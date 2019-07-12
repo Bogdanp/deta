@@ -9,7 +9,7 @@
          "adapter/adapter.rkt"
          "adapter/postgresql.rkt"
          "adapter/sqlite3.rkt"
-         "ast.rkt"
+         (prefix-in ast: "ast.rkt")
          "schema.rkt"
          "private/field.rkt"
          "private/meta.rkt"
@@ -30,14 +30,14 @@
   (-> connection? schema-or-name/c void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (create-table-ddl (schema-table-name schema)
-                                                       (schema-fields schema)))))
+                                     (ast:create-table-ddl (schema-table-name schema)
+                                                           (schema-fields schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
   (-> connection? schema-or-name/c void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (drop-table-ddl (schema-table-name schema)))))
+                                     (ast:drop-table-ddl (schema-table-name schema)))))
 
 
 ;; insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -65,14 +65,14 @@
 
   (define pk (schema-primary-key schema))
   (define pk-column
-    (and pk (column-expr (field-name pk))))
+    (and pk (ast:column (field-name pk))))
 
   (define stmt
-    (insert-stmt (table-expr (schema-table-name schema))
-                 (map column-expr columns)
-                 (for/list ([i (in-range 1 (add1 (length columns)))])
-                   (placeholder-expr i))
-                 (and pk-column (column-expr pk-column))))
+    (ast:insert (ast:table (schema-table-name schema))
+                (map ast:column columns)
+                (for/list ([i (in-range 1 (add1 (length columns)))])
+                  (ast:placeholder i))
+                (and pk-column (ast:column pk-column))))
 
   (define query
     (adapter-emit-query adapter stmt))
@@ -115,10 +115,10 @@
     (raise-argument-error 'delete-entity! "cannot delete entities without a primary key" entity))
 
   (define stmt
-    (delete-stmt (from-clause schema (table-expr (schema-table-name schema)))
-                 (where-clause (binary-expr '=
-                                            (column-expr (field-name pk))
-                                            (placeholder-expr 1)))))
+    (ast:delete (ast:from schema (ast:table (schema-table-name schema)))
+                (ast:where (ast:binop '=
+                                      (ast:column (field-name pk))
+                                      (ast:placeholder 1)))))
 
   (query-exec conn (adapter-emit-query adapter stmt) ((field-getter pk) entity))
   ((schema-meta-updater schema) entity meta-track-deleted))
@@ -151,17 +151,16 @@
   (keyword-apply (schema-struct-ctor schema) kwds kw-args null))
 
 (define/contract (in-rows conn stmt . args)
-  (-> connection? stmt? any/c ... sequence?)
+  (-> connection? ast:stmt? any/c ... sequence?)
   (define adapter (connection-adapter conn))
-  (define schema
-    (stmt-schema stmt))
+  (define schema (ast:stmt-schema stmt))
 
   (sequence-map (lambda cols
                   (make-entity-instance schema cols))
                 (apply in-query conn (adapter-emit-query adapter stmt) args)))
 
 (define/contract (in-row conn stmt . args)
-  (-> connection? stmt? any/c ... sequence?)
+  (-> connection? ast:stmt? any/c ... sequence?)
   (let ([consumed #f])
     (stop-before (apply in-rows conn stmt args) (lambda _
                                                   (begin0 consumed

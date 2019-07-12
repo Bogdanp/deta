@@ -19,28 +19,22 @@
     [(? string?)
      (quote/standard e)]
 
-    [(qualified-name parent name)
+    [(qualified parent name)
      (~a (recur parent) "." (quote/standard name))]
 
-    [(alias-expr e alias)
+    [(as e alias)
      (~a (recur e) " " (quote/standard alias))]
 
-    [(binary-expr op a b)
+    [(binop op a b)
      (~a (recur a) " " op " " (recur b))]
 
-    [(column-expr (and (? string?) name))
-     (quote/standard name)]
-
-    [(column-expr e)
+    [(column e)
      (recur e)]
 
-    [(placeholder-expr n)
+    [(placeholder n)
      (~a "$" n)]
 
-    [(table-expr (and (? string?) name))
-     (quote/standard name)]
-
-    [(table-expr e)
+    [(table e)
      (recur e)]))
 
 (define ((make-stmt-emitter recur emit-expr
@@ -49,17 +43,17 @@
     [(list exprs ...)
      (string-join (map emit-expr exprs) ", ")]
 
-    [(select-stmt from columns where)
+    [(select from columns where)
      (with-output-to-string
        (lambda _
          (display @~a{SELECT @(recur columns) @(recur from)})
          (when where
            (display (~a " " (recur where))))))]
 
-    [(delete-stmt from where)
+    [(delete from where)
      @~a{DELETE @(recur from) @(recur where)}]
 
-    [(insert-stmt table columns column-values returning)
+    [(insert table columns column-values returning)
      (with-output-to-string
        (lambda _
          (display @~a{INSERT INTO @(emit-expr table) (@(recur columns))})
@@ -67,5 +61,5 @@
          (when (and returning supports-returning?)
            (display @~a{ RETURNING @(emit-expr returning)}))))]
 
-    [(from-clause _ t) @~a{FROM  @(emit-expr t)}]
-    [(where-clause  e) @~a{WHERE @(emit-expr e)}]))
+    [(from _ t) @~a{FROM  @(emit-expr t)}]
+    [(where  e) @~a{WHERE @(emit-expr e)}]))
