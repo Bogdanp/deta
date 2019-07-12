@@ -9,7 +9,7 @@
          "adapter/adapter.rkt"
          "adapter/postgresql.rkt"
          "adapter/sqlite3.rkt"
-         "adapter/ast.rkt"
+         "ast.rkt"
          "schema.rkt"
          "private/field.rkt"
          "private/meta.rkt"

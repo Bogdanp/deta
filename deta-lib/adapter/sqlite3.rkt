@@ -5,10 +5,10 @@
          racket/match
          racket/port
          racket/string
+         "../ast.rkt"
          "../private/field.rkt"
          "../type.rkt"
          "adapter.rkt"
-         "ast.rkt"
          "standard.rkt")
 
 (provide

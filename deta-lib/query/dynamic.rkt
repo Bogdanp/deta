@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/contract
-         "../adapter/ast.rkt"
+         "../ast.rkt"
          "../private/field.rkt"
          "../schema.rkt")
 
