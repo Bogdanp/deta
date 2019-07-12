@@ -30,7 +30,7 @@
 
       (check-true (user? (make-user #:username "bogdan@example.com"))))
 
-    (test-case "defined structs have a associated functional setters and updaters"
+    (test-case "defined structs have associated functional setters and updaters"
       (define a-user (make-user #:username "bogdan"))
       (check-equal? (user-username (update-user-username a-user string-upcase)) "BOGDAN"))
 
