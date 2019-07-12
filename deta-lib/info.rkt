@@ -4,5 +4,6 @@
 (define collection "deta")
 
 (define deps '("base"
-               "db-lib"))
+               "db-lib"
+               "gregor-lib"))
 (define build-deps '("at-exp-lib"))

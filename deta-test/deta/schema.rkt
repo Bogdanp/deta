@@ -2,15 +2,18 @@
 
 (require deta
          deta/private/meta
+         gregor
          rackunit)
 
 (provide
  schema-tests)
 
 (define-schema user
-  ([id id/f #:primary-key]
-   [username string/f]
-   [password-hash string/f #:nullable]))
+  ([id id/f #:primary-key #:auto-increment]
+   [username string/f #:unique]
+   [password-hash string/f #:nullable]
+   [(created-at (now/moment)) datetime-tz/f]
+   [(updated-at (now/moment)) datetime-tz/f]))
 
 (define schema-tests
   (test-suite

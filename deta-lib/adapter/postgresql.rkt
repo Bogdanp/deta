@@ -6,7 +6,6 @@
          racket/port
          racket/string
          "../private/field.rkt"
-         "../schema.rkt"
          "../type.rkt"
          "adapter.rkt"
          "ast.rkt"
@@ -22,6 +21,10 @@
       #:methods gen:adapter
       [(define (adapter-supports-returning? _) #t)
 
+       (define/contract (adapter-last-id-query _)
+         (-> adapter? string?)
+         "SELECT lastval()")
+
        (define/contract (adapter-emit-ddl _ d)
          (-> adapter? ddl? string?)
          (emit-ddl d))
@@ -30,8 +33,7 @@
          (-> adapter? stmt? string?)
          (emit-stmt s))])
 
-    (values postgresql-adapter?
-            (postgresql-adapter))))
+    (values postgresql-adapter? (postgresql-adapter))))
 
 (define (emit-ddl d)
   (match d
@@ -60,11 +62,20 @@
 
 (define (field-type->postgresql t)
   (cond
-    [(id/f? t)      "INTEGER"]
-    [(integer/f? t) "INTEGER"]
-    [(string/f? t)  "TEXT"]
-    [(symbol/f? t)  "TEXT"]
-    [(boolean/f? t) "BOOLEAN"]
+    [(id/f?          t) "INTEGER"]
+    [(integer/f?     t) "INTEGER"]
+    [(real/f?        t) "REAL"]
+    [(numeric/f?     t) @~a{NUMERIC(@(numeric/f-precision t), @(numeric/f-scale t))}]
+    [(string/f?      t) "TEXT"]
+    [(binary/f?      t) "BLOB"]
+    [(symbol/f?      t) "TEXT"]
+    [(boolean/f?     t) "BOOLEAN"]
+    [(date/f?        t) "DATE"]
+    [(time/f?        t) "TIME"]
+    [(datetime/f?    t) "TIMESTAMP"]
+    [(datetime-tz/f? t) "TIMESTAMPTZ"]
+    [(json/f?        t) "JSON"]
+    [(jsonb/f?       t) "JSONB"]
     [else (raise-argument-error 'field-type->postgresql "unsupported type for DDL" t)]))
 
 (define (emit-expr e)

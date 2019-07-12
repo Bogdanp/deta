@@ -2,12 +2,10 @@
 
 (require racket/contract
          racket/format
-         racket/list
          racket/match
          racket/port
          racket/string
          "../private/field.rkt"
-         "../schema.rkt"
          "../type.rkt"
          "adapter.rkt"
          "ast.rkt"
@@ -31,12 +29,11 @@
          (-> adapter? ddl? string?)
          (emit-ddl d))
 
-       (define/contract (adapter-emit-query _ stmt)
+       (define/contract (adapter-emit-query _ s)
          (-> adapter? stmt? string?)
-         (emit-stmt stmt))])
+         (emit-stmt s))])
 
-    (values sqlite3-adapter?
-            (sqlite3-adapter))))
+    (values sqlite3-adapter? (sqlite3-adapter))))
 
 (define (emit-ddl d)
   (match d
@@ -61,11 +58,13 @@
 
 (define (field-type->sqlite3 t)
   (cond
-    [(id/f? t)      "INTEGER"]
-    [(integer/f? t) "INTEGER"]
-    [(string/f? t)  "TEXT"]
-    [(symbol/f? t)  "TEXT"]
-    [(boolean/f? t) "BOOLEAN"]
+    [(id/f?          t) "INTEGER"]
+    [(integer/f?     t) "INTEGER"]
+    [(real/f?        t) "REAL"]
+    [(string/f?      t) "TEXT"]
+    [(binary/f?      t) "BLOB"]
+    [(symbol/f?      t) "TEXT"]
+    [(boolean/f?     t) "BOOLEAN"]
     [else (raise-argument-error 'field-type->sqlite3 "unsupported type for DDL" t)]))
 
 (define (emit-expr e)
