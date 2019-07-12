@@ -28,9 +28,11 @@
  expr?
  stmt?
 
+ (struct-out name)
+ (struct-out scalar)
  (struct-out qualified)
  (struct-out as)
- (struct-out binop)
+ (struct-out app)
  (struct-out column)
  (struct-out placeholder)
  (struct-out table)
@@ -49,13 +51,19 @@
 (struct stmt ()
   #:transparent)
 
+(struct name expr (name)
+  #:transparent)
+
+(struct scalar expr (v)
+  #:transparent)
+
 (struct qualified expr (parent name)
   #:transparent)
 
 (struct as expr (e alias)
   #:transparent)
 
-(struct binop expr (op a b)
+(struct app expr (f args)
   #:transparent)
 
 (struct column expr (e)

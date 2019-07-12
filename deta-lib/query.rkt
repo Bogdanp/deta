@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base
+                     racket/match
                      syntax/parse)
          (except-in db query)
          racket/contract
@@ -117,9 +118,9 @@
 
   (define stmt
     (ast:delete (ast:from (ast:table (schema-table-name schema)))
-                (ast:where (ast:binop '=
-                                      (ast:column (field-name pk))
-                                      (ast:placeholder 1)))))
+                (ast:where (ast:app (ast:name '=)
+                                    (list (ast:column (field-name pk))
+                                          (ast:placeholder 1))))))
 
   (query-exec conn (adapter-emit-query adapter stmt) ((field-getter pk) entity))
   ((schema-meta-updater schema) entity meta-track-deleted))
@@ -131,7 +132,8 @@
  in-rows
  in-row
 
- from)
+ from
+ where)
 
 (define (make-entity-instance schema cols)
   (define pairs
@@ -167,10 +169,58 @@
                                                (begin0 consumed
                                                  (set! consumed #t))))))
 
+(begin-for-syntax
+  (define column-reference-re
+    #rx"^([^\\.]+)\\.([^\\.]+)$")
+
+  (define (column-reference? id)
+    (regexp-match? column-reference-re (symbol->string id)))
+
+  (define (syntax->column-reference stx)
+    (match-define (list _ a b)
+      (regexp-match column-reference-re (symbol->string (syntax->datum stx))))
+
+    (cons (datum->syntax stx a)
+          (datum->syntax stx b)))
+
+  (define-syntax-class q-expr
+    #:datum-literals (and or null)
+    (pattern ref:id
+             #:when (column-reference? (syntax->datum this-syntax))
+             #:with e (with-syntax ([a (car (syntax->column-reference this-syntax))]
+                                    [b (cdr (syntax->column-reference this-syntax))])
+                        #'(ast:qualified a b)))
+
+    (pattern name:id
+             #:with e #'(ast:name 'name))
+
+    (pattern b:boolean
+             #:with e #'(ast:scalar b))
+
+    (pattern s:string
+             #:with e #'(ast:scalar s))
+
+    (pattern n:number
+             #:with e #'(ast:scalar n))
+
+    (pattern (and a:q-expr b:q-expr)
+             #:with e #'(ast:app (ast:name 'and) (list a.e b.e)))
+
+    (pattern (or a:q-expr b:q-expr)
+             #:with e #'(ast:app (ast:name 'or) (list a.e b.e)))
+
+    (pattern (f:q-expr arg:q-expr ...)
+             #:with e #'(ast:app f.e (list arg.e ...)))))
+
 (define-syntax (from stx)
   (syntax-parse stx
     [(_ schema:id #:as alias:id)
      #'(dyn:from 'schema #:as 'alias)]))
+
+(define-syntax (where stx)
+  (syntax-parse stx
+    [(_ q:expr e:q-expr)
+     #'(dyn:where q e.e)]))
 
 
 ;; common ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

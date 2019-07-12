@@ -1,22 +1,28 @@
 #lang racket/base
 
 (require racket/contract
+         racket/match
          (prefix-in ast: "../private/ast.rkt")
          "../private/field.rkt"
          "../schema.rkt"
          "struct.rkt")
 
 (provide
- (contract-out
-  [as (-> ast:expr? (or/c string? symbol?) ast:as?)]
-  [from (-> (or/c schema? symbol?) #:as symbol? query?)]))
+ as
+ from
+ where
+ and-where
+ or-where)
 
-(define (as e name)
+(define/contract (as e name)
+  (-> ast:expr? (or/c string? symbol?) ast:as?)
   (ast:as e (cond
               [(string? name) name]
               [(symbol? name) (symbol->string name)])))
 
-(define (from schema-or-name #:as alias)
+(define/contract (from schema-or-name #:as alias)
+  (-> (or/c schema? symbol?) #:as symbol? query?)
+
   (define schema (schema-registry-lookup schema-or-name))
   (define alias:str (symbol->string alias))
 
@@ -26,3 +32,25 @@
           (for/list ([f (in-list (schema-fields schema))])
             (ast:column (ast:qualified alias:str (field-name f))))
           #f)))
+
+(define/contract (where q e)
+  (-> query? ast:expr? query?)
+  (match q
+    [(query schema stmt)
+     (query schema (struct-copy ast:select stmt [where (ast:where e)]))]))
+
+(define/contract (and-where q e)
+  (-> query? ast:expr? query?)
+  (match q
+    [(query schema (and (struct* ast:select ([where e0])) stmt))
+     (query schema (struct-copy ast:select stmt [where (if e0
+                                                           (ast:app 'and (list e0 e))
+                                                           e)]))]))
+
+(define/contract (or-where q e)
+  (-> query? ast:expr? query?)
+  (match q
+    [(query schema (and (struct* ast:select ([where e0])) stmt))
+     (query schema (struct-copy ast:select stmt [where (if e0
+                                                           (ast:app 'or (list e0 e))
+                                                           e)]))]))

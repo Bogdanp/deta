@@ -19,14 +19,26 @@
     [(? string?)
      (quote/standard e)]
 
+    [(name n)
+     (symbol->string n)]
+
+    [(scalar #t) "true"]
+    [(scalar #f) "false"]
+
+    [(scalar v)
+     (~v v)]
+
     [(qualified parent name)
      (~a (recur parent) "." (quote/standard name))]
 
     [(as e alias)
-     (~a (recur e) " " (quote/standard alias))]
+     (~a (recur e) " AS " (quote/standard alias))]
 
-    [(binop op a b)
+    [(app (name (and (or 'and 'or '= '> '< '>= '<=) op)) (list a b))
      (~a (recur a) " " op " " (recur b))]
+
+    [(app f args)
+     (~a (recur f) "(" (string-join (map recur args) ", ") ")")]
 
     [(column e)
      (recur e)]
