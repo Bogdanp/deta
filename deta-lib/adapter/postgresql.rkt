@@ -26,9 +26,9 @@
          (-> adapter? ddl? string?)
          (emit-ddl d))
 
-       (define/contract (adapter-emit-query _ stmt)
+       (define/contract (adapter-emit-query _ s)
          (-> adapter? stmt? string?)
-         (emit-query/standard #:supports-returning? #t stmt))])
+         (emit-stmt s))])
 
     (values postgresql-adapter?
             (postgresql-adapter))))
@@ -66,3 +66,18 @@
     [(symbol/f? t)  "TEXT"]
     [(boolean/f? t) "BOOLEAN"]
     [else (raise-argument-error 'field-type->postgresql "unsupported type for DDL" t)]))
+
+(define (emit-expr e)
+  (match e
+    [_ (emit-expr/standard e)]))
+
+(define emit-expr/standard
+  (make-expr-emitter emit-expr))
+
+(define (emit-stmt e)
+  (match e
+    [_ (emit-stmt/standard e)]))
+
+(define emit-stmt/standard
+  (make-stmt-emitter emit-stmt emit-expr
+                     #:supports-returning? #t))

@@ -29,13 +29,16 @@
  stmt-schema
 
  (struct-out qualified-name)
+ (struct-out placeholder-expr)
+ (struct-out binary-expr)
  (struct-out alias-expr)
  (struct-out column-expr)
  (struct-out table-expr)
  (struct-out from-clause)
  (struct-out where-clause)
- (struct-out select-stmt)
- (struct-out insert-stmt))
+ (struct-out insert-stmt)
+ (struct-out delete-stmt)
+ (struct-out select-stmt))
 
 (struct stmt ()
   #:transparent)
@@ -46,6 +49,12 @@
     [_ #f]))
 
 (struct qualified-name (parent name)
+  #:transparent)
+
+(struct placeholder-expr ()
+  #:transparent)
+
+(struct binary-expr (op a b)
   #:transparent)
 
 (struct alias-expr (e alias)
@@ -63,8 +72,11 @@
 (struct where-clause (e)
   #:transparent)
 
-(struct select-stmt stmt (from columns where)
+(struct insert-stmt stmt (into columns returning)
   #:transparent)
 
-(struct insert-stmt stmt (into columns returning)
+(struct delete-stmt stmt (from where)
+  #:transparent)
+
+(struct select-stmt stmt (from columns where)
   #:transparent)

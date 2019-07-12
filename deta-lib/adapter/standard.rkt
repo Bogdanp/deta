@@ -1,4 +1,4 @@
-#lang racket/base
+#lang at-exp racket/base
 
 (require racket/format
          racket/match
@@ -8,38 +8,45 @@
 
 (provide
  quote/standard
- emit-query/standard)
+ make-expr-emitter
+ make-stmt-emitter)
 
 (define (quote/standard e)
   (~a #\" e #\"))
 
-(define (emit-query/standard e
-                             #:supports-returning? [supports-returning? #f])
+(define ((make-expr-emitter recur) e)
   (match e
-    [(? string?)
-     (quote/standard e)]
-
-    [(list es ...)
-     (string-join (map emit-query/standard es) ", ")]
-
     [(qualified-name parent name)
-     (~a (emit-query/standard parent) "." (emit-query/standard name))]
+     (~a (recur parent) "." (recur name))]
 
     [(alias-expr e alias)
-     (~a (emit-query/standard e) " " (emit-query/standard alias))]
+     (~a (recur e) " " (quote/standard alias))]
+
+    [(column-expr (and (? string?) name))
+     (quote/standard name)]
 
     [(column-expr e)
-     (emit-query/standard e)]
+     (recur e)]
+
+    [(table-expr (and (? string?) name))
+     (quote/standard name)]
 
     [(table-expr e)
-     (emit-query/standard e)]
+     (recur e)]
+
+    [_ (error 'foo)]))
+
+(define ((make-stmt-emitter recur emit-expr
+                            #:supports-returning? [supports-returning? #f]) e)
+  (match e
+    [(list exprs ...)
+     (string-join (map emit-expr exprs) ", ")]
 
     [(select-stmt from columns where)
      (with-output-to-string
        (lambda _
-         (display (~a "SELECT " (emit-query/standard columns) " " (emit-query/standard from)))
-         (when where
-           (display (emit-query/standard where)))))]
+         (display @~a{SELECT @(recur columns) @(recur from)})
+         (when where (display (recur where)))))]
 
     [(insert-stmt table columns returning)
      (with-output-to-string
@@ -48,15 +55,10 @@
            (for/list ([i (in-range 1 (add1 (length columns)))])
              (~a "$" i)))
 
-         (display (~a "INSERT INTO " (emit-query/standard table)
-                      " (" (emit-query/standard columns) ") "
-                      " VALUES (" (string-join placeholders ", ") ")"))
-
+         (display @~a{INSERT INTO @(emit-expr table) (@(recur columns))
+                             VALUES (@(string-join placeholders ", "))})
          (when (and returning supports-returning?)
-           (display (~a " RETURNING " (emit-query/standard returning))))))]
+           (display @~a{ RETURNING @(emit-expr returning)}))))]
 
-    [(from-clause _ table)
-     (~a "FROM " (emit-query/standard table))]
-
-    [(where-clause e)
-     (~a "WHERE " (emit-query/standard e))]))
+    [(from-clause _ t) @~a{ FROM  @(emit-expr t)}]
+    [(where-clause  e) @~a{ WHERE @(emit-expr e)}]))

@@ -8,6 +8,7 @@
  meta-state
  meta-schema
  meta-can-persist?
+ meta-can-delete?
  meta-track-change
  meta-track-persisted
  meta-track-deleted)
@@ -30,6 +31,12 @@
     ['created #t]
     ['changed #t]
     [_        #f]))
+
+(define (meta-can-delete? meta)
+  (match (meta-state meta)
+    ['persisted #t]
+    ['changed   #t]
+    [_          #f]))
 
 (define (meta-track-persisted m)
   (struct-copy meta m [state 'persisted]))

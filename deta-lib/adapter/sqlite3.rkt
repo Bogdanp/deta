@@ -33,7 +33,7 @@
 
        (define/contract (adapter-emit-query _ stmt)
          (-> adapter? stmt? string?)
-         (emit-query/standard stmt))])
+         (emit-stmt stmt))])
 
     (values sqlite3-adapter?
             (sqlite3-adapter))))
@@ -67,3 +67,17 @@
     [(symbol/f? t)  "TEXT"]
     [(boolean/f? t) "BOOLEAN"]
     [else (raise-argument-error 'field-type->sqlite3 "unsupported type for DDL" t)]))
+
+(define (emit-expr e)
+  (match e
+    [_ (emit-expr/standard e)]))
+
+(define emit-expr/standard
+  (make-expr-emitter emit-expr))
+
+(define (emit-stmt e)
+  (match e
+    [_ (emit-stmt/standard e)]))
+
+(define emit-stmt/standard
+  (make-stmt-emitter emit-stmt emit-expr))
