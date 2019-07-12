@@ -34,7 +34,11 @@
 
       (define u* (car (insert! (current-conn) u)))
       (check-eq? (meta-state (entity-meta u*)) 'persisted)
-      (check-not-eq? (user-id u*) sql-null)))))
+      (check-not-eq? (user-id u*) sql-null)
+
+      (test-case "changing a persistent entity updates its meta state"
+        (define u** (set-user-username u* "jim@example.com"))
+        (check-eq? (meta-state (entity-meta u**)) 'changed))))))
 
 (module+ test
   (require rackunit/text-ui)
