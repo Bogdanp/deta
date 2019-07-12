@@ -1,0 +1,240 @@
+#lang racket/base
+
+(require (for-syntax racket/base
+                     racket/contract
+                     racket/list
+                     racket/syntax
+                     syntax/parse
+                     syntax/parse/experimental/template)
+         db
+         racket/contract
+         racket/match
+         "private/field.rkt"
+         "private/meta.rkt"
+         "private/type.rkt")
+
+;; schema ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ entity?
+ entity-meta
+
+ define-schema
+ schema?
+ schema-name
+ schema-table-name
+ schema-struct-name
+ schema-struct-ctor
+ schema-struct-pred
+ schema-meta-updater
+ schema-fields
+ schema-primary-key)
+
+(struct entity (meta)
+  #:transparent)
+
+(struct schema (name table-name struct-name struct-ctor struct-pred meta-updater fields)
+  #:transparent)
+
+(define (make-schema #:name name
+                     #:table-name table-name
+                     #:struct-name struct-name
+                     #:struct-ctor struct-ctor
+                     #:struct-pred struct-pred
+                     #:meta-updater meta-updater
+                     #:fields fields)
+  (define the-schema
+    (schema name
+            table-name
+            struct-name
+            struct-ctor
+            struct-pred
+            meta-updater
+            (sort fields keyword<? #:key field-kwd)))
+
+  (begin0 the-schema
+    (schema-registry (cons the-schema (schema-registry)))))
+
+(define (schema-primary-key schema)
+  (for/first ([f (in-list (schema-fields schema))]
+              #:when (field-primary-key? f))
+    f))
+
+(begin-for-syntax
+  (define (pluralize name)
+    (format "~as" name))
+
+  (define syntax->keyword
+    (compose1 string->keyword symbol->string syntax->datum))
+
+  (define-template-metafunction (make-fld-setter stx)
+    (syntax-parse stx
+      [(_ struct-name struct-pred fld-name fld-contract fld-wrapper)
+       (with-syntax ([setter-name (format-id #'struct-name "set-~a-~a" #'struct-name #'fld-name)])
+         #'(define/contract (setter-name e v [track-change? #t])
+             (->* (struct-pred fld-contract) (boolean?) struct-pred)
+             (define meta
+               (if track-change?
+                   (meta-track-change (entity-meta e))
+                   (entity-meta e)))
+
+             (struct-copy struct-name e
+                          [meta #:parent entity meta]
+                          [fld-name (fld-wrapper v)])))]))
+
+  (define-template-metafunction (make-fld-updater stx)
+    (syntax-parse stx
+      [(_ struct-name struct-pred fld-name fld-contract fld-wrapper)
+       (with-syntax ([getter-name  (format-id #'struct-name "~a-~a"        #'struct-name #'fld-name)]
+                     [updater-name (format-id #'struct-name "update-~a-~a" #'struct-name #'fld-name)])
+         #'(define/contract (updater-name e p [track-change? #t])
+             (->* (struct-pred (-> fld-contract fld-contract)) (boolean?) struct-pred)
+             (define meta
+               (if track-change?
+                   (meta-track-change (entity-meta e))
+                   (entity-meta e)))
+
+             (struct-copy struct-name e
+                          [meta #:parent entity meta]
+                          [fld-name (fld-wrapper (p (getter-name e)))])))]))
+
+  (define-template-metafunction (make-fld-maker stx)
+    (syntax-parse stx
+      [(_ struct-name fld-name fld-type fld-pk? fld-ai? fld-nullable?)
+       (with-syntax ([getter-name  (format-id #'struct-name "~a-~a"        #'struct-name #'fld-name)]
+                     [setter-name  (format-id #'struct-name "set-~a-~a"    #'struct-name #'fld-name)]
+                     [updater-name (format-id #'struct-name "update-~a-~a" #'struct-name #'fld-name)])
+         #'(make-field #:name 'fld-name
+                       #:type fld-type
+                       #:getter getter-name
+                       #:setter setter-name
+                       #:updater updater-name
+                       #:primary-key? fld-pk?
+                       #:auto-increment? fld-ai?
+                       #:nullable? fld-nullable?))]))
+
+  (define-template-metafunction (make-ctor-contract stx)
+    (syntax-parse stx
+      [(_ [(fld-kwd fld-contract fld-required?) ...] struct-pred)
+       (with-syntax ([((required-arg ...) ...)
+                      (filter-map (lambda (fld-kwd fld-contract fld-required?)
+                                    (and (syntax->datum fld-required?)
+                                         (quasisyntax/loc stx
+                                           (#,fld-kwd #,fld-contract))))
+                                  (syntax-e #'(fld-kwd ...))
+                                  (syntax-e #'(fld-contract ...))
+                                  (syntax-e #'(fld-required? ...)))]
+                     [((optional-arg ...) ...)
+                      (filter-map (lambda (fld-kwd fld-contract fld-required?)
+                                    (and (not (syntax->datum fld-required?))
+                                         (quasisyntax/loc stx
+                                           (#,fld-kwd #,fld-contract))))
+                                  (syntax-e #'(fld-kwd ...))
+                                  (syntax-e #'(fld-contract ...))
+                                  (syntax-e #'(fld-required? ...)))])
+         #'(->* (required-arg ... ...)
+                (optional-arg ... ...)
+                struct-pred))]))
+
+  (define-syntax-class fld
+    (pattern (name:id type:expr (~alt (~optional (~and #:primary-key primary-key))
+                                      (~optional (~and #:auto-increment auto-increment))
+                                      (~optional (~and #:nullable nullable))
+                                      (~optional (~seq #:contract contract-e:expr) #:defaults ([contract-e #'any/c]))
+                                      (~optional (~seq #:wrapper wrapper:expr) #:defaults ([wrapper #'values]))) ...)
+             #:fail-when (and (attribute primary-key)
+                              (attribute nullable))
+             "primary keys may not be nullable"
+
+             #:with required? (if (or (attribute primary-key)
+                                      (attribute nullable)) #'#f #'t)
+             #:with primary-key? (if (attribute primary-key) #'#t #'#f)
+             #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
+             #:with nullable? (if (attribute nullable) #'#t #'#f)
+             #:with contract (if (attribute nullable)
+                                 #'(or/c sql-null? (and/c (type-contract type) contract-e))
+                                 #'(and/c (type-contract type) contract-e))
+             #:with ctor-kwd (syntax->keyword #'name)
+             #:with ctor-arg (cond
+                               [(attribute primary-key) #'(ctor-kwd [name sql-null])]
+                               [(attribute nullable)    #'(ctor-kwd [name sql-null])]
+                               [else                    #'(ctor-kwd  name)]))
+
+    (pattern ((name:id default:expr) type:expr (~alt (~optional (~and #:primary-key primary-key))
+                                                     (~optional (~and #:auto-increment auto-increment))
+                                                     (~optional (~and #:nullable nullable))
+                                                     (~optional (~seq #:contract contract-e:expr) #:defaults ([contract-e #'any/c]))
+                                                     (~optional (~seq #:wrapper wrapper:expr) #:defaults ([wrapper #'values]))) ...)
+             #:fail-when (and (attribute primary-key)
+                              (attribute nullable))
+             "primary keys may not be nullable"
+
+             #:with required? #'#f
+             #:with primary-key? (if (attribute primary-key) #'#t #'#f)
+             #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
+             #:with nullable? (if (attribute nullable) #'#t #'#f)
+             #:with contract (if (attribute nullable)
+                                 #'(or/c sql-null? (and/c (type-contract type) contract-e))
+                                 #'(and/c (type-contract type) contract-e))
+             #:with ctor-kwd (syntax->keyword #'name)
+             #:with ctor-arg #'(ctor-kwd [name default]))))
+
+(define-syntax (define-schema stx)
+  (syntax-parse stx
+    [(_ name:id
+        (~alt (~optional (~seq #:table table-name:str))) ...
+        (f:fld ...+))
+     (with-syntax* ([pluralized-name (datum->syntax #'name (pluralize (syntax->datum #'name)))]
+                    [table-name #'(~? table-name pluralized-name)]
+                    [ctor-name (format-id #'name "make-~a" #'name)]
+                    [((ctor-arg ...) ...) #'(f.ctor-arg ...)]
+                    [meta-updater-name (format-id #'name "update-~a-meta" #'name)]
+                    [struct-name #'name]
+                    [struct-pred (format-id #'name "~a?" #'name)]
+                    [schema-name (format-id #'name "~a-schema" #'name)])
+       #'(begin
+           (struct struct-name entity (f.name ...)
+             #:transparent)
+
+           (define/contract (ctor-name ctor-arg ... ...)
+             (make-ctor-contract [(f.ctor-kwd f.contract f.required?) ...] struct-pred)
+             (struct-name (make-meta schema-name)
+                          (f.wrapper f.name) ...))
+
+           (define/contract (meta-updater-name e p)
+             (-> entity? (-> meta? meta?) entity?)
+             (struct-copy struct-name e [meta #:parent entity (p (entity-meta e))]))
+
+           (begin (make-fld-setter  struct-name struct-pred f.name f.contract f.wrapper) ...)
+           (begin (make-fld-updater struct-name struct-pred f.name f.contract f.wrapper) ...)
+
+           (define schema-name
+             (make-schema #:name 'name
+                          #:table-name table-name
+                          #:struct-name struct-name
+                          #:struct-ctor ctor-name
+                          #:struct-pred struct-pred
+                          #:meta-updater meta-updater-name
+                          #:fields (list (make-fld-maker struct-name
+                                                         f.name
+                                                         f.type
+                                                         f.primary-key?
+                                                         f.auto-increment?
+                                                         f.nullable?) ...)))))]))
+
+
+;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ schema-registry
+ schema-registry-ref)
+
+(define/contract schema-registry
+  (parameter/c (listof schema?))
+  (make-parameter null))
+
+(define/contract (schema-registry-ref name)
+  (-> symbol? (or/c false/c schema?))
+  (for/first ([schema (in-list (schema-registry))]
+              #:when (eq? (schema-name schema) name))
+    schema))
