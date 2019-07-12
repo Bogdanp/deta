@@ -29,10 +29,12 @@ This is currently alpha stuff and you should not use it.
 (create-table! conn 'post)
 
 (define my-first-post
-  (car
-   (insert! conn (make-post #:title "My First Post"
-                            #:content "Hello, world!"))))
+  (let* ([p (make-post #:title "My First Post"
+                       #:content "Hello, world!")]
+         [p (set-post-title p "My First Post!!!")])
+    (car (insert! conn p))))
 
+(displayln my-first-post)
 (for ([p (in-rows (select (from 'post)))])
   (displayln p))
 ```
