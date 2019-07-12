@@ -3,6 +3,7 @@
 (require db
          deta
          deta/private/meta
+         racket/match
          racket/string
          rackunit)
 
@@ -38,7 +39,24 @@
 
       (test-case "changing a persistent entity updates its meta state"
         (define u** (set-user-username u* "jim@example.com"))
-        (check-eq? (meta-state (entity-meta u**)) 'changed))))))
+        (check-eq? (meta-state (entity-meta u**)) 'changed))))
+
+   (test-suite
+    "delete!"
+
+    (test-case "does nothing to entities that haven't been persisted"
+      (define u (make-user #:username "bogdan@example.com"))
+      (check-equal? (delete! (current-conn) u) null))
+
+    (test-case "deletes persisted entities"
+      (define u (make-user #:username "will-delete@example.com"))
+      (match-define (list u*)
+        (insert! (current-conn) u))
+
+      (match-define (list u**)
+        (delete! (current-conn) u*))
+
+      (check-eq? (meta-state (entity-meta u**)) 'deleted)))))
 
 (module+ test
   (require rackunit/text-ui)

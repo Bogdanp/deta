@@ -64,7 +64,11 @@
     (and pk (column-expr (field-name pk))))
 
   (define stmt
-    (insert-stmt (table-expr (schema-table-name schema)) columns pk-column))
+    (insert-stmt (table-expr (schema-table-name schema))
+                 (map column-expr columns)
+                 (for/list ([i (in-range 1 (add1 (length columns)))])
+                   (placeholder-expr i))
+                 (and pk-column (column-expr pk-column))))
 
   (define query
     (adapter-emit-query adapter stmt))
@@ -86,6 +90,34 @@
     (cond
       [(and res pk) ((field-setter pk) e res #f)]
       [else                            e        ])))
+
+
+;; delete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ delete!)
+
+(define/contract (delete! conn . entities)
+  (-> connection? entity? ... (listof entity?))
+  (define adapter (connection-adapter conn))
+  (for/list ([entity (in-list entities)] #:when (meta-can-delete? (entity-meta entity)))
+    (delete-entity! adapter conn entity)))
+
+(define (delete-entity! adapter conn entity)
+  (define meta (entity-meta entity))
+  (define schema (meta-schema meta))
+  (define pk (schema-primary-key schema))
+  (unless pk
+    (raise-argument-error 'delete-entity! "cannot delete entities without a primary key" entity))
+
+  (define stmt
+    (delete-stmt (from-clause schema (table-expr (schema-table-name schema)))
+                 (where-clause (binary-expr '=
+                                            (column-expr (field-name pk))
+                                            (placeholder-expr 1)))))
+
+  (query-exec conn (adapter-emit-query adapter stmt) ((field-getter pk) entity))
+  ((schema-meta-updater schema) entity meta-track-deleted))
 
 
 ;; select ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
