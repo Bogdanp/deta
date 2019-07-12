@@ -46,7 +46,8 @@
     (for*/fold ([columns null]
                 [getters null])
                ([f (in-list (schema-fields schema))]
-                [p (in-value (type-dump (field-type f) f))])
+                [p (in-value (type-dump (field-type f) f))]
+                #:unless (field-auto-increment? f))
       (values (append (map car p) columns)
               (append (map cdr p) getters))))
 

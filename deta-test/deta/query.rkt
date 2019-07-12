@@ -13,7 +13,7 @@
   (make-parameter #f))
 
 (define-schema user
-  ([id id/f #:primary-key]
+  ([id id/f #:primary-key #:auto-increment]
    [username string/f #:wrapper string-downcase]
    [password-hash string/f #:nullable]))
 
@@ -37,4 +37,16 @@
 
   (parameterize ([current-conn (sqlite3-connect #:database 'memory)])
     (create-table! (current-conn) user-schema)
-    (run-tests query-tests)))
+    (run-tests query-tests))
+
+  (define pg-database (getenv "DETA_POSTGRES_DB"))
+  (define pg-username (getenv "DETA_POSTGRES_USER"))
+  (define pg-password (getenv "DETA_POSTGRES_PASS"))
+  (when pg-database
+    (parameterize ([current-conn (postgresql-connect #:server   "127.0.0.1"
+                                                     #:port     5432
+                                                     #:database pg-database
+                                                     #:user     pg-username
+                                                     #:password pg-password)])
+      (create-table! (current-conn) user-schema)
+      (run-tests query-tests))))
