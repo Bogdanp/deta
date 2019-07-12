@@ -22,7 +22,9 @@
    #:before
    (lambda _
      (drop-table! (current-conn) 'user)
-     (create-table! (current-conn) 'user))))
+     (create-table! (current-conn) 'user))
+
+   ))
 
 (module+ test
   (require rackunit/text-ui)

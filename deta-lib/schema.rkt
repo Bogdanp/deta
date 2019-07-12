@@ -233,7 +233,8 @@
 
 (provide
  schema-registry
- schema-registry-ref)
+ schema-registry-ref
+ schema-registry-lookup)
 
 (define/contract schema-registry
   (parameter/c (listof schema?))
@@ -244,3 +245,15 @@
   (for/first ([schema (in-list (schema-registry))]
               #:when (eq? (schema-name schema) name))
     schema))
+
+(define/contract (schema-registry-lookup schema-or-name)
+  (-> (or/c schema? symbol?) schema?)
+  (define schema
+    (match schema-or-name
+      [(? schema?)                      schema-or-name ]
+      [(? symbol?) (schema-registry-ref schema-or-name)]))
+
+  (unless schema
+    (raise-argument-error 'lookup-schema "unregistered schema" schema-or-name))
+
+  schema)

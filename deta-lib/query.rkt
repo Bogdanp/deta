@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require db
+(require (for-syntax racket/base
+                     syntax/parse)
+         db
          racket/contract
          racket/match
          racket/sequence
@@ -11,7 +13,8 @@
          "schema.rkt"
          "private/field.rkt"
          "private/meta.rkt"
-         "private/type.rkt")
+         "private/type.rkt"
+         (prefix-in dyn: "query/dynamic.rkt"))
 
 (define schema-or-name/c
   (or/c schema? symbol?))
@@ -25,15 +28,16 @@
 
 (define/contract (create-table! conn schema-or-name)
   (-> connection? schema-or-name/c void?)
-  (define schema (lookup-schema schema-or-name))
+  (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
                                      (create-table-ddl (schema-table-name schema)
                                                        (schema-fields schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
   (-> connection? schema-or-name/c void?)
+  (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (drop-table-ddl (schema-table-name (lookup-schema schema-or-name))))))
+                                     (drop-table-ddl (schema-table-name schema)))))
 
 
 ;; insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,7 +126,13 @@
 
 ;; select ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (make-entity schema cols)
+(provide
+ in-rows
+ in-row
+
+ from)
+
+(define (make-entity-instance schema cols)
   (define pairs
     (for/fold ([pairs null])
               ([f (in-list (schema-fields schema))]
@@ -147,7 +157,7 @@
     (stmt-schema stmt))
 
   (sequence-map (lambda cols
-                  (make-entity schema cols))
+                  (make-entity-instance schema cols))
                 (apply in-query conn (adapter-emit-query adapter stmt) args)))
 
 (define/contract (in-row conn stmt . args)
@@ -157,29 +167,10 @@
                                                   (begin0 consumed
                                                     (set! consumed #t))))))
 
-(define/contract (from schema-or-name #:as [alias #f])
-  (->* (schema-or-name/c)
-       (#:as (or/c false/c symbol?))
-       from-clause?)
-
-  (define schema
-    (lookup-schema schema-or-name))
-
-  (from-clause schema (if alias
-                          (alias-expr (table-expr (schema-table-name schema)) alias)
-                          (table-expr (schema-table-name schema)))))
-
-(define/contract (select q)
-  (-> (or/c from-clause? stmt?) select-stmt?)
-
-  (define schema
-    (from-clause-schema q))
-
-  (define column:exprs
-    (for/list ([f (in-list (schema-fields schema))])
-      (column-expr (field-name f))))
-
-  (select-stmt q column:exprs #f))
+(define-syntax (from stx)
+  (syntax-parse stx
+    [(_ schema:id #:as alias:id)
+     #'(dyn:from 'schema #:as 'alias)]))
 
 
 ;; common ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,14 +181,3 @@
     ['postgresql postgresql-adapter]
     ['sqlite3    sqlite3-adapter]
     [_           (error 'connection-adapter "this connection type is not supported")]))
-
-(define (lookup-schema schema-or-name)
-  (define schema
-    (match schema-or-name
-      [(? schema?)                      schema-or-name ]
-      [(? symbol?) (schema-registry-ref schema-or-name)]))
-
-  (unless schema
-    (raise-argument-error 'lookup-schema "unregistered schema" schema-or-name))
-
-  schema)

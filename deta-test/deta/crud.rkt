@@ -8,7 +8,7 @@
          rackunit)
 
 (provide
- query-tests)
+ crud-tests)
 
 (define current-conn
   (make-parameter #f))
@@ -18,9 +18,9 @@
    [username string/f #:unique #:wrapper string-downcase]
    [password-hash string/f #:nullable]))
 
-(define query-tests
+(define crud-tests
   (test-suite
-   "query"
+   "crud"
    #:before
    (lambda ()
      (drop-table! (current-conn) 'user)
@@ -50,19 +50,28 @@
 
     (test-case "deletes persisted entities"
       (define u (make-user #:username "will-delete@example.com"))
-      (match-define (list u*)
-        (insert! (current-conn) u))
+      (match-define (list u*)  (insert! (current-conn) u))
+      (match-define (list u**) (delete! (current-conn) u*))
+      (check-eq? (meta-state (entity-meta u**)) 'deleted)))
 
-      (match-define (list u**)
-        (delete! (current-conn) u*))
+   (test-suite
+    "query"
 
-      (check-eq? (meta-state (entity-meta u**)) 'deleted)))))
+    (test-suite
+     "from"
+
+     (test-case "retrieves whole entities from the database"
+       (define all-users
+         (for/list ([u (in-rows (current-conn) (from user #:as u))])
+           (check-true (user? u))))
+
+       (check-true (> (length all-users) 0)))))))
 
 (module+ test
   (require rackunit/text-ui)
 
   (parameterize ([current-conn (sqlite3-connect #:database 'memory)])
-    (run-tests query-tests))
+    (run-tests crud-tests))
 
   (define pg-database (getenv "DETA_POSTGRES_DB"))
   (define pg-username (getenv "DETA_POSTGRES_USER"))
@@ -73,4 +82,4 @@
                                                      #:database pg-database
                                                      #:user     pg-username
                                                      #:password pg-password)])
-      (run-tests query-tests))))
+      (run-tests crud-tests))))

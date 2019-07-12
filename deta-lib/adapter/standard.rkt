@@ -16,6 +16,9 @@
 
 (define ((make-expr-emitter recur) e)
   (match e
+    [(? string?)
+     (quote/standard e)]
+
     [(qualified-name parent name)
      (~a (recur parent) "." (quote/standard name))]
 
@@ -38,9 +41,7 @@
      (quote/standard name)]
 
     [(table-expr e)
-     (recur e)]
-
-    [_ (error 'foo)]))
+     (recur e)]))
 
 (define ((make-stmt-emitter recur emit-expr
                             #:supports-returning? [supports-returning? #f]) e)
