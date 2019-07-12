@@ -27,20 +27,28 @@
          (-> adapter? string?)
          "SELECT last_insert_rowid()")
 
-       (define/contract (adapter-emit-ddl _ s)
-         (-> adapter? schema? string?)
-         (with-output-to-string
-           (lambda _
-             (displayln (~a "CREATE TABLE IF NOT EXISTS " (quote/standard (schema-table-name s)) "("))
-             (displayln (string-join (map emit-field-ddl (schema-fields s)) ",\n"))
-             (displayln ")"))))
+       (define/contract (adapter-emit-ddl _ d)
+         (-> adapter? ddl? string?)
+         (emit-ddl d))
 
        (define/contract (adapter-emit-query _ stmt)
          (-> adapter? stmt? string?)
-         (emit/standard stmt))])
+         (emit-query/standard stmt))])
 
     (values sqlite3-adapter?
             (sqlite3-adapter))))
+
+(define (emit-ddl d)
+  (match d
+    [(create-table-ddl table fields)
+     (with-output-to-string
+       (lambda _
+         (displayln (~a "CREATE TABLE IF NOT EXISTS " (quote/standard table) "("))
+         (displayln (string-join (map emit-field-ddl fields) ",\n"))
+         (displayln ")")))]
+
+    [(drop-table-ddl table)
+     (~a "DROP TABLE IF EXISTS " (quote/standard table))]))
 
 (define (emit-field-ddl f)
   (with-output-to-string
@@ -48,7 +56,8 @@
       (display (~a (quote/standard (field-name f)) " " (field-type->sqlite3 (field-type f))))
       (unless (field-nullable? f) (display " NOT NULL"))
       (when (field-primary-key? f) (display " PRIMARY KEY"))
-      (when (field-auto-increment? f) (display " AUTOINCREMENT")))))
+      (when (field-auto-increment? f) (display " AUTOINCREMENT"))
+      (when (field-unique? f) (display " UNIQUE")))))
 
 (define (field-type->sqlite3 t)
   (cond

@@ -8,38 +8,38 @@
 
 (provide
  quote/standard
- emit/standard)
+ emit-query/standard)
 
 (define (quote/standard e)
   (~a #\" e #\"))
 
-(define (emit/standard e
-                       #:supports-returning? [supports-returning? #f])
+(define (emit-query/standard e
+                             #:supports-returning? [supports-returning? #f])
   (match e
     [(? string?)
      (quote/standard e)]
 
     [(list es ...)
-     (string-join (map emit/standard es) ", ")]
+     (string-join (map emit-query/standard es) ", ")]
 
     [(qualified-name parent name)
-     (~a (emit/standard parent) "." (emit/standard name))]
+     (~a (emit-query/standard parent) "." (emit-query/standard name))]
 
     [(alias-expr e alias)
-     (~a (emit/standard e) " " (emit/standard alias))]
+     (~a (emit-query/standard e) " " (emit-query/standard alias))]
 
     [(column-expr e)
-     (emit/standard e)]
+     (emit-query/standard e)]
 
     [(table-expr e)
-     (emit/standard e)]
+     (emit-query/standard e)]
 
     [(select-stmt from columns where)
      (with-output-to-string
        (lambda _
-         (display (~a "SELECT " (emit/standard columns) " " (emit/standard from)))
+         (display (~a "SELECT " (emit-query/standard columns) " " (emit-query/standard from)))
          (when where
-           (display (emit/standard where)))))]
+           (display (emit-query/standard where)))))]
 
     [(insert-stmt table columns returning)
      (with-output-to-string
@@ -48,15 +48,15 @@
            (for/list ([i (in-range 1 (add1 (length columns)))])
              (~a "$" i)))
 
-         (display (~a "INSERT INTO " (emit/standard table)
-                      " (" (emit/standard columns) ") "
+         (display (~a "INSERT INTO " (emit-query/standard table)
+                      " (" (emit-query/standard columns) ") "
                       " VALUES (" (string-join placeholders ", ") ")"))
 
          (when (and returning supports-returning?)
-           (display (~a " RETURNING " (emit/standard returning))))))]
+           (display (~a " RETURNING " (emit-query/standard returning))))))]
 
     [(from-clause _ table)
-     (~a "FROM " (emit/standard table))]
+     (~a "FROM " (emit-query/standard table))]
 
     [(where-clause e)
-     (~a "WHERE " (emit/standard e))]))
+     (~a "WHERE " (emit-query/standard e))]))

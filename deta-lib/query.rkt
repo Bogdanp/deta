@@ -20,12 +20,20 @@
 ;; ddl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- create-table!)
+ create-table!
+ drop-table!)
 
 (define/contract (create-table! conn schema-or-name)
   (-> connection? schema-or-name/c void?)
+  (define schema (lookup-schema schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (lookup-schema schema-or-name))))
+                                     (create-table-ddl (schema-table-name schema)
+                                                       (schema-fields schema)))))
+
+(define/contract (drop-table! conn schema-or-name)
+  (-> connection? schema-or-name/c void?)
+  (query-exec conn (adapter-emit-ddl (connection-adapter conn)
+                                     (drop-table-ddl (schema-table-name (lookup-schema schema-or-name))))))
 
 
 ;; insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

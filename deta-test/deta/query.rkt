@@ -14,12 +14,16 @@
 
 (define-schema user
   ([id id/f #:primary-key #:auto-increment]
-   [username string/f #:wrapper string-downcase]
+   [username string/f #:unique #:wrapper string-downcase]
    [password-hash string/f #:nullable]))
 
 (define query-tests
   (test-suite
    "query"
+   #:before
+   (lambda ()
+     (drop-table! (current-conn) 'user)
+     (create-table! (current-conn) 'user))
 
    (test-suite
     "insert!"
@@ -36,7 +40,6 @@
   (require rackunit/text-ui)
 
   (parameterize ([current-conn (sqlite3-connect #:database 'memory)])
-    (create-table! (current-conn) user-schema)
     (run-tests query-tests))
 
   (define pg-database (getenv "DETA_POSTGRES_DB"))
@@ -48,5 +51,4 @@
                                                      #:database pg-database
                                                      #:user     pg-username
                                                      #:password pg-password)])
-      (create-table! (current-conn) user-schema)
       (run-tests query-tests))))

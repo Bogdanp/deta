@@ -15,7 +15,8 @@
    updater
    primary-key?
    auto-increment?
-   nullable?)
+   nullable?
+   unique?)
   #:transparent)
 
 (define (make-field #:name name
@@ -25,7 +26,8 @@
                     #:updater updater
                     #:primary-key? primary-key?
                     #:auto-increment? auto-increment?
-                    #:nullable? nullable?)
+                    #:nullable? nullable?
+                    #:unique? unique?)
   (field (string-replace (symbol->string name) "-" "_")
          (string->keyword (symbol->string name))
          type
@@ -34,4 +36,5 @@
          updater
          primary-key?
          auto-increment?
-         nullable?))
+         nullable?
+         unique?))

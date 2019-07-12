@@ -100,7 +100,7 @@
 
   (define-template-metafunction (make-fld-maker stx)
     (syntax-parse stx
-      [(_ struct-name fld-name fld-type fld-pk? fld-ai? fld-nullable?)
+      [(_ struct-name fld-name fld-type fld-pk? fld-ai? fld-nullable? fld-unique?)
        (with-syntax ([getter-name  (format-id #'struct-name "~a-~a"        #'struct-name #'fld-name)]
                      [setter-name  (format-id #'struct-name "set-~a-~a"    #'struct-name #'fld-name)]
                      [updater-name (format-id #'struct-name "update-~a-~a" #'struct-name #'fld-name)])
@@ -111,7 +111,8 @@
                        #:updater updater-name
                        #:primary-key? fld-pk?
                        #:auto-increment? fld-ai?
-                       #:nullable? fld-nullable?))]))
+                       #:nullable? fld-nullable?
+                       #:unique? fld-unique?))]))
 
   (define-template-metafunction (make-ctor-contract stx)
     (syntax-parse stx
@@ -140,6 +141,7 @@
     (pattern (name:id type:expr (~alt (~optional (~and #:primary-key primary-key))
                                       (~optional (~and #:auto-increment auto-increment))
                                       (~optional (~and #:nullable nullable))
+                                      (~optional (~and #:unique unique))
                                       (~optional (~seq #:contract contract-e:expr) #:defaults ([contract-e #'any/c]))
                                       (~optional (~seq #:wrapper wrapper:expr) #:defaults ([wrapper #'values]))) ...)
              #:fail-when (and (attribute primary-key)
@@ -151,6 +153,7 @@
              #:with primary-key? (if (attribute primary-key) #'#t #'#f)
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
+             #:with unique? (if (attribute unique) #'#t #'#f)
              #:with contract (if (attribute nullable)
                                  #'(or/c sql-null? (and/c (type-contract type) contract-e))
                                  #'(and/c (type-contract type) contract-e))
@@ -163,6 +166,7 @@
     (pattern ((name:id default:expr) type:expr (~alt (~optional (~and #:primary-key primary-key))
                                                      (~optional (~and #:auto-increment auto-increment))
                                                      (~optional (~and #:nullable nullable))
+                                                     (~optional (~and #:unique unique))
                                                      (~optional (~seq #:contract contract-e:expr) #:defaults ([contract-e #'any/c]))
                                                      (~optional (~seq #:wrapper wrapper:expr) #:defaults ([wrapper #'values]))) ...)
              #:fail-when (and (attribute primary-key)
@@ -173,6 +177,7 @@
              #:with primary-key? (if (attribute primary-key) #'#t #'#f)
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
+             #:with unique? (if (attribute unique) #'#t #'#f)
              #:with contract (if (attribute nullable)
                                  #'(or/c sql-null? (and/c (type-contract type) contract-e))
                                  #'(and/c (type-contract type) contract-e))
@@ -220,7 +225,8 @@
                                                          f.type
                                                          f.primary-key?
                                                          f.auto-increment?
-                                                         f.nullable?) ...)))))]))
+                                                         f.nullable?
+                                                         f.unique?) ...)))))]))
 
 
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

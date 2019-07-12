@@ -2,8 +2,29 @@
 
 (require racket/match)
 
+
+;; ddl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (provide
- clause?
+ ddl?
+
+ (struct-out create-table-ddl)
+ (struct-out drop-table-ddl))
+
+(struct ddl ()
+  #:transparent)
+
+;; TODO: Eventually there should be a ddl-field struct.
+(struct create-table-ddl ddl (table fields)
+  #:transparent)
+
+(struct drop-table-ddl ddl (table)
+  #:transparent)
+
+
+;; stmt ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
  stmt?
  stmt-schema
 
@@ -15,9 +36,6 @@
  (struct-out where-clause)
  (struct-out select-stmt)
  (struct-out insert-stmt))
-
-(struct clause ()
-  #:transparent)
 
 (struct stmt ()
   #:transparent)
