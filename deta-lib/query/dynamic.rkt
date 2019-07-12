@@ -3,18 +3,21 @@
 (require racket/contract
          (prefix-in ast: "../ast.rkt")
          "../private/field.rkt"
-         "../schema.rkt")
+         "../schema.rkt"
+         "struct.rkt")
 
 (provide
- (contract-out
-  [from (-> (or/c schema? symbol?) #:as symbol? ast:select?)]))
+ from)
 
-(define (from schema-or-name #:as alias)
+(define/contract (from schema-or-name #:as alias)
+  (-> (or/c schema? symbol?) #:as symbol? query?)
+
   (define schema (schema-registry-lookup schema-or-name))
   (define alias:str (symbol->string alias))
 
-  (ast:select
-   (ast:from schema (ast:as (ast:table (schema-table-name schema)) alias:str))
-   (for/list ([f (in-list (schema-fields schema))])
-     (ast:column (ast:qualified alias:str (field-name f))))
-   #f))
+  (query schema
+         (ast:select
+          (ast:from (ast:as (ast:table (schema-table-name schema)) alias:str))
+          (for/list ([f (in-list (schema-fields schema))])
+            (ast:column (ast:qualified alias:str (field-name f))))
+          #f)))

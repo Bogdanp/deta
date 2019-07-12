@@ -2,7 +2,7 @@
 
 (require (for-syntax racket/base
                      syntax/parse)
-         db
+         (except-in db query)
          racket/contract
          racket/match
          racket/sequence
@@ -14,7 +14,8 @@
          "private/field.rkt"
          "private/meta.rkt"
          "private/type.rkt"
-         (prefix-in dyn: "query/dynamic.rkt"))
+         (prefix-in dyn: "query/dynamic.rkt")
+         "query/struct.rkt")
 
 (define schema-or-name/c
   (or/c schema? symbol?))
@@ -115,7 +116,7 @@
     (raise-argument-error 'delete-entity! "cannot delete entities without a primary key" entity))
 
   (define stmt
-    (ast:delete (ast:from schema (ast:table (schema-table-name schema)))
+    (ast:delete (ast:from (ast:table (schema-table-name schema)))
                 (ast:where (ast:binop '=
                                       (ast:column (field-name pk))
                                       (ast:placeholder 1)))))
@@ -150,21 +151,21 @@
 
   (keyword-apply (schema-struct-ctor schema) kwds kw-args null))
 
-(define/contract (in-rows conn stmt . args)
-  (-> connection? ast:stmt? any/c ... sequence?)
+(define/contract (in-rows conn q . args)
+  (-> connection? query? any/c ... sequence?)
   (define adapter (connection-adapter conn))
-  (define schema (ast:stmt-schema stmt))
+  (define schema (query-schema q))
 
   (sequence-map (lambda cols
                   (make-entity-instance schema cols))
-                (apply in-query conn (adapter-emit-query adapter stmt) args)))
+                (apply in-query conn (adapter-emit-query adapter (query-stmt q)) args)))
 
-(define/contract (in-row conn stmt . args)
-  (-> connection? ast:stmt? any/c ... sequence?)
+(define/contract (in-row conn q . args)
+  (-> connection? query? any/c ... sequence?)
   (let ([consumed #f])
-    (stop-before (apply in-rows conn stmt args) (lambda _
-                                                  (begin0 consumed
-                                                    (set! consumed #t))))))
+    (stop-before (apply in-rows conn q args) (lambda _
+                                               (begin0 consumed
+                                                 (set! consumed #t))))))
 
 (define-syntax (from stx)
   (syntax-parse stx

@@ -61,5 +61,5 @@
          (when (and returning supports-returning?)
            (display @~a{ RETURNING @(emit-expr returning)}))))]
 
-    [(from _ t) @~a{FROM  @(emit-expr t)}]
-    [(where  e) @~a{WHERE @(emit-expr e)}]))
+    [(from  t) @~a{FROM  @(emit-expr t)}]
+    [(where e) @~a{WHERE @(emit-expr e)}]))

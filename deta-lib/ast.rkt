@@ -25,12 +25,7 @@
 ;; stmt ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- expr?
-
- clause?
-
  stmt?
- stmt-schema
 
  (struct-out qualified)
  (struct-out as)
@@ -53,11 +48,6 @@
 (struct stmt ()
   #:transparent)
 
-(define (stmt-schema e)
-  (match e
-    [(select (from schema _) _ _) schema]
-    [_ #f]))
-
 (struct qualified expr (parent name)
   #:transparent)
 
@@ -76,7 +66,7 @@
 (struct table expr (e)
   #:transparent)
 
-(struct from clause (schema table)
+(struct from clause (e)
   #:transparent)
 
 (struct where clause (e)
