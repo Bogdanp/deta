@@ -13,7 +13,7 @@
 (define current-conn
   (make-parameter #f))
 
-(define-schema user
+(define-schema crud-user
   ([id id/f #:primary-key #:auto-increment]
    [username string/f #:unique #:wrapper string-downcase]
    [password-hash string/f #:nullable]))
@@ -23,33 +23,33 @@
    "crud"
    #:before
    (lambda ()
-     (drop-table! (current-conn) 'user)
-     (create-table! (current-conn) 'user))
+     (drop-table! (current-conn) 'crud-user)
+     (create-table! (current-conn) 'crud-user))
 
    (test-suite
     "insert!"
 
     (test-case "persists entities"
-      (define u (make-user #:username "bogdan@example.com"))
+      (define u (make-crud-user #:username "bogdan@example.com"))
       (check-eq? (meta-state (entity-meta u)) 'created)
 
       (define u* (car (insert! (current-conn) u)))
       (check-eq? (meta-state (entity-meta u*)) 'persisted)
-      (check-not-eq? (user-id u*) sql-null)
+      (check-not-eq? (crud-user-id u*) sql-null)
 
       (test-case "changing a persistent entity updates its meta state"
-        (define u** (set-user-username u* "jim@example.com"))
+        (define u** (set-crud-user-username u* "jim@example.com"))
         (check-eq? (meta-state (entity-meta u**)) 'changed))))
 
    (test-suite
     "delete!"
 
     (test-case "does nothing to entities that haven't been persisted"
-      (define u (make-user #:username "bogdan@example.com"))
+      (define u (make-crud-user #:username "bogdan@example.com"))
       (check-equal? (delete! (current-conn) u) null))
 
     (test-case "deletes persisted entities"
-      (define u (make-user #:username "will-delete@example.com"))
+      (define u (make-crud-user #:username "will-delete@example.com"))
       (match-define (list u*)  (insert! (current-conn) u))
       (match-define (list u**) (delete! (current-conn) u*))
       (check-eq? (meta-state (entity-meta u**)) 'deleted)))
@@ -62,8 +62,8 @@
 
      (test-case "retrieves whole entities from the database"
        (define all-users
-         (for/list ([u (in-rows (current-conn) (from user #:as u))])
-           (check-true (user? u))))
+         (for/list ([u (in-rows (current-conn) (from crud-user #:as u))])
+           (check-true (crud-user? u))))
 
        (check-true (> (length all-users) 0)))))))
 

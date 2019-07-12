@@ -53,7 +53,7 @@
             (sort fields keyword<? #:key field-kwd)))
 
   (begin0 the-schema
-    (schema-registry (cons the-schema (schema-registry)))))
+    (register! name the-schema)))
 
 (define (schema-primary-key schema)
   (for/first ([f (in-list (schema-fields schema))]
@@ -232,19 +232,24 @@
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- schema-registry
  schema-registry-ref
  schema-registry-lookup)
 
 (define/contract schema-registry
-  (parameter/c (listof schema?))
-  (make-parameter null))
+  (parameter/c (hash/c symbol? schema?))
+  (make-parameter (hasheq)))
+
+(define (register! name schema)
+  (define registry (schema-registry))
+  (when (hash-has-key? registry name)
+    (raise-user-error 'register! "schema ~a conflicts with a previous one" name))
+
+  (schema-registry
+   (hash-set registry name schema)))
 
 (define/contract (schema-registry-ref name)
   (-> symbol? (or/c false/c schema?))
-  (for/first ([schema (in-list (schema-registry))]
-              #:when (eq? (schema-name schema) name))
-    schema))
+  (hash-ref (schema-registry) name #f))
 
 (define/contract (schema-registry-lookup schema-or-name)
   (-> (or/c schema? symbol?) schema?)

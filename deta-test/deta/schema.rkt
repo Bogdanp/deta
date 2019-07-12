@@ -25,6 +25,15 @@
     (test-case "registers schema metadata in the registry"
       (check-eq? user-schema (schema-registry-ref 'user)))
 
+    (test-case "raises an error if two schemas are defined with the same name"
+      (check-exn
+       exn:fail:user?
+       (lambda _
+         (define-schema user
+           ([id id/f #:primary-key #:auto-increment]))
+
+         (fail "should never get here"))))
+
     (test-case "defined structs have an associated smart constructor"
       (check-exn
        exn:fail:contract?

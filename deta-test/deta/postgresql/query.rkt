@@ -6,7 +6,7 @@
          racket/string
          rackunit)
 
-(define-schema user
+(define-schema pg-user
   ([id id/f #:primary-key #:auto-increment]
    [username string/f #:unique #:wrapper string-downcase]
    [password-hash string/f #:nullable]
@@ -21,10 +21,8 @@
    "postgresql-query"
    #:before
    (lambda _
-     (drop-table! (current-conn) 'user)
-     (create-table! (current-conn) 'user))
-
-   ))
+     (drop-table! (current-conn) 'pg-user)
+     (create-table! (current-conn) 'pg-user))))
 
 (module+ test
   (require rackunit/text-ui)
