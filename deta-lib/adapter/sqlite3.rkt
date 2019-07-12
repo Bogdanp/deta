@@ -5,7 +5,7 @@
          racket/match
          racket/port
          racket/string
-         "../ast.rkt"
+         "../private/ast.rkt"
          "../private/field.rkt"
          "../type.rkt"
          "adapter.rkt"

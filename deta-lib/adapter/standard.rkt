@@ -4,7 +4,7 @@
          racket/match
          racket/port
          racket/string
-         "../ast.rkt")
+         "../private/ast.rkt")
 
 (provide
  quote/standard

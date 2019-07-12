@@ -1,13 +1,13 @@
 #lang racket/base
 
 (require racket/contract
-         "../ast.rkt"
+         "../private/ast.rkt"
          "../schema.rkt")
 
 (provide
  (contract-out
   [struct query ([schema schema?]
-                 [stmt stmt?])]))
+                 [stmt select?])]))
 
 (struct query (schema stmt)
   #:transparent)
