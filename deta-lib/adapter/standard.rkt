@@ -7,6 +7,10 @@
          "../private/ast.rkt"
          "adapter.rkt")
 
+;; Implements a "standard" emitter for SQL from our AST.  I say
+;; "standard", but what I really mean is as close to the standard as
+;; PostgreSQL 11 natively supports.
+
 (provide
  quote/standard
  make-expr-emitter
