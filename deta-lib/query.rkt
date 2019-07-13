@@ -134,7 +134,9 @@
  in-row
 
  from
- where)
+ where
+ and-where
+ or-where)
 
 (define (make-entity-instance schema cols)
   (define pairs
@@ -222,6 +224,16 @@
   (syntax-parse stx
     [(_ q:expr e:q-expr)
      #'(dyn:where q e.e)]))
+
+(define-syntax (and-where stx)
+  (syntax-parse stx
+    [(_ q:expr e:q-expr)
+     #'(dyn:and-where q e.e)]))
+
+(define-syntax (or-where stx)
+  (syntax-parse stx
+    [(_ q:expr e:q-expr)
+     #'(dyn:or-where q e.e)]))
 
 
 ;; common ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

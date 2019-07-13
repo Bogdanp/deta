@@ -42,15 +42,17 @@
 (define/contract (and-where q e)
   (-> query? ast:expr? query?)
   (match q
-    [(query schema (and (struct* ast:select ([where e0])) stmt))
-     (query schema (struct-copy ast:select stmt [where (if e0
-                                                           (ast:app 'and (list e0 e))
-                                                           e)]))]))
+    [(query schema (and (struct* ast:select ([where #f])) stmt))
+     (query schema (struct-copy ast:select stmt [where e]))]
+
+    [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
+     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'and) (list e0 e)))]))]))
 
 (define/contract (or-where q e)
   (-> query? ast:expr? query?)
   (match q
-    [(query schema (and (struct* ast:select ([where e0])) stmt))
-     (query schema (struct-copy ast:select stmt [where (if e0
-                                                           (ast:app 'or (list e0 e))
-                                                           e)]))]))
+    [(query schema (and (struct* ast:select ([where #f])) stmt))
+     (query schema (struct-copy ast:select stmt [where e]))]
+
+    [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
+     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'or) (list e0 e)))]))]))

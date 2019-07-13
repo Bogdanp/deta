@@ -25,6 +25,9 @@
     [(scalar #t) "true"]
     [(scalar #f) "false"]
 
+    [(scalar (and (? string?) v))
+     (~a "'" (string-replace v "'" "''") "'")]
+
     [(scalar v)
      (~v v)]
 
@@ -34,8 +37,8 @@
     [(as e alias)
      (~a (recur e) " AS " (quote/standard alias))]
 
-    [(app (name (and (or 'and 'or '= '> '< '>= '<=) op)) (list a b))
-     (~a (recur a) " " op " " (recur b))]
+    [(app (name (and (or 'and 'or 'like '= '> '< '>= '<=) op)) (list a b))
+     (~a (recur a) " " (string-upcase (symbol->string op)) " " (recur b))]
 
     [(app f args)
      (~a (recur f) "(" (string-join (map recur args) ", ") ")")]

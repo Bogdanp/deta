@@ -83,17 +83,27 @@
 
        (check-true (null? all-active-users))
 
-       (match-define (list active-user)
+       (match-define (list active-user-jim active-user-bob)
          (insert! (current-conn)
-                  (make-pg-user #:username "active-user@example.com"
+                  (make-pg-user #:username "active-user-jim@example.com"
+                                #:active? #t)
+                  (make-pg-user #:username "active-user-bob@example.com"
                                 #:active? #t)))
 
        (define all-active-users*
          (for/list ([u (in-rows (current-conn) query)]) u))
 
-       (check-equal? (length all-active-users*) 1)
-       (check-equal? (pg-user-id active-user)
-                     (pg-user-id (car all-active-users*))))))))
+       (check-equal? (length all-active-users*) 2)
+
+       (define all-active-users-named-bob
+         (for/list ([u (in-rows (current-conn)
+                                (~> query
+                                    (and-where (like u.username "%bob%"))))])
+           u))
+
+       (check-equal? (length all-active-users-named-bob) 1)
+       (check-equal? (pg-user-id active-user-bob)
+                     (pg-user-id (car all-active-users-named-bob))))))))
 
 (module+ test
   (require rackunit/text-ui)
