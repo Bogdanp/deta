@@ -44,7 +44,7 @@
     [(scalar (and (? string?) v))
      (~a "'" (string-replace v "'" "''") "'")]
 
-    [(scalar (and (? exact-integer?) v))
+    [(scalar v)
      (~v v)]
 
     [(qualified parent name)

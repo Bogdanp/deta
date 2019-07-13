@@ -52,6 +52,7 @@
     "select"
 
     (check-emitted (select 1) "SELECT 1")
+    (check-emitted (select 1.5) "SELECT 1.5")
     (check-emitted (select (+ 1 2)) "SELECT 1 + 2")
     (check-emitted (select #t) "SELECT TRUE")
     (check-emitted (select #f) "SELECT FALSE")

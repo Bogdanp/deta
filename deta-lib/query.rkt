@@ -266,6 +266,7 @@
              #:with e #'(ast:scalar s))
 
     (pattern n:number
+             #:when (rational? (syntax->datum #'n))
              #:with e #'(ast:scalar n))
 
     (pattern (as a:q-expr b:id)
