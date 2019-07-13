@@ -8,10 +8,10 @@
  make-empty-query
 
  (contract-out
-  [struct query ([schema (or/c false/c schema?)]
+  [struct query ([projection (or/c false/c schema?)]
                  [stmt ast:select?])]))
 
-(struct query (schema stmt)
+(struct query (projection stmt)
   #:transparent)
 
 (define (make-empty-query)

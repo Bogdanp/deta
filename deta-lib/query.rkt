@@ -3,7 +3,7 @@
 (require (for-syntax racket/base
                      racket/match
                      syntax/parse
-                     "private/field.rkt")
+                     "field.rkt")
          (except-in db query)
          racket/contract
          racket/match
@@ -11,9 +11,9 @@
          "adapter/adapter.rkt"
          "adapter/postgresql.rkt"
          "adapter/sqlite3.rkt"
+         "field.rkt"
          "schema.rkt"
          (prefix-in ast: "private/ast.rkt")
-         "private/field.rkt"
          "private/meta.rkt"
          "private/type.rkt"
          (prefix-in dyn: "query/dynamic.rkt")
@@ -137,7 +137,9 @@
  select
  where
  and-where
- or-where)
+ or-where
+
+ (rename-out [dyn:project project]))
 
 (define (make-entity-instance schema cols)
   (define pairs
@@ -160,10 +162,12 @@
 (define/contract (in-rows conn q . args)
   (-> connection? query? any/c ... sequence?)
   (define adapter (connection-adapter conn))
-  (define schema (query-schema q))
+  (define schema (query-projection q))
 
   (sequence-map (lambda cols
-                  (make-entity-instance schema cols))
+                  (if schema
+                      (make-entity-instance schema cols)
+                      (apply values cols)))
                 (apply in-query conn (adapter-emit-query adapter (query-stmt q)) args)))
 
 (define/contract (in-row conn q . args)
@@ -188,7 +192,7 @@
           (datum->syntax stx (id->column-name b))))
 
   (define-syntax-class q-expr
-    #:datum-literals (and or null)
+    #:datum-literals (and as null or)
     (pattern ref:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (with-syntax ([a (car (syntax->column-reference this-syntax))]
@@ -206,6 +210,9 @@
 
     (pattern n:number
              #:with e #'(ast:scalar n))
+
+    (pattern (as a:q-expr b:id)
+             #:with e #'(ast:as a.e 'b))
 
     (pattern (and a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:name 'and) (list a.e b.e)))

@@ -3,13 +3,14 @@
 (require racket/contract
          racket/match
          (prefix-in ast: "../private/ast.rkt")
-         "../private/field.rkt"
+         "../field.rkt"
          "../schema.rkt"
          "struct.rkt")
 
 (provide
  as
  from
+ project
  select
  where
  and-where
@@ -39,6 +40,10 @@
   (match q
     [(query _ stmt)
      (query #f (struct-copy ast:select stmt [columns columns]))]))
+
+(define/contract (project q s)
+  (-> query? schema? query?)
+  (struct-copy query q [projection s]))
 
 (define/contract (where q e)
   (-> query? ast:expr? query?)

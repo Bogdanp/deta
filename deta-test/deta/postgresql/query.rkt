@@ -64,6 +64,45 @@
     "query"
 
     (test-suite
+     "select"
+
+     (test-case "can retrieve arbitrary data"
+       (define x
+         (for/first ([(x) (in-row (current-conn) (select 1))])
+           x))
+
+       (check-equal? x 1))
+
+     (test-case "can project query results"
+       (struct res (x y)
+         #:transparent)
+
+       (define res-schema
+         (make-schema
+          #:struct-ctor (lambda (#:x x
+                                 #:y y)
+                          (res x y))
+          #:fields (list (make-field #:name 'x
+                                     #:type integer/f
+                                     #:getter res-x
+                                     #:setter (lambda (r x [_ #f])
+                                                (struct-copy res r [x x])))
+                         (make-field #:name 'y
+                                     #:type string/f
+                                     #:getter res-y
+                                     #:setter (lambda (r y [_ #f])
+                                                (struct-copy res r [y y]))))))
+
+       (define r
+         (for/first ([r (in-row (current-conn) (~> (select 1 "hello")
+                                                   (project res-schema)))])
+           r))
+
+       (check-true (res? r))
+       (check-equal? (res-x r) 1)
+       (check-equal? (res-y r) "hello")))
+
+    (test-suite
      "from"
 
      (test-case "retrieves whole entities from the database"

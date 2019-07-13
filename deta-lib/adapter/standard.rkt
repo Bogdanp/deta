@@ -23,6 +23,7 @@
     [(name 'bitwise-and)     "&"]
     [(name 'bitwise-or )     "|"]
     [(name 'bitwise-xor)     "#"]
+    [(name 'concat)          "||"]
     [(name 'is-distinct)     "IS DISTINCT"]
     [(name 'is-not-distinct) "IS NOT DISTINCT"]
     [(name 'is-not)          "IS NOT"]
@@ -61,6 +62,9 @@
 
                       ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
                       '+ '- '* '/ '% '<< '>>
+
+                      ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
+                      'concat
                       ))
                op)
           (list a b))

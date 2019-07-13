@@ -8,8 +8,9 @@
                      syntax/parse/experimental/template)
          db
          racket/contract
+         racket/function
          racket/match
-         "private/field.rkt"
+         "field.rkt"
          "private/meta.rkt"
          "private/type.rkt")
 
@@ -19,11 +20,11 @@
  entity?
  entity-meta
 
+ make-schema
  define-schema
  schema?
  schema-name
  schema-table-name
- schema-struct-name
  schema-struct-ctor
  schema-struct-pred
  schema-meta-updater
@@ -33,27 +34,33 @@
 (struct entity (meta)
   #:transparent)
 
-(struct schema (name table-name struct-name struct-ctor struct-pred meta-updater fields)
+(struct schema (name table-name struct-ctor struct-pred meta-updater fields)
   #:transparent)
 
-(define (make-schema #:name name
-                     #:table-name table-name
-                     #:struct-name struct-name
-                     #:struct-ctor struct-ctor
-                     #:struct-pred struct-pred
-                     #:meta-updater meta-updater
-                     #:fields fields)
+(define/contract (make-schema #:name [name #f]
+                              #:table-name [table-name #f]
+                              #:struct-ctor struct-ctor
+                              #:struct-pred [struct-pred (const #t)]
+                              #:meta-updater [meta-updater values]
+                              #:fields fields)
+  (->* (#:struct-ctor any/c
+        #:fields (listof field?))
+       (#:name (or/c false/c symbol?)
+        #:table-name (or/c false/c string?)
+        #:struct-pred (-> any/c boolean?)
+        #:meta-updater (-> any/c (-> meta? meta?) any/c))
+       schema?)
   (define the-schema
     (schema name
             table-name
-            struct-name
             struct-ctor
             struct-pred
             meta-updater
             (sort fields keyword<? #:key field-kwd)))
 
   (begin0 the-schema
-    (register! name the-schema)))
+    (when name
+      (register! name the-schema))))
 
 (define (schema-primary-key schema)
   (for/first ([f (in-list (schema-fields schema))]
@@ -216,7 +223,6 @@
            (define schema-name
              (make-schema #:name 'name
                           #:table-name table-name
-                          #:struct-name struct-name
                           #:struct-ctor ctor-name
                           #:struct-pred struct-pred
                           #:meta-updater meta-updater-name
