@@ -16,6 +16,11 @@
   (~a #\" e #\"))
 
 (define ((make-expr-emitter recur) e)
+  (define (maybe-parenthize e)
+    (if (expr-terminal? e)
+        (recur e)
+        (~a "(" (recur e) ")")))
+
   (match e
     [(? string?)
      (quote/standard e)]
@@ -46,10 +51,10 @@
      (~a (recur parent) "." (quote/standard name))]
 
     [(as e alias)
-     (~a (recur e) " AS " (quote/standard alias))]
+     (~a (maybe-parenthize e) " AS " (quote/standard alias))]
 
     [(app (and (name (or 'not 'interval)) op) (list a))
-     (~a (recur op) " " (recur a))]
+     (~a (recur op) " " (maybe-parenthize a))]
 
     [(app (and (name (or
                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
@@ -69,10 +74,10 @@
                       ))
                op)
           (list a b))
-     (~a (recur a) " " (recur op) " " (recur b))]
+     (~a (maybe-parenthize a) " " (recur op) " " (maybe-parenthize b))]
 
     [(app (name 'between) (list a b c))
-     (~a (recur a) " BETWEEN " (recur b) " AND " (recur c))]
+     (~a (maybe-parenthize a) " BETWEEN " (maybe-parenthize b) " AND " (maybe-parenthize c))]
 
     [(app f args)
      (~a (recur f) "(" (string-join (map recur args) ", ") ")")]

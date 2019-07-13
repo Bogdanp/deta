@@ -5,6 +5,7 @@
          deta/adapter/postgresql
          deta/query/struct
          (prefix-in ast: deta/private/ast)
+         racket/format
          rackunit
          threading)
 
@@ -53,9 +54,13 @@
     (check-emitted (select 1) "SELECT 1")
     (check-emitted (select (+ 1 2)) "SELECT 1 + 2")
     (check-emitted (select #t) "SELECT TRUE")
-    (check-emitted (select (not #t)) "SELECT NOT TRUE")
-    (check-emitted (select (sum 1)) "SELECT SUM(1)")
+    (check-emitted (select #f) "SELECT FALSE")
     (check-emitted (select (and 1 2)) "SELECT 1 AND 2")
+    (check-emitted (select (or #t #f)) "SELECT TRUE OR FALSE")
+    (check-emitted (select (not #t)) "SELECT NOT TRUE")
+    (check-emitted (select (not (or #t #f))) "SELECT NOT (TRUE OR FALSE)")
+    (check-emitted (select (or (and (not #t) #f) 1)) "SELECT ((NOT TRUE) AND FALSE) OR 1")
+    (check-emitted (select (sum 1)) "SELECT SUM(1)")
     (check-emitted (select (bitwise-or 1 2)) "SELECT 1 | 2")
     (check-emitted (select (concat "hello " "world!")) "SELECT 'hello ' || 'world!'")
     (check-emitted (select (is null null)) "SELECT NULL IS NULL")
@@ -65,7 +70,10 @@
                                         (- (now) (interval "7 days"))
                                         (+ (now) (interval "7 days")))
                                is_between))
-                   "SELECT NOW() BETWEEN NOW() - INTERVAL '7 days' AND NOW() + INTERVAL '7 days' AS \"is_between\""))
+                   (~a "SELECT ((NOW()) "
+                       "BETWEEN ((NOW()) - (INTERVAL '7 days')) "
+                       "AND ((NOW()) + (INTERVAL '7 days'))) "
+                       "AS \"is_between\"")))
 
    (test-suite
     "group-by"

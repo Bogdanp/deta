@@ -26,6 +26,7 @@
 
 (provide
  expr?
+ expr-terminal?
 
  (struct-out name)
  (struct-out scalar)
@@ -38,6 +39,9 @@
 
 (struct expr ()
   #:transparent)
+
+(define (expr-terminal? e)
+  (not (app? e)))
 
 (struct name expr (name)
   #:transparent)
