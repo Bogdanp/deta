@@ -4,21 +4,22 @@
                      racket/match
                      syntax/parse
                      "private/field.rkt")
-         (except-in db query)
+         (except-in db
+                    query)
          racket/contract
          racket/match
-         racket/set
          racket/sequence
+         racket/set
          "adapter/adapter.rkt"
          "adapter/postgresql.rkt"
          "adapter/sqlite3.rkt"
-         "schema.rkt"
          (prefix-in ast: "private/ast.rkt")
          "private/field.rkt"
          "private/meta.rkt"
          "private/type.rkt"
          (prefix-in dyn: "query/dynamic.rkt")
-         "query/struct.rkt")
+         "query/struct.rkt"
+         "schema.rkt")
 
 ;; ddl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,14 +68,12 @@
               (append (map cdr p) getters))))
 
   (define pk (schema-primary-key schema))
-  (define pk-column (and pk (ast:column (field-name pk))))
-
   (define stmt
     (ast:insert (ast:table (schema-table-name schema))
                 (map ast:column columns)
                 (for/list ([getter (in-list getters)])
                   (ast:placeholder (getter entity)))
-                (and pk-column (ast:column pk-column))))
+                (and pk (ast:column (field-name pk)))))
 
   (define-values (query args)
     (adapter-emit-query adapter stmt))
@@ -112,9 +111,6 @@
   (unless pk
     (raise-argument-error 'update-entity! "entity with primary key field" entity))
 
-  (define pk-column
-    (ast:column (field-name pk)))
-
   (define changes (meta-changes meta))
   (define-values (columns getters)
     (for*/fold ([columns null]
@@ -134,7 +130,8 @@
                    (cons (ast:column column)
                          (ast:placeholder (getter entity)))))
                 (ast:where (ast:app (ast:name '=)
-                                    (list pk-column (ast:placeholder ((field-getter pk) entity)))))))
+                                    (list (ast:column (field-name pk))
+                                          (ast:placeholder ((field-getter pk) entity)))))))
 
   (define-values (query args)
     (adapter-emit-query adapter stmt))
