@@ -5,7 +5,8 @@
          deta/adapter/postgresql
          deta/query/struct
          (prefix-in ast: deta/private/ast)
-         rackunit)
+         rackunit
+         threading)
 
 (provide
  sql-tests)
@@ -65,6 +66,14 @@
                                         (+ (now) (interval "7 days")))
                                is_between))
                    "SELECT NOW() BETWEEN NOW() - INTERVAL '7 days' AND NOW() + INTERVAL '7 days' AS \"is_between\""))
+
+   (test-suite
+    "group-by"
+
+    (check-emitted (~> (from "books" #:as b)
+                       (select b.year (count b.title))
+                       (group-by b.year))
+                   "SELECT \"b\".\"year\", COUNT(\"b\".\"title\") FROM \"books\" AS \"b\" GROUP BY \"b\".\"year\""))
 
    (test-suite
     "placeholders"

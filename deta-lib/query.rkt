@@ -185,6 +185,7 @@
  in-row
 
  from
+ group-by
  select
  where
  and-where
@@ -284,6 +285,9 @@
 
 (define-syntax (from stx)
   (syntax-parse stx
+    [(_ schema:str #:as alias:id)
+     #'(dyn:from schema #:as 'alias)]
+
     [(_ schema:id #:as alias:id)
      #'(dyn:from 'schema #:as 'alias)]))
 
@@ -294,6 +298,11 @@
 
     [(_ q:expr e:q-expr ...)
      #'(dyn:select q e.e ...)]))
+
+(define-syntax (group-by stx)
+  (syntax-parse stx
+    [(_ q:expr e:q-expr ...)
+     #'(dyn:group-by q e.e ...)]))
 
 (define-syntax (where stx)
   (syntax-parse stx

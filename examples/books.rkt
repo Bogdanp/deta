@@ -47,6 +47,22 @@
 (for ([b (books-between 1950 1970)])
   (displayln (book-title b)))
 
+(define-schema book-stats
+  #:virtual
+  ([year integer/f]
+   [books integer/f]))
+
+(displayln "")
+(displayln "Statistics:")
+(for ([stats (in-rows conn (~> (from book #:as b)
+                               (select b.year-published (count b.title))
+                               (group-by b.year-published)
+                               (project book-stats-schema)))])
+  (displayln (format "year: ~a books: ~a"
+                     (book-stats-year stats)
+                     (book-stats-books stats))))
+
+
 (void
  (apply delete! conn (sequence->list (books-between 1950 1970))))
 

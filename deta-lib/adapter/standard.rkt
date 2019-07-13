@@ -92,12 +92,13 @@
     [(list exprs ...)
      (string-join (map emit-expr exprs) ", ")]
 
-    [(select columns from where)
+    [(select columns from where group-by)
      (with-output-to-string
        (lambda _
          (display @~a{SELECT @(recur columns)})
-         (when from  (display (~a " " (recur from))))
-         (when where (display (~a " " (recur where))))))]
+         (when from     (display (~a " " (recur from))))
+         (when where    (display (~a " " (recur where))))
+         (when group-by (display (~a " " (recur group-by))))))]
 
     [(update table assignments where)
      (with-output-to-string
@@ -124,5 +125,6 @@
 
      @~a{SET @(string-join pair:strs ", ")}]
 
-    [(from  t) @~a{FROM @(emit-expr t)}]
-    [(where e) @~a{WHERE @(emit-expr e)}]))
+    [(from  t)       @~a{FROM @(emit-expr t)}]
+    [(where e)       @~a{WHERE @(emit-expr e)}]
+    [(group-by cols) @~a{GROUP BY @(recur cols)}]))

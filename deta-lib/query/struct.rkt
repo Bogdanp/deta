@@ -15,4 +15,4 @@
   #:transparent)
 
 (define (make-empty-query)
-  (query #f (ast:select null #f #f)))
+  (query #f (ast:make-select)))

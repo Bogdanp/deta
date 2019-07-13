@@ -22,11 +22,10 @@
   #:transparent)
 
 
-;; stmt ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; expr ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
  expr?
- stmt?
 
  (struct-out name)
  (struct-out scalar)
@@ -35,22 +34,9 @@
  (struct-out app)
  (struct-out column)
  (struct-out placeholder)
- (struct-out table)
- (struct-out assignments)
- (struct-out from)
- (struct-out where)
- (struct-out insert)
- (struct-out update)
- (struct-out delete)
- (struct-out select))
+ (struct-out table))
 
 (struct expr ()
-  #:transparent)
-
-(struct clause ()
-  #:transparent)
-
-(struct stmt ()
   #:transparent)
 
 (struct name expr (name)
@@ -77,13 +63,47 @@
 (struct table expr (e)
   #:transparent)
 
-(struct from clause (e)
+
+;; clauses ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ clause?
+ (struct-out assignments)
+ (struct-out from)
+ (struct-out group-by)
+ (struct-out where))
+
+(struct clause ()
   #:transparent)
 
 (struct assignments clause (pairs)
   #:transparent)
 
+(struct from clause (e)
+  #:transparent)
+
+(struct group-by clause (columns)
+  #:transparent)
+
 (struct where clause (e)
+  #:transparent)
+
+
+;; statements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ stmt?
+ (struct-out delete)
+ (struct-out insert)
+ (struct-out update)
+
+ make-select
+ (struct-out select))
+
+(struct stmt ()
+  #:transparent)
+
+(struct delete stmt (from where)
   #:transparent)
 
 (struct insert stmt (into columns column-values returning)
@@ -92,8 +112,11 @@
 (struct update stmt (table assignments where)
   #:transparent)
 
-(struct delete stmt (from where)
+(struct select stmt (columns from where group-by)
   #:transparent)
 
-(struct select stmt (columns from where)
-  #:transparent)
+(define (make-select #:columns [columns null]
+                     #:from [from #f]
+                     #:where [where #f]
+                     #:group-by [group-by #f])
+  (select columns from where group-by))

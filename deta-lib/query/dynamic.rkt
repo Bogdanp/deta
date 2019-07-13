@@ -10,6 +10,7 @@
 (provide
  as
  from
+ group-by
  project
  select
  where
@@ -23,23 +24,37 @@
               [(symbol? name) (symbol->string name)])))
 
 (define/contract (from schema-or-name #:as alias)
-  (-> (or/c schema? symbol?) #:as symbol? query?)
+  (-> (or/c schema? string? symbol?) #:as symbol? query?)
 
-  (define schema (schema-registry-lookup schema-or-name))
   (define alias:str (symbol->string alias))
+  (define-values (schema table-name columns)
+    (cond
+      [(string? schema-or-name)
+       (values #f schema-or-name null)]
+
+      [else
+       (define schema (schema-registry-lookup schema-or-name))
+       (values schema
+               (schema-table-name schema)
+               (for/list ([f (in-list (schema-fields schema))])
+                 (ast:column (ast:qualified alias:str (field-name f)))))]))
 
   (query schema
-         (ast:select
-          (for/list ([f (in-list (schema-fields schema))])
-            (ast:column (ast:qualified alias:str (field-name f))))
-          (ast:from (ast:as (ast:table (schema-table-name schema)) alias:str))
-          #f)))
+         (ast:make-select
+          #:columns columns
+          #:from (ast:from (ast:as (ast:table table-name) alias:str)))))
 
 (define/contract (select q . columns)
   (-> query? ast:expr? ... query?)
   (match q
     [(query _ stmt)
      (query #f (struct-copy ast:select stmt [columns columns]))]))
+
+(define/contract (group-by q . columns)
+  (-> query? ast:expr? ... query?)
+  (match q
+    [(query _ stmt)
+     (query #f (struct-copy ast:select stmt [group-by (ast:group-by columns)]))]))
 
 (define/contract (project q s)
   (-> query? schema? query?)

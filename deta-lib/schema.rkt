@@ -59,7 +59,7 @@
             struct-ctor
             struct-pred
             meta-updater
-            (sort fields keyword<? #:key field-kwd)))
+            fields))
 
   (begin0 the-schema
     (unless virtual?
