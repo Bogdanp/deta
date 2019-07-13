@@ -11,6 +11,7 @@
  as
  from
  group-by
+ offset
  order-by
  project-onto
  select
@@ -54,8 +55,14 @@
 (define/contract (group-by q column0 . columns)
   (-> query? ast:expr? ast:expr? ... query?)
   (match q
-    [(query _ stmt)
-     (query #f (struct-copy ast:select stmt [group-by (ast:group-by (cons column0 columns))]))]))
+    [(query schema stmt)
+     (query schema (struct-copy ast:select stmt [group-by (ast:group-by (cons column0 columns))]))]))
+
+(define/contract (offset q n)
+  (-> query? exact-integer? query?)
+  (match q
+    [(query schema stmt)
+     (query schema (struct-copy ast:select stmt [offset (ast:offset n)]))]))
 
 (define order-by-pair/c
   (cons/c ast:expr? (or/c 'asc 'desc)))
@@ -63,8 +70,8 @@
 (define/contract (order-by q pair0 . pairs)
   (-> query? order-by-pair/c order-by-pair/c ... query?)
   (match q
-    [(query _ stmt)
-     (query #f (struct-copy ast:select stmt [order-by (ast:order-by (cons pair0 pairs))]))]))
+    [(query schema stmt)
+     (query schema (struct-copy ast:select stmt [order-by (ast:order-by (cons pair0 pairs))]))]))
 
 (define/contract (project-onto q s)
   (-> query? schema? query?)

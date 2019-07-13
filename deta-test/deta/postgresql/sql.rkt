@@ -103,6 +103,15 @@
                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\""))
 
    (test-suite
+    "offset"
+
+    (check-emitted (~> (from "books" #:as b)
+                       (select b.title)
+                       (offset 20)
+                       (order-by ([b.title])))
+                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"title\" OFFSET 20"))
+
+   (test-suite
     "placeholders"
 
     (check-emitted/placeholders (select ,42) "SELECT $1" '(42))

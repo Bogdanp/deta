@@ -182,6 +182,7 @@
 
  from
  group-by
+ offset
  order-by
  select
  where
@@ -307,6 +308,11 @@
   (syntax-parse stx
     [(_ q:expr e:q-expr ...+)
      #'(dyn:group-by q e.e ...)]))
+
+(define-syntax (offset stx)
+  (syntax-parse stx
+    [(_ q:expr n:number)
+     #'(dyn:offset q n)]))
 
 (define-syntax (order-by stx)
   (syntax-parse stx

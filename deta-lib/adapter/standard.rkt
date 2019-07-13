@@ -97,14 +97,15 @@
     [(list exprs ...)
      (string-join (map emit-expr exprs) ", ")]
 
-    [(select columns from where group-by order-by)
+    [(select columns from where group-by order-by offset)
      (with-output-to-string
        (lambda _
          (display @~a{SELECT @(recur columns)})
          (when from     (display (~a " " (recur from))))
          (when where    (display (~a " " (recur where))))
          (when group-by (display (~a " " (recur group-by))))
-         (when order-by (display (~a " " (recur order-by))))))]
+         (when order-by (display (~a " " (recur order-by))))
+         (when offset   (display (~a " " (recur offset))))))]
 
     [(update table assignments where)
      (with-output-to-string
@@ -134,6 +135,7 @@
     [(from  t)        @~a{FROM @(emit-expr t)}]
     [(where e)        @~a{WHERE @(emit-expr e)}]
     [(group-by cols)  @~a{GROUP BY @(recur cols)}]
+    [(offset n)       @~a{OFFSET @n}]
 
     [(order-by pairs)
      (define pair:strs
