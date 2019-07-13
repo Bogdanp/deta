@@ -64,7 +64,6 @@
     [(string/f?      t) "TEXT"]
     [(binary/f?      t) "BLOB"]
     [(symbol/f?      t) "TEXT"]
-    [(boolean/f?     t) "BOOLEAN"]
     [else (raise-argument-error 'field-type->sqlite3 "unsupported type for DDL" t)]))
 
 (define (emit-expr e)
