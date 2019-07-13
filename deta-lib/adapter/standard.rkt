@@ -46,8 +46,8 @@
     [(as e alias)
      (~a (recur e) " AS " (quote/standard alias))]
 
-    [(app (name 'interval) (list a))
-     (~a "INTERVAL " (recur a))]
+    [(app (and (name (or 'not 'interval)) op) (list a))
+     (~a (recur op) " " (recur a))]
 
     [(app (and (name (or
                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html

@@ -22,6 +22,8 @@
 
     (check-emitted (select 1) "SELECT 1")
     (check-emitted (select (+ 1 2)) "SELECT 1 + 2")
+    (check-emitted (select #t) "SELECT TRUE")
+    (check-emitted (select (not #t)) "SELECT NOT TRUE")
     (check-emitted (select (sum 1)) "SELECT SUM(1)")
     (check-emitted (select (and 1 2)) "SELECT 1 AND 2")
     (check-emitted (select (bitwise-or 1 2)) "SELECT 1 | 2")
