@@ -38,7 +38,7 @@
 (define (books-between start-year end-year)
   (displayln (format "Books published between ~a and ~a:" start-year end-year))
   (for ([b (in-rows conn (~> (from book #:as b)
-                             (where (between b.year-published 1950 1970))))])
+                             (where (between b.year-published ,start-year ,end-year))))])
     (displayln (book-title b))))
 
 (books-before 1950)
