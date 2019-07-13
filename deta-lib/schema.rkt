@@ -148,7 +148,7 @@
                               (attribute nullable))
              "primary keys may not be nullable"
 
-             #:with required? (if (or (attribute primary-key)
+             #:with required? (if (or (attribute auto-increment)
                                       (attribute nullable)) #'#f #'t)
              #:with primary-key? (if (attribute primary-key) #'#t #'#f)
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
