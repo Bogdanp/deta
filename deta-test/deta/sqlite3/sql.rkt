@@ -12,23 +12,11 @@
 (provide
  sql-tests)
 
-(define (query->stmt q)
-  (cond
-    [(query? q) (query-stmt q)]
-    [else q]))
-
 (define-check (check-emitted q expected)
   (define-values (query _)
-    (adapter-emit-query sqlite3-adapter (query->stmt q)))
+    (adapter-emit-query sqlite3-adapter (query-stmt q)))
 
   (check-equal? query expected))
-
-(define-check (check-emitted/placeholders q expected-query expected-placeholders)
-  (define-values (query args)
-    (adapter-emit-query sqlite3-adapter (query->stmt q)))
-
-  (check-equal? query expected-query)
-  (check-equal? args expected-placeholders))
 
 (define sql-tests
   (test-suite
