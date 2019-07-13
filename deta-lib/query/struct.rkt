@@ -1,13 +1,18 @@
 #lang racket/base
 
 (require racket/contract
-         "../private/ast.rkt"
+         (prefix-in ast: "../private/ast.rkt")
          "../schema.rkt")
 
 (provide
+ make-empty-query
+
  (contract-out
-  [struct query ([schema schema?]
-                 [stmt select?])]))
+  [struct query ([schema (or/c false/c schema?)]
+                 [stmt ast:select?])]))
 
 (struct query (schema stmt)
   #:transparent)
+
+(define (make-empty-query)
+  (query #f (ast:select null #f #f)))

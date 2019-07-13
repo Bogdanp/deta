@@ -4,7 +4,9 @@
 
 (define deps '())
 (define build-deps '("base"
+                     "db-lib"
                      "deta-lib"
+                     "gregor-lib"
                      "rackunit-lib"
                      "threading-lib"))
 

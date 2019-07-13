@@ -10,6 +10,7 @@
 (provide
  as
  from
+ select
  where
  and-where
  or-where)
@@ -28,10 +29,16 @@
 
   (query schema
          (ast:select
-          (ast:from (ast:as (ast:table (schema-table-name schema)) alias:str))
           (for/list ([f (in-list (schema-fields schema))])
             (ast:column (ast:qualified alias:str (field-name f))))
+          (ast:from (ast:as (ast:table (schema-table-name schema)) alias:str))
           #f)))
+
+(define/contract (select q . columns)
+  (-> query? ast:expr? ... query?)
+  (match q
+    [(query _ stmt)
+     (query #f (struct-copy ast:select stmt [columns columns]))]))
 
 (define/contract (where q e)
   (-> query? ast:expr? query?)

@@ -3,6 +3,7 @@
 (require db
          deta
          deta/private/meta
+         gregor
          racket/match
          racket/string
          rackunit
@@ -18,7 +19,9 @@
   ([id id/f #:primary-key #:auto-increment]
    [username string/f #:unique #:wrapper string-downcase]
    [(active? #f) boolean/f]
-   [password-hash string/f #:nullable]))
+   [password-hash string/f #:nullable]
+   [(created-at (now/moment)) datetime-tz/f]
+   [(updated-at (now/moment)) datetime-tz/f]))
 
 (define pg-tests
   (test-suite

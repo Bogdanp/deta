@@ -19,16 +19,25 @@
     [(? string?)
      (quote/standard e)]
 
-    [(name n)
-     (symbol->string n)]
+    [(name 'bitwise-not)     "~"]
+    [(name 'bitwise-and)     "&"]
+    [(name 'bitwise-or )     "|"]
+    [(name 'bitwise-xor)     "#"]
+    [(name 'is-distinct)     "IS DISTINCT"]
+    [(name 'is-not-distinct) "IS NOT DISTINCT"]
+    [(name 'is-not)          "IS NOT"]
+    [(name 'not-like)        "NOT LIKE"]
 
-    [(scalar #t) "true"]
-    [(scalar #f) "false"]
+    [(name n)
+     (string-upcase (symbol->string n))]
+
+    [(scalar #t) "TRUE"]
+    [(scalar #f) "FALSE"]
 
     [(scalar (and (? string?) v))
      (~a "'" (string-replace v "'" "''") "'")]
 
-    [(scalar v)
+    [(scalar (and (? exact-integer?) v))
      (~v v)]
 
     [(qualified parent name)
@@ -37,8 +46,28 @@
     [(as e alias)
      (~a (recur e) " AS " (quote/standard alias))]
 
-    [(app (name (and (or 'and 'or 'like '= '> '< '>= '<=) op)) (list a b))
-     (~a (recur a) " " (string-upcase (symbol->string op)) " " (recur b))]
+    [(app (name 'interval) (list a))
+     (~a "INTERVAL " (recur a))]
+
+    [(app (and (name (or
+                      ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
+                      'bitwise-not 'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
+
+                      ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
+                      'and 'or
+
+                      ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
+                      '= '> '< '>= '<= '<> '!= 'like 'not-like 'is 'is-not 'is-distinct 'is-not-distinct
+
+                      ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
+                      '+ '- '* '/ '% '<< '>>
+                      ))
+               op)
+          (list a b))
+     (~a (recur a) " " (recur op) " " (recur b))]
+
+    [(app (name 'between) (list a b c))
+     (~a (recur a) " BETWEEN " (recur b) " AND " (recur c))]
 
     [(app f args)
      (~a (recur f) "(" (string-join (map recur args) ", ") ")")]
@@ -58,12 +87,12 @@
     [(list exprs ...)
      (string-join (map emit-expr exprs) ", ")]
 
-    [(select from columns where)
+    [(select columns from where)
      (with-output-to-string
        (lambda _
-         (display @~a{SELECT @(recur columns) @(recur from)})
-         (when where
-           (display (~a " " (recur where))))))]
+         (display @~a{SELECT @(recur columns)})
+         (when from  (display (~a " " (recur from))))
+         (when where (display (~a " " (recur where))))))]
 
     [(delete from where)
      @~a{DELETE @(recur from) @(recur where)}]

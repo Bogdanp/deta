@@ -87,5 +87,5 @@
 (struct delete stmt (from where)
   #:transparent)
 
-(struct select stmt (from columns where)
+(struct select stmt (columns from where)
   #:transparent)

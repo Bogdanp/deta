@@ -36,6 +36,6 @@ This is currently alpha stuff and you should not use it.
       (car)))
 
 (displayln my-first-post)
-(for ([p (in-rows (select (from 'post)))])
+(for ([p (in-rows (from 'post))])
   (displayln p))
 ```

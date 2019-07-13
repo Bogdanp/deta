@@ -134,6 +134,7 @@
  in-row
 
  from
+ select
  where
  and-where
  or-where)
@@ -219,6 +220,14 @@
   (syntax-parse stx
     [(_ schema:id #:as alias:id)
      #'(dyn:from 'schema #:as 'alias)]))
+
+(define-syntax (select stx)
+  (syntax-parse stx
+    [(_ e:q-expr ...)
+     #'(dyn:select (make-empty-query) e.e ...)]
+
+    [(_ q:expr e:q-expr ...)
+     #'(dyn:select q e.e ...)]))
 
 (define-syntax (where stx)
   (syntax-parse stx
