@@ -45,7 +45,17 @@
 
       (test-case "changing a persistent entity updates its meta state"
         (define u** (set-pg-user-username u* "jim@example.com"))
-        (check-eq? (meta-state (entity-meta u**)) 'changed))))
+        (check-eq? (meta-state (entity-meta u**)) 'changed)))
+
+    (test-case "does not persist entities with virtual schemas"
+      (define-schema v
+        #:virtual
+        ([x integer/f]))
+
+      (check-exn
+       exn:fail:user?
+       (lambda _
+         (insert! (current-conn) (make-v #:x 42))))))
 
    (test-suite
     "delete!"

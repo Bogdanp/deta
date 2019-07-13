@@ -57,6 +57,9 @@
 (define (insert-entity! adapter conn entity)
   (define meta (entity-meta entity))
   (define schema (meta-schema meta))
+  (when (schema-virtual? schema)
+    (raise-user-error 'inter-entity! "cannot insert entity ~v because it has a virtual schema" entity))
+
   (define-values (columns getters)
     (for*/fold ([columns null]
                 [getters null])
