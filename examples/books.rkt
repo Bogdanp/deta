@@ -57,6 +57,7 @@
 (for ([stats (in-rows conn (~> (from book #:as b)
                                (select b.year-published (count b.title))
                                (group-by b.year-published)
+                               (order-by ([b.year-published #:desc]))
                                (project-onto book-stats-schema)))])
   (displayln (format "year: ~a books: ~a"
                      (book-stats-year stats)

@@ -76,6 +76,24 @@
                    "SELECT \"b\".\"year\", COUNT(\"b\".\"title\") FROM \"books\" AS \"b\" GROUP BY \"b\".\"year\""))
 
    (test-suite
+    "order-by"
+
+    (check-emitted (~> (from "books" #:as b)
+                       (select b.title)
+                       (order-by ([b.year])))
+                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\"")
+    (check-emitted (~> (from "books" #:as b)
+                       (select b.title)
+                       (order-by ([b.year #:desc]
+                                  [b.title])))
+                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\"")
+    (check-emitted (~> (from "books" #:as b)
+                       (select b.title)
+                       (order-by ([b.year #:desc]
+                                  [b.title #:asc])))
+                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\""))
+
+   (test-suite
     "placeholders"
 
     (check-emitted/placeholders (select ,42) "SELECT $1" '(42))

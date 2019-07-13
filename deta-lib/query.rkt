@@ -20,10 +20,6 @@
          (prefix-in dyn: "query/dynamic.rkt")
          "query/struct.rkt")
 
-(define schema-or-name/c
-  (or/c schema? symbol?))
-
-
 ;; ddl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
@@ -31,14 +27,14 @@
  drop-table!)
 
 (define/contract (create-table! conn schema-or-name)
-  (-> connection? schema-or-name/c void?)
+  (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
                                      (ast:create-table-ddl (schema-table-name schema)
                                                            (schema-fields schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
-  (-> connection? schema-or-name/c void?)
+  (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
                                      (ast:drop-table-ddl (schema-table-name schema)))))
@@ -186,6 +182,7 @@
 
  from
  group-by
+ order-by
  select
  where
  and-where
@@ -281,7 +278,13 @@
              #:with e #'(ast:app (ast:name 'or) (list a.e b.e)))
 
     (pattern (f:q-expr arg:q-expr ...)
-             #:with e #'(ast:app f.e (list arg.e ...)))))
+             #:with e #'(ast:app f.e (list arg.e ...))))
+
+  (define-syntax-class q-order-pair
+    (pattern (c:q-expr (~or (~optional (~and #:asc dir-asc))
+                            (~optional (~and #:desc dir-desc))))
+             #:with dir (if (attribute dir-desc) #''desc #''asc)
+             #:with e #'(cons c.e dir))))
 
 (define-syntax (from stx)
   (syntax-parse stx
@@ -293,16 +296,21 @@
 
 (define-syntax (select stx)
   (syntax-parse stx
-    [(_ e:q-expr ...)
+    [(_ e:q-expr ...+)
      #'(dyn:select (make-empty-query) e.e ...)]
 
-    [(_ q:expr e:q-expr ...)
+    [(_ q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))
 
 (define-syntax (group-by stx)
   (syntax-parse stx
-    [(_ q:expr e:q-expr ...)
+    [(_ q:expr e:q-expr ...+)
      #'(dyn:group-by q e.e ...)]))
+
+(define-syntax (order-by stx)
+  (syntax-parse stx
+    [(_ q:expr (e:q-order-pair ...+))
+     #'(dyn:order-by q e.e ...)]))
 
 (define-syntax (where stx)
   (syntax-parse stx
@@ -321,7 +329,6 @@
 
 
 ;; common ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (define (connection-adapter conn)
   (match (dbsystem-name (connection-dbsystem conn))

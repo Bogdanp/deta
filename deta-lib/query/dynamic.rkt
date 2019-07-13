@@ -11,6 +11,7 @@
  as
  from
  group-by
+ order-by
  project-onto
  select
  where
@@ -44,17 +45,26 @@
           #:columns columns
           #:from (ast:from (ast:as (ast:table table-name) alias:str)))))
 
-(define/contract (select q . columns)
-  (-> query? ast:expr? ... query?)
+(define/contract (select q column0 . columns)
+  (-> query? ast:expr? ast:expr? ... query?)
   (match q
     [(query _ stmt)
-     (query #f (struct-copy ast:select stmt [columns columns]))]))
+     (query #f (struct-copy ast:select stmt [columns (cons column0 columns)]))]))
 
-(define/contract (group-by q . columns)
-  (-> query? ast:expr? ... query?)
+(define/contract (group-by q column0 . columns)
+  (-> query? ast:expr? ast:expr? ... query?)
   (match q
     [(query _ stmt)
-     (query #f (struct-copy ast:select stmt [group-by (ast:group-by columns)]))]))
+     (query #f (struct-copy ast:select stmt [group-by (ast:group-by (cons column0 columns))]))]))
+
+(define order-by-pair/c
+  (cons/c ast:expr? (or/c 'asc 'desc)))
+
+(define/contract (order-by q pair0 . pairs)
+  (-> query? order-by-pair/c order-by-pair/c ... query?)
+  (match q
+    [(query _ stmt)
+     (query #f (struct-copy ast:select stmt [order-by (ast:order-by (cons pair0 pairs))]))]))
 
 (define/contract (project-onto q s)
   (-> query? schema? query?)
