@@ -36,9 +36,11 @@
  (struct-out column)
  (struct-out placeholder)
  (struct-out table)
+ (struct-out assignments)
  (struct-out from)
  (struct-out where)
  (struct-out insert)
+ (struct-out update)
  (struct-out delete)
  (struct-out select))
 
@@ -78,10 +80,16 @@
 (struct from clause (e)
   #:transparent)
 
+(struct assignments clause (pairs)
+  #:transparent)
+
 (struct where clause (e)
   #:transparent)
 
 (struct insert stmt (into columns column-values returning)
+  #:transparent)
+
+(struct update stmt (table assignments where)
   #:transparent)
 
 (struct delete stmt (from where)

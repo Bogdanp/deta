@@ -4,18 +4,37 @@
          deta/adapter/adapter
          deta/adapter/postgresql
          deta/query/struct
+         (prefix-in ast: deta/private/ast)
          rackunit)
 
 (provide
  sql-tests)
 
 (define-check (check-emitted q expected)
-  (define emitted (adapter-emit-query postgresql-adapter (query-stmt q)))
+  (define emitted
+    (adapter-emit-query postgresql-adapter
+                        (cond
+                          [(query? q) (query-stmt q)]
+                          [else q])))
   (check-equal? emitted expected))
 
 (define sql-tests
   (test-suite
    "postgresq-sql"
+
+   (test-suite
+    "update"
+
+    (check-emitted (ast:update (ast:table "users")
+                               (ast:assignments
+                                (list (cons (ast:column "username")
+                                            (ast:placeholder 1))
+                                      (cons (ast:column "password_hash")
+                                            (ast:placeholder 2))))
+                               (ast:where (ast:app (ast:name '=)
+                                                   (list (ast:column "id")
+                                                         (ast:placeholder 3)))))
+                   "UPDATE \"users\" SET \"username\" = $1, \"password_hash\" = $2 WHERE \"id\" = $3"))
 
    (test-suite
     "select"

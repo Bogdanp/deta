@@ -58,6 +58,26 @@
          (insert! (current-conn) (make-v #:x 42))))))
 
    (test-suite
+    "update!"
+
+    (test-case "does nothing to entities that haven't been persisted"
+      (define u (make-pg-user #:username "bogdan@example.com"))
+      (check-equal? (update! (current-conn) u) null))
+
+    (test-case "updates entities that have been changed"
+      (match-define (list u)
+        (insert! (current-conn)
+                 (make-pg-user #:username "bogdan-for-update@example.com")))
+
+      (define u* (set-pg-user-username u "bogdan-for-update-changed@example.com"))
+      (check-eq? (meta-state (entity-meta u*)) 'changed)
+      (check-equal? (meta-changes (entity-meta u*)) '(username))
+
+      (match-define (list u**) (update! (current-conn) u*))
+      (check-eq? (meta-state (entity-meta u**)) 'persisted)
+      (check-equal? (meta-changes (entity-meta u**)) null)))
+
+   (test-suite
     "delete!"
 
     (test-case "does nothing to entities that haven't been persisted"

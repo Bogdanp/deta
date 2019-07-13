@@ -102,6 +102,59 @@
       [else                            e        ])))
 
 
+;; update ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ update!)
+
+(define/contract (update! conn . entities)
+  (-> connection? entity? ... (listof entity?))
+  (define adapter (connection-adapter conn))
+  (for/list ([entity (in-list entities)] #:when (meta-can-update? (entity-meta entity)))
+    (update-entity! adapter conn entity)))
+
+(define (update-entity! adapter conn entity)
+  (define meta (entity-meta entity))
+  (define schema (meta-schema meta))
+  (define pk (schema-primary-key schema))
+  (unless pk
+    (raise-argument-error 'update-entity! "entity with primary key field" entity))
+
+  (define pk-column
+    (ast:column (field-name pk)))
+
+  (define changes (meta-changes meta))
+  (define-values (columns getters)
+    (for*/fold ([columns null]
+                [getters null])
+               ([f (in-list (schema-fields schema))]
+                #:when (member (field-id f) changes)
+                [p (in-value (type-dump (field-type f) f))]
+                #:unless (field-auto-increment? f))
+      (values (append (map car p) columns)
+              (append (map cdr p) getters))))
+
+  (define stmt
+    (ast:update (ast:table (schema-table-name schema))
+                (ast:assignments
+                 (for/list ([c (in-list columns)]
+                            [i (in-range 2 (add1 (add1 (length columns))))])
+                   (cons (ast:column c)
+                         (ast:placeholder i))))
+                (ast:where (ast:app (ast:name '=)
+                                    (list pk-column (ast:placeholder 1))))))
+
+  (define query
+    (adapter-emit-query adapter stmt))
+
+  (define args
+    (for/list ([getter (in-list getters)])
+      (getter entity)))
+
+  (apply query-exec conn query (cons ((field-getter pk) entity) args))
+  ((schema-meta-updater schema) entity meta-track-persisted))
+
+
 ;; delete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
@@ -118,7 +171,7 @@
   (define schema (meta-schema meta))
   (define pk (schema-primary-key schema))
   (unless pk
-    (raise-argument-error 'delete-entity! "cannot delete entities without a primary key" entity))
+    (raise-argument-error 'delete-entity! "entity with primary key field" entity))
 
   (define stmt
     (ast:delete (ast:from (ast:table (schema-table-name schema)))

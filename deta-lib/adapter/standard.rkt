@@ -98,6 +98,13 @@
          (when from  (display (~a " " (recur from))))
          (when where (display (~a " " (recur where))))))]
 
+    [(update table assignments where)
+     (with-output-to-string
+       (lambda _
+         (display @~a{UPDATE @(emit-expr table)})
+         (when assignments (display (~a " " (recur assignments))))
+         (when where       (display (~a " " (recur where))))))]
+
     [(delete from where)
      @~a{DELETE @(recur from) @(recur where)}]
 
@@ -108,6 +115,13 @@
          (display @~a{ VALUES (@(recur column-values))})
          (when (and returning supports-returning?)
            (display @~a{ RETURNING @(emit-expr returning)}))))]
+
+    [(assignments pairs)
+     (define pair:strs
+       (for/list ([pair (in-list pairs)])
+         @~a{@(emit-expr (car pair)) = @(emit-expr (cdr pair))}))
+
+     @~a{SET @(string-join pair:strs ", ")}]
 
     [(from  t) @~a{FROM @(emit-expr t)}]
     [(where e) @~a{WHERE @(emit-expr e)}]))

@@ -10,7 +10,8 @@
  id->column-name)
 
 (struct field
-  (name
+  (id
+   name
    kwd
    type
    getter
@@ -22,7 +23,8 @@
    unique?)
   #:transparent)
 
-(define (make-field #:name name
+(define (make-field #:id id
+                    #:name [name (symbol->string id)]
                     #:type type
                     #:getter getter
                     #:setter setter
@@ -31,9 +33,9 @@
                     #:auto-increment? auto-increment?
                     #:nullable? nullable?
                     #:unique? unique?)
-  (define name:str (symbol->string name))
-  (field (id->column-name name:str)
-         (string->keyword name:str)
+  (field id
+         (id->column-name name)
+         (string->keyword name)
          type
          getter
          setter

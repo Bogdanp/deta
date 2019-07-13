@@ -86,7 +86,7 @@
              (->* (struct-pred fld-contract) (boolean?) struct-pred)
              (define meta
                (if track-change?
-                   (meta-track-change (entity-meta e))
+                   (meta-track-change (entity-meta e) 'fld-name)
                    (entity-meta e)))
 
              (struct-copy struct-name e
@@ -102,7 +102,7 @@
              (->* (struct-pred (-> fld-contract fld-contract)) (boolean?) struct-pred)
              (define meta
                (if track-change?
-                   (meta-track-change (entity-meta e))
+                   (meta-track-change (entity-meta e) 'fld-name)
                    (entity-meta e)))
 
              (struct-copy struct-name e
@@ -115,7 +115,7 @@
        (with-syntax ([getter-name  (format-id #'struct-name "~a-~a"        #'struct-name #'fld-name)]
                      [setter-name  (format-id #'struct-name "set-~a-~a"    #'struct-name #'fld-name)]
                      [updater-name (format-id #'struct-name "update-~a-~a" #'struct-name #'fld-name)])
-         #'(make-field #:name 'fld-name
+         #'(make-field #:id 'fld-name
                        #:type fld-type
                        #:getter getter-name
                        #:setter setter-name
