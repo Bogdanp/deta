@@ -135,6 +135,7 @@
      (test-case "retrieves whole entities from the database"
        (define all-users
          (for/list ([u (in-rows (current-conn) (from pg-user #:as u))])
+           (check-equal? (meta-state (entity-meta u)) 'persisted)
            (check-true (pg-user? u))))
 
        (check-true (> (length all-users) 0))))

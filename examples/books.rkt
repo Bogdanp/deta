@@ -2,6 +2,7 @@
 
 (require db
          deta
+         racket/sequence
          threading)
 
 (define-schema book
@@ -30,17 +31,26 @@
                      #:year-published 1949)))
 
 (define (books-before year)
-  (displayln (format "Books published before ~a:" year))
-  (for ([b (in-rows conn (~> (from book #:as b)
-                             (where (< b.year-published ,year))))])
-    (displayln (book-title b))))
+  (in-rows conn (~> (from book #:as b)
+                    (where (< b.year-published ,year)))))
 
 (define (books-between start-year end-year)
-  (displayln (format "Books published between ~a and ~a:" start-year end-year))
-  (for ([b (in-rows conn (~> (from book #:as b)
-                             (where (between b.year-published ,start-year ,end-year))))])
-    (displayln (book-title b))))
+  (in-rows conn (~> (from book #:as b)
+                    (where (between b.year-published ,start-year ,end-year)))))
 
-(books-before 1950)
+(displayln "Books published before 1950:")
+(for ([b (books-before 1950)])
+  (displayln (book-title b)))
+
 (displayln "")
-(books-between 1950 1970)
+(displayln "Books published between 1950 and 1970:")
+(for ([b (books-between 1950 1970)])
+  (displayln (book-title b)))
+
+(void
+ (apply delete! conn (sequence->list (books-between 1950 1970))))
+
+(displayln "")
+(displayln "Books published between 1950 and 1970:")
+(for ([b (books-between 1950 1970)])
+  (displayln (book-title b)))

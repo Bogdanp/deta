@@ -208,7 +208,10 @@
       (values (car pair)
               (cdr pair))))
 
-  (keyword-apply (schema-struct-ctor schema) kwds kw-args null))
+  (define e
+    (keyword-apply (schema-struct-ctor schema) kwds kw-args null))
+
+  ((schema-meta-updater schema) e meta-track-persisted))
 
 (define/contract (in-rows conn q)
   (-> connection? query? sequence?)
