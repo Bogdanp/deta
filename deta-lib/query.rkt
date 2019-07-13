@@ -71,22 +71,17 @@
               (append (map cdr p) getters))))
 
   (define pk (schema-primary-key schema))
-  (define pk-column
-    (and pk (ast:column (field-name pk))))
+  (define pk-column (and pk (ast:column (field-name pk))))
 
   (define stmt
     (ast:insert (ast:table (schema-table-name schema))
                 (map ast:column columns)
-                (for/list ([i (in-range 1 (add1 (length columns)))])
-                  (ast:placeholder i))
+                (for/list ([getter (in-list getters)])
+                  (ast:placeholder (getter entity)))
                 (and pk-column (ast:column pk-column))))
 
-  (define query
+  (define-values (query args)
     (adapter-emit-query adapter stmt))
-
-  (define args
-    (for/list ([getter (in-list getters)])
-      (getter entity)))
 
   (define res
     (cond
@@ -138,21 +133,17 @@
   (define stmt
     (ast:update (ast:table (schema-table-name schema))
                 (ast:assignments
-                 (for/list ([c (in-list columns)]
-                            [i (in-range 2 (add1 (add1 (length columns))))])
-                   (cons (ast:column c)
-                         (ast:placeholder i))))
+                 (for/list ([column (in-list columns)]
+                            [getter (in-list getters)])
+                   (cons (ast:column column)
+                         (ast:placeholder (getter entity)))))
                 (ast:where (ast:app (ast:name '=)
-                                    (list pk-column (ast:placeholder 1))))))
+                                    (list pk-column (ast:placeholder ((field-getter pk) entity)))))))
 
-  (define query
+  (define-values (query args)
     (adapter-emit-query adapter stmt))
 
-  (define args
-    (for/list ([getter (in-list getters)])
-      (getter entity)))
-
-  (apply query-exec conn query (cons ((field-getter pk) entity) args))
+  (apply query-exec conn query args)
   ((schema-meta-updater schema) entity meta-track-persisted))
 
 
@@ -178,9 +169,12 @@
     (ast:delete (ast:from (ast:table (schema-table-name schema)))
                 (ast:where (ast:app (ast:name '=)
                                     (list (ast:column (field-name pk))
-                                          (ast:placeholder 1))))))
+                                          (ast:placeholder ((field-getter pk) entity)))))))
 
-  (query-exec conn (adapter-emit-query adapter stmt) ((field-getter pk) entity))
+  (define-values (query args)
+    (adapter-emit-query adapter stmt))
+
+  (apply query-exec conn query args)
   ((schema-meta-updater schema) entity meta-track-deleted))
 
 
@@ -216,23 +210,25 @@
 
   (keyword-apply (schema-struct-ctor schema) kwds kw-args null))
 
-(define/contract (in-rows conn q . args)
-  (-> connection? query? any/c ... sequence?)
+(define/contract (in-rows conn q)
+  (-> connection? query? sequence?)
   (define adapter (connection-adapter conn))
   (define schema (query-projection q))
+  (define-values (query args)
+    (adapter-emit-query adapter (query-stmt q)))
 
   (sequence-map (lambda cols
                   (if schema
                       (make-entity-instance schema cols)
                       (apply values cols)))
-                (apply in-query conn (adapter-emit-query adapter (query-stmt q)) args)))
+                (apply in-query conn query args)))
 
-(define/contract (in-row conn q . args)
-  (-> connection? query? any/c ... sequence?)
+(define/contract (in-row conn q)
+  (-> connection? query? sequence?)
   (let ([consumed #f])
-    (stop-before (apply in-rows conn q args) (lambda _
-                                               (begin0 consumed
-                                                 (set! consumed #t))))))
+    (stop-before (in-rows conn q) (lambda _
+                                    (begin0 consumed
+                                      (set! consumed #t))))))
 
 (begin-for-syntax
   (define column-reference-re
@@ -249,7 +245,11 @@
           (datum->syntax stx (id->column-name b))))
 
   (define-syntax-class q-expr
-    #:datum-literals (and as null or)
+    #:datum-literals (as null)
+    #:literals (and or unquote)
+    (pattern (unquote v)
+             #:with e #'(ast:placeholder v))
+
     (pattern ref:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])

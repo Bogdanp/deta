@@ -71,7 +71,7 @@
 (struct column expr (e)
   #:transparent)
 
-(struct placeholder expr (n)
+(struct placeholder expr (v)
   #:transparent)
 
 (struct table expr (e)

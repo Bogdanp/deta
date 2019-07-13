@@ -10,13 +10,23 @@
 (provide
  sql-tests)
 
+(define (query->stmt q)
+  (cond
+    [(query? q) (query-stmt q)]
+    [else q]))
+
 (define-check (check-emitted q expected)
-  (define emitted
-    (adapter-emit-query postgresql-adapter
-                        (cond
-                          [(query? q) (query-stmt q)]
-                          [else q])))
-  (check-equal? emitted expected))
+  (define-values (query _)
+    (adapter-emit-query postgresql-adapter (query->stmt q)))
+
+  (check-equal? query expected))
+
+(define-check (check-emitted/placeholders q expected-query expected-placeholders)
+  (define-values (query args)
+    (adapter-emit-query postgresql-adapter (query->stmt q)))
+
+  (check-equal? query expected-query)
+  (check-equal? args expected-placeholders))
 
 (define sql-tests
   (test-suite
@@ -54,7 +64,17 @@
                                         (- (now) (interval "7 days"))
                                         (+ (now) (interval "7 days")))
                                is_between))
-                   "SELECT NOW() BETWEEN NOW() - INTERVAL '7 days' AND NOW() + INTERVAL '7 days' AS \"is_between\""))))
+                   "SELECT NOW() BETWEEN NOW() - INTERVAL '7 days' AND NOW() + INTERVAL '7 days' AS \"is_between\""))
+
+   (test-suite
+    "placeholders"
+
+    (check-emitted/placeholders (select ,42) "SELECT $1" '(42))
+    (let ([x 1]
+          [y "hello"])
+      (check-emitted/placeholders (select (<> ,x ,y))
+                                  "SELECT $1 <> $2"
+                                  '(1 "hello"))))))
 
 (module+ test
   (require rackunit/text-ui)

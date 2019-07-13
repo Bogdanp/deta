@@ -29,7 +29,7 @@
          (-> adapter? ddl? string?)
          (emit-ddl d))
 
-       (define/contract (adapter-emit-query _ s)
+       (define/contract (adapter-emit-query/impl _ s)
          (-> adapter? stmt? string?)
          (emit-stmt s))])
 

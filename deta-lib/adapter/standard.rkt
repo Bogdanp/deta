@@ -4,7 +4,8 @@
          racket/match
          racket/port
          racket/string
-         "../private/ast.rkt")
+         "../private/ast.rkt"
+         "adapter.rkt")
 
 (provide
  quote/standard
@@ -79,8 +80,8 @@
     [(column e)
      (recur e)]
 
-    [(placeholder n)
-     (~a "$" n)]
+    [(placeholder v)
+     (~a "$" (track-placeholder! v))]
 
     [(table e)
      (recur e)]))
