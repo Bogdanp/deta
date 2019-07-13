@@ -73,25 +73,11 @@
 
        (check-equal? x 1))
 
-     (test-case "can project query results"
-       (struct res (x y)
-         #:transparent)
-
-       (define res-schema
-         (make-schema
-          #:struct-ctor (lambda (#:x x
-                                 #:y y)
-                          (res x y))
-          #:fields (list (make-field #:name 'x
-                                     #:type integer/f
-                                     #:getter res-x
-                                     #:setter (lambda (r x [_ #f])
-                                                (struct-copy res r [x x])))
-                         (make-field #:name 'y
-                                     #:type string/f
-                                     #:getter res-y
-                                     #:setter (lambda (r y [_ #f])
-                                                (struct-copy res r [y y]))))))
+     (test-case "can project query results onto virtual schemas"
+       (define-schema res
+         #:virtual
+         ([x integer/f]
+          [y string/f]))
 
        (define r
          (for/first ([r (in-row (current-conn) (~> (select 1 "hello")

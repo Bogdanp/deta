@@ -20,11 +20,11 @@
  entity?
  entity-meta
 
- make-schema
  define-schema
  schema?
  schema-name
  schema-table-name
+ schema-virtual?
  schema-struct-ctor
  schema-struct-pred
  schema-meta-updater
@@ -34,35 +34,39 @@
 (struct entity (meta)
   #:transparent)
 
-(struct schema (name table-name struct-ctor struct-pred meta-updater fields)
+(struct schema
+  (name
+   table-name
+   virtual?
+   struct-ctor
+   struct-pred
+   meta-updater
+   fields)
   #:transparent)
 
-(define/contract (make-schema #:name [name #f]
-                              #:table-name [table-name #f]
-                              #:struct-ctor struct-ctor
-                              #:struct-pred [struct-pred (const #t)]
-                              #:meta-updater [meta-updater values]
-                              #:fields fields)
-  (->* (#:struct-ctor any/c
-        #:fields (listof field?))
-       (#:name (or/c false/c symbol?)
-        #:table-name (or/c false/c string?)
-        #:struct-pred (-> any/c boolean?)
-        #:meta-updater (-> any/c (-> meta? meta?) any/c))
-       schema?)
+(define (make-schema #:name name
+                     #:table-name table-name
+                     #:virtual? virtual?
+                     #:struct-ctor struct-ctor
+                     #:struct-pred struct-pred
+                     #:meta-updater meta-updater
+                     #:fields fields)
+
   (define the-schema
     (schema name
             table-name
+            virtual?
             struct-ctor
             struct-pred
             meta-updater
             (sort fields keyword<? #:key field-kwd)))
 
   (begin0 the-schema
-    (when name
+    (unless virtual?
       (register! name the-schema))))
 
-(define (schema-primary-key schema)
+(define/contract (schema-primary-key schema)
+  (-> schema? (or/c false/c field?))
   (for/first ([f (in-list (schema-fields schema))]
               #:when (field-primary-key? f))
     f))
@@ -194,10 +198,12 @@
 (define-syntax (define-schema stx)
   (syntax-parse stx
     [(_ name:id
-        (~alt (~optional (~seq #:table table-name:str))) ...
+        (~alt (~optional (~seq #:table table-name:str))
+              (~optional (~and #:virtual virtual))) ...
         (f:fld ...+))
      (with-syntax* ([pluralized-name (datum->syntax #'name (pluralize (syntax->datum #'name)))]
                     [table-name #'(~? table-name pluralized-name)]
+                    [virtual? (if (attribute virtual) #'#t #'#f)]
                     [ctor-name (format-id #'name "make-~a" #'name)]
                     [((ctor-arg ...) ...) #'(f.ctor-arg ...)]
                     [meta-updater-name (format-id #'name "update-~a-meta" #'name)]
@@ -223,6 +229,7 @@
            (define schema-name
              (make-schema #:name 'name
                           #:table-name table-name
+                          #:virtual? virtual?
                           #:struct-ctor ctor-name
                           #:struct-pred struct-pred
                           #:meta-updater meta-updater-name
