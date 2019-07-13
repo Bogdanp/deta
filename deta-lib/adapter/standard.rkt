@@ -92,7 +92,8 @@
      (recur e)]))
 
 (define ((make-stmt-emitter recur emit-expr
-                            #:supports-returning? [supports-returning? #f]) e)
+                            #:supports-returning? [supports-returning? #f]
+                            #:fetch-before-offset? [fetch-before-offset? #f]) e)
   (match e
     [(list exprs ...)
      (string-join (map emit-expr exprs) ", ")]
@@ -110,8 +111,15 @@
          (when where    (display (~a " " (recur where))))
          (when group-by (display (~a " " (recur group-by))))
          (when order-by (display (~a " " (recur order-by))))
-         (when offset   (display (~a " " (recur offset))))
-         (when fetch    (display (~a " " (recur fetch))))))]
+
+         (cond
+           [fetch-before-offset?
+            (when fetch  (display (~a " " (recur fetch))))
+            (when offset (display (~a " " (recur offset))))]
+
+           [else
+            (when offset (display (~a " " (recur offset))))
+            (when fetch  (display (~a " " (recur fetch))))])))]
 
     [(update table assignments where)
      (with-output-to-string
