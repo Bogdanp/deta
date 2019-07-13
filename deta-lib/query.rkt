@@ -2,7 +2,8 @@
 
 (require (for-syntax racket/base
                      racket/match
-                     syntax/parse)
+                     syntax/parse
+                     "private/field.rkt")
          (except-in db query)
          racket/contract
          racket/match
@@ -181,7 +182,7 @@
       (regexp-match column-reference-re (symbol->string (syntax->datum stx))))
 
     (cons (datum->syntax stx a)
-          (datum->syntax stx b)))
+          (datum->syntax stx (id->column-name b))))
 
   (define-syntax-class q-expr
     #:datum-literals (and or null)
