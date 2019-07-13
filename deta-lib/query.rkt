@@ -195,9 +195,8 @@
     #:datum-literals (and as null or)
     (pattern ref:id
              #:when (column-reference? (syntax->datum this-syntax))
-             #:with e (with-syntax ([a (car (syntax->column-reference this-syntax))]
-                                    [b (cdr (syntax->column-reference this-syntax))])
-                        #'(ast:qualified a b)))
+             #:with e (let ([ref (syntax->column-reference this-syntax)])
+                        #`(ast:qualified #,(car ref) #,(cdr ref))))
 
     (pattern name:id
              #:with e #'(ast:name 'name))
