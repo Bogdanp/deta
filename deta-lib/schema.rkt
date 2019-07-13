@@ -10,7 +10,7 @@
          racket/contract
          racket/function
          racket/match
-         "field.rkt"
+         "private/field.rkt"
          "private/meta.rkt"
          "private/type.rkt")
 

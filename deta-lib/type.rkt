@@ -7,7 +7,7 @@
          racket/contract
          racket/generic
          racket/match
-         "field.rkt"
+         "private/field.rkt"
          "private/type.rkt")
 
 (provide

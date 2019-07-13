@@ -3,7 +3,7 @@
 (require racket/contract
          racket/match
          (prefix-in ast: "../private/ast.rkt")
-         "../field.rkt"
+         "../private/field.rkt"
          "../schema.rkt"
          "struct.rkt")
 

@@ -6,7 +6,6 @@
     (provide (all-from-out e ...))))
 
 (reprovide
- "field.rkt"
  "schema.rkt"
  "query.rkt"
  "type.rkt")

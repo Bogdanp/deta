@@ -6,7 +6,7 @@
          racket/port
          racket/string
          "../private/ast.rkt"
-         "../field.rkt"
+         "../private/field.rkt"
          "../type.rkt"
          "adapter.rkt"
          "standard.rkt")

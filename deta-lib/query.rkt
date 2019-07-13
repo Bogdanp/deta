@@ -3,7 +3,7 @@
 (require (for-syntax racket/base
                      racket/match
                      syntax/parse
-                     "field.rkt")
+                     "private/field.rkt")
          (except-in db query)
          racket/contract
          racket/match
@@ -11,9 +11,9 @@
          "adapter/adapter.rkt"
          "adapter/postgresql.rkt"
          "adapter/sqlite3.rkt"
-         "field.rkt"
          "schema.rkt"
          (prefix-in ast: "private/ast.rkt")
+         "private/field.rkt"
          "private/meta.rkt"
          "private/type.rkt"
          (prefix-in dyn: "query/dynamic.rkt")
