@@ -11,7 +11,7 @@
  as
  from
  group-by
- project
+ project-onto
  select
  where
  and-where
@@ -56,7 +56,7 @@
     [(query _ stmt)
      (query #f (struct-copy ast:select stmt [group-by (ast:group-by columns)]))]))
 
-(define/contract (project q s)
+(define/contract (project-onto q s)
   (-> query? schema? query?)
   (struct-copy query q [projection s]))
 

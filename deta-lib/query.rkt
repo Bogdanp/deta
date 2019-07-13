@@ -191,7 +191,7 @@
  and-where
  or-where
 
- (rename-out [dyn:project project]))
+ (rename-out [dyn:project-onto project-onto]))
 
 (define (make-entity-instance schema cols)
   (define pairs

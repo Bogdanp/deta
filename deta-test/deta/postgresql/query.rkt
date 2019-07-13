@@ -122,7 +122,7 @@
        (define r
          (for/first ([r (in-row (current-conn)
                                 (~> (select 1 "hello")
-                                    (project res-schema)))])
+                                    (project-onto res-schema)))])
            r))
 
        (check-true (res? r))
