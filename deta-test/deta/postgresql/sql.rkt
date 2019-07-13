@@ -112,6 +112,18 @@
                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"title\" OFFSET 20"))
 
    (test-suite
+    "fetch"
+
+    (check-emitted (~> (from "books" #:as b)
+                       (fetch 20))
+                   "SELECT * FROM \"books\" AS \"b\" FETCH NEXT 20 ROWS")
+
+    (check-emitted (~> (from "books" #:as b)
+                       (offset 10)
+                       (fetch 20))
+                   "SELECT * FROM \"books\" AS \"b\" OFFSET 10 FETCH NEXT 20 ROWS"))
+
+   (test-suite
     "placeholders"
 
     (check-emitted/placeholders (select ,42) "SELECT $1" '(42))

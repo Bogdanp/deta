@@ -8,16 +8,17 @@
          "struct.rkt")
 
 (provide
+ and-where
  as
+ fetch
  from
  group-by
  offset
+ or-where
  order-by
  project-onto
  select
- where
- and-where
- or-where)
+ where)
 
 (define/contract (as e name)
   (-> ast:expr? (or/c string? symbol?) ast:as?)
@@ -51,6 +52,12 @@
   (match q
     [(query _ stmt)
      (query #f (struct-copy ast:select stmt [columns (cons column0 columns)]))]))
+
+(define/contract (fetch q n)
+  (-> query? exact-integer? query?)
+  (match q
+    [(query schema stmt)
+     (query schema (struct-copy ast:select stmt [fetch (ast:fetch n)]))]))
 
 (define/contract (group-by q column0 . columns)
   (-> query? ast:expr? ast:expr? ... query?)

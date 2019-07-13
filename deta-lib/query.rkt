@@ -180,6 +180,7 @@
  in-rows
  in-row
 
+ fetch
  from
  group-by
  offset
@@ -303,6 +304,11 @@
 
     [(_ q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))
+
+(define-syntax (fetch stx)
+  (syntax-parse stx
+    [(_ q:expr n:number)
+     #'(dyn:fetch q n)]))
 
 (define-syntax (group-by stx)
   (syntax-parse stx
