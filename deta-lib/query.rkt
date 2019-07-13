@@ -248,11 +248,8 @@
           (datum->syntax stx (id->column-name b))))
 
   (define-syntax-class q-expr
-    #:datum-literals (as null)
-    #:literals (and or unquote)
-    (pattern (unquote v)
-             #:with e #'(ast:placeholder v))
-
+    #:datum-literals (as list null)
+    #:literals (and or quote unquote)
     (pattern ref:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
@@ -279,6 +276,13 @@
 
     (pattern (or a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:name 'or) (list a.e b.e)))
+
+    (pattern (~or (list v:q-expr ...)
+                  (quote (v:q-expr ...)))
+             #:with e #'(ast:scalar (list v.e ...)))
+
+    (pattern (unquote v)
+             #:with e #'(ast:placeholder v))
 
     (pattern (f:q-expr arg:q-expr ...)
              #:with e #'(ast:app f.e (list arg.e ...))))

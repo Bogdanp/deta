@@ -33,6 +33,7 @@
     [(name 'is-distinct)     "IS DISTINCT"]
     [(name 'is-not-distinct) "IS NOT DISTINCT"]
     [(name 'is-not)          "IS NOT"]
+    [(name 'not-in)          "NOT IN"]
     [(name 'not-like)        "NOT LIKE"]
 
     [(name n)
@@ -40,6 +41,9 @@
 
     [(scalar #t) "TRUE"]
     [(scalar #f) "FALSE"]
+
+    [(scalar (and (? list?) v))
+     (~a "(" (string-join (map recur v) ", ") ")")]
 
     [(scalar (and (? string?) v))
      (~a "'" (string-replace v "'" "''") "'")]
@@ -64,7 +68,7 @@
                       'and 'or
 
                       ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
-                      '= '> '< '>= '<= '<> '!= 'like 'not-like 'is 'is-not 'is-distinct 'is-not-distinct
+                      '= '> '< '>= '<= '<> '!= 'like 'not-like 'in 'not-in 'is 'is-not 'is-distinct 'is-not-distinct
 
                       ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
                       '+ '- '* '/ '% '<< '>>
