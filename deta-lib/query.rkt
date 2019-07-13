@@ -7,6 +7,7 @@
          (except-in db query)
          racket/contract
          racket/match
+         racket/set
          racket/sequence
          "adapter/adapter.rkt"
          "adapter/postgresql.rkt"
@@ -128,7 +129,7 @@
     (for*/fold ([columns null]
                 [getters null])
                ([f (in-list (schema-fields schema))]
-                #:when (member (field-id f) changes)
+                #:when (set-member? changes (field-id f))
                 [p (in-value (type-dump (field-type f) f))]
                 #:unless (field-auto-increment? f))
       (values (append (map car p) columns)

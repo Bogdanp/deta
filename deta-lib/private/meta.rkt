@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/match)
+(require racket/match
+         racket/set)
 
 (provide
  make-meta
@@ -19,7 +20,7 @@
   #:transparent)
 
 (define (make-meta schema)
-  (meta 'created schema null))
+  (meta 'created schema (seteq)))
 
 (define (meta-track-change m f)
   (struct-copy meta m
@@ -28,7 +29,7 @@
                         ['persisted 'changed]
                         ['changed   'changed]
                         ['deleted   'deleted])]
-               [changes (cons f (meta-changes m))]))
+               [changes (set-add (meta-changes m) f)]))
 
 (define (meta-can-persist? meta)
   (match (meta-state meta)
@@ -50,9 +51,9 @@
 (define (meta-track-persisted m)
   (struct-copy meta m
                [state 'persisted]
-               [changes null]))
+               [changes (seteq)]))
 
 (define (meta-track-deleted m)
   (struct-copy meta m
                [state 'deleted]
-               [changes null]))
+               [changes (seteq)]))

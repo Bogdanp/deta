@@ -5,6 +5,7 @@
          deta/private/meta
          gregor
          racket/match
+         racket/set
          racket/string
          rackunit
          threading)
@@ -71,11 +72,11 @@
 
       (define u* (set-pg-user-username u "bogdan-for-update-changed@example.com"))
       (check-eq? (meta-state (entity-meta u*)) 'changed)
-      (check-equal? (meta-changes (entity-meta u*)) '(username))
+      (check-equal? (meta-changes (entity-meta u*)) (seteq 'username))
 
       (match-define (list u**) (update! (current-conn) u*))
       (check-eq? (meta-state (entity-meta u**)) 'persisted)
-      (check-equal? (meta-changes (entity-meta u**)) null)))
+      (check-equal? (meta-changes (entity-meta u**)) (seteq))))
 
    (test-suite
     "delete!"
