@@ -2,27 +2,98 @@
 
 (require db
          deta
-         gregor
+         deta/private/meta
+         racket/match
          racket/string
-         rackunit)
+         rackunit
+         threading)
 
-(define-schema pg-user
-  ([id id/f #:primary-key #:auto-increment]
-   [username string/f #:unique #:wrapper string-downcase]
-   [password-hash string/f #:nullable]
-   [(created-at (now/moment)) datetime-tz/f]
-   [(updated-at (now/moment)) datetime-tz/f]))
+(provide
+ pg-tests)
 
 (define current-conn
   (make-parameter #f))
 
-(define query-tests
+(define-schema pg-user
+  ([id id/f #:primary-key #:auto-increment]
+   [username string/f #:unique #:wrapper string-downcase]
+   [(active? #f) boolean/f]
+   [password-hash string/f #:nullable]))
+
+(define pg-tests
   (test-suite
-   "postgresql-query"
+   "postgres-query"
+
    #:before
-   (lambda _
+   (lambda ()
      (drop-table! (current-conn) 'pg-user)
-     (create-table! (current-conn) 'pg-user))))
+     (create-table! (current-conn) 'pg-user))
+
+   (test-suite
+    "insert!"
+
+    (test-case "persists entities"
+      (define u (make-pg-user #:username "bogdan@example.com"))
+      (check-eq? (meta-state (entity-meta u)) 'created)
+
+      (define u* (car (insert! (current-conn) u)))
+      (check-eq? (meta-state (entity-meta u*)) 'persisted)
+      (check-not-eq? (pg-user-id u*) sql-null)
+
+      (test-case "changing a persistent entity updates its meta state"
+        (define u** (set-pg-user-username u* "jim@example.com"))
+        (check-eq? (meta-state (entity-meta u**)) 'changed))))
+
+   (test-suite
+    "delete!"
+
+    (test-case "does nothing to entities that haven't been persisted"
+      (define u (make-pg-user #:username "bogdan@example.com"))
+      (check-equal? (delete! (current-conn) u) null))
+
+    (test-case "deletes persisted entities"
+      (define u (make-pg-user #:username "will-delete@example.com"))
+      (match-define (list u*)  (insert! (current-conn) u))
+      (match-define (list u**) (delete! (current-conn) u*))
+      (check-eq? (meta-state (entity-meta u**)) 'deleted)))
+
+   (test-suite
+    "query"
+
+    (test-suite
+     "from"
+
+     (test-case "retrieves whole entities from the database"
+       (define all-users
+         (for/list ([u (in-rows (current-conn) (from pg-user #:as u))])
+           (check-true (pg-user? u))))
+
+       (check-true (> (length all-users) 0))))
+
+    (test-suite
+     "where"
+
+     (test-case "restricts which entities are retrieved from the database"
+       (define query
+         (~> (from pg-user #:as u)
+             (where u.active?)))
+
+       (define all-active-users
+         (for/list ([u (in-rows (current-conn) query)]) u))
+
+       (check-true (null? all-active-users))
+
+       (match-define (list active-user)
+         (insert! (current-conn)
+                  (make-pg-user #:username "active-user@example.com"
+                                #:active? #t)))
+
+       (define all-active-users*
+         (for/list ([u (in-rows (current-conn) query)]) u))
+
+       (check-equal? (length all-active-users*) 1)
+       (check-equal? (pg-user-id active-user)
+                     (pg-user-id (car all-active-users*))))))))
 
 (module+ test
   (require rackunit/text-ui)
@@ -36,4 +107,4 @@
                                                      #:database pg-database
                                                      #:user     pg-username
                                                      #:password pg-password)])
-      (run-tests query-tests))))
+      (run-tests pg-tests))))
