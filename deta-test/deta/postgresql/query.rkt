@@ -73,6 +73,15 @@
 
        (check-equal? x 1))
 
+     (test-case "can retrieve subsets of data from schemas"
+       (define usernames
+         (for/list ([(username) (in-rows (current-conn)
+                                         (~> (from pg-user #:as u)
+                                             (select u.username)))])
+           username))
+
+       (check-true (not (null? usernames))))
+
      (test-case "can project query results onto virtual schemas"
        (define-schema res
          #:virtual
@@ -80,8 +89,9 @@
           [y string/f]))
 
        (define r
-         (for/first ([r (in-row (current-conn) (~> (select 1 "hello")
-                                                   (project res-schema)))])
+         (for/first ([r (in-row (current-conn)
+                                (~> (select 1 "hello")
+                                    (project res-schema)))])
            r))
 
        (check-true (res? r))
