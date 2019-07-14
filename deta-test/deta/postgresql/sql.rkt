@@ -51,30 +51,123 @@
    (test-suite
     "select"
 
-    (check-emitted (select 1) "SELECT 1")
-    (check-emitted (select 1.5) "SELECT 1.5")
-    (check-emitted (select (+ 1 2)) "SELECT 1 + 2")
-    (check-emitted (select #t) "SELECT TRUE")
-    (check-emitted (select #f) "SELECT FALSE")
-    (check-emitted (select (and 1 2)) "SELECT 1 AND 2")
-    (check-emitted (select (or #t #f)) "SELECT TRUE OR FALSE")
-    (check-emitted (select (not #t)) "SELECT NOT TRUE")
-    (check-emitted (select (not (or #t #f))) "SELECT NOT (TRUE OR FALSE)")
-    (check-emitted (select (or (and (not #t) #f) 1)) "SELECT ((NOT TRUE) AND FALSE) OR 1")
-    (check-emitted (select (sum 1)) "SELECT SUM(1)")
-    (check-emitted (select (bitwise-or 1 2)) "SELECT 1 | 2")
-    (check-emitted (select (concat "hello " "world!")) "SELECT 'hello ' || 'world!'")
-    (check-emitted (select (is null null)) "SELECT NULL IS NULL")
-    (check-emitted (select (like u.a "hello%")) "SELECT \"u\".\"a\" LIKE 'hello%'")
-    (check-emitted (select (not-like u.a "hello%")) "SELECT \"u\".\"a\" NOT LIKE 'hello%'")
-    (check-emitted (select (in 1 '(1 2 3))) "SELECT 1 IN (1, 2, 3)")
-    (check-emitted (select (in 1 (list 1 2 3))) "SELECT 1 IN (1, 2, 3)")
-    (check-emitted (select (not-in 1 '(1 2 3))) "SELECT 1 NOT IN (1, 2, 3)")
-    (check-emitted (select (not-in 1 (list 1 2 3))) "SELECT 1 NOT IN (1, 2, 3)")
-    (check-emitted (select (date "1950-01-01")) "SELECT DATE '1950-01-01'")
-    (check-emitted (select (interval "7 days")) "SELECT INTERVAL '7 days'")
-    (check-emitted (select (timestamp "1950-01-01 00:00:00")) "SELECT TIMESTAMP '1950-01-01 00:00:00'")
-    (check-emitted (select (cast "1950-01-01" date)) "SELECT CAST('1950-01-01' AS DATE)")
+    (check-emitted (select 1)
+                   "SELECT 1")
+
+    (check-emitted (select 1.5)
+                   "SELECT 1.5")
+
+    (check-emitted (select (+ 1 2))
+                   "SELECT 1 + 2")
+
+    (check-emitted (select (* 3 (+ 1 2)))
+                   "SELECT 3 * (1 + 2)")
+
+    (check-emitted (select (abs -1))
+                   "SELECT ABS(-1)")
+
+    (check-emitted (select (random))
+                   "SELECT RANDOM()")
+
+    (check-emitted (select #t)
+                   "SELECT TRUE")
+
+    (check-emitted (select #f)
+                   "SELECT FALSE")
+
+    (check-emitted (select (and 1 2))
+                   "SELECT 1 AND 2")
+
+    (check-emitted (select (or #t #f))
+                   "SELECT TRUE OR FALSE")
+
+    (check-emitted (select (not #t))
+                   "SELECT NOT TRUE")
+
+    (check-emitted (select (not (or #t #f)))
+                   "SELECT NOT (TRUE OR FALSE)")
+
+    (check-emitted (select (or (and (not #t) #f) 1))
+                   "SELECT ((NOT TRUE) AND FALSE) OR 1")
+
+    (check-emitted (select (sum 1))
+                   "SELECT SUM(1)")
+
+    (check-emitted (select (bitwise-or 1 2))
+                   "SELECT 1 | 2")
+
+    (check-emitted (select (concat "hello " "world!"))
+                   "SELECT 'hello ' || 'world!'")
+
+    (check-emitted (select "quoting 'test'")
+                   "SELECT 'quoting ''test'''")
+
+    (check-emitted (select (position "om" "Thomas"))
+                   "SELECT POSITION('om' IN 'Thomas')")
+
+    (check-emitted (select (trim leading "x" "xxtestxx"))
+                   "SELECT TRIM(LEADING 'x' FROM 'xxtestxx')")
+
+    (check-emitted (select (similar-to "x" "%x%"))
+                   "SELECT 'x' SIMILAR TO '%x%'")
+
+    (check-emitted (select (~ "x" "^x$"))
+                   "SELECT 'x' ~ '^x$'")
+
+    (check-emitted (select (~* "x" "^x$"))
+                   "SELECT 'x' ~* '^x$'")
+
+    (check-emitted (select (!~ "x" "^x$"))
+                   "SELECT 'x' !~ '^x$'")
+
+    (check-emitted (select (!~* "x" "^x$"))
+                   "SELECT 'x' !~* '^x$'")
+
+    (check-emitted (select (is null null))
+                   "SELECT NULL IS NULL")
+
+    (check-emitted (select (like u.a "hello%"))
+                   "SELECT \"u\".\"a\" LIKE 'hello%'")
+
+    (check-emitted (select (not-like u.a "hello%"))
+                   "SELECT \"u\".\"a\" NOT LIKE 'hello%'")
+
+    (check-emitted (select (in 1 '(1 2 3)))
+                   "SELECT 1 IN (1, 2, 3)")
+
+    (check-emitted (select (in 1 (list 1 2 3)))
+                   "SELECT 1 IN (1, 2, 3)")
+
+    (check-emitted (select (not-in 1 '(1 2 3)))
+                   "SELECT 1 NOT IN (1, 2, 3)")
+
+    (check-emitted (select (not-in 1 (list 1 2 3)))
+                   "SELECT 1 NOT IN (1, 2, 3)")
+
+    (check-emitted (select (date "1950-01-01"))
+                   "SELECT DATE '1950-01-01'")
+
+    (check-emitted (select (interval "7 days"))
+                   "SELECT INTERVAL '7 days'")
+
+    (check-emitted (select (isfinite (interval "7 days")))
+                   "SELECT ISFINITE(INTERVAL '7 days')")
+
+    (check-emitted (select (time "12:30"))
+                   "SELECT TIME '12:30'")
+
+    (check-emitted (select (timestamp "1950-01-01 00:00:00"))
+                   "SELECT TIMESTAMP '1950-01-01 00:00:00'")
+
+    (check-emitted (select (date_part "year" (date "1950-01-01")))
+                   "SELECT DATE_PART('year', DATE '1950-01-01')")
+
+    (check-emitted (select (extract year (timestamp "1950-01-01 00:00:00")))
+                   "SELECT EXTRACT(YEAR FROM (TIMESTAMP '1950-01-01 00:00:00'))")
+
+    (check-emitted (select (cast "1950-01-01" date))
+                   "SELECT CAST('1950-01-01' AS DATE)")
+
     (check-emitted (select (as (between (now)
                                         (- (now) (interval "7 days"))
                                         (+ (now) (interval "7 days")))

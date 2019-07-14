@@ -39,6 +39,8 @@
     [(name 'is-not)          "IS NOT"]
     [(name 'not-in)          "NOT IN"]
     [(name 'not-like)        "NOT LIKE"]
+    [(name 'not-similar-to)  "NOT SIMILAR TO"]
+    [(name 'similar-to)      "SIMILAR TO"]
 
     [(name n)
      (string-upcase (symbol->string n))]
@@ -66,14 +68,17 @@
                       'not
 
                       ;; date ops: https://www.postgresql.org/docs/9.1/functions-datetime.html
-                      'date 'interval 'timestamp
+                      'date 'time 'timestamp 'interval
                       ))
                op)
           (list a))
      (~a (recur op) " " (maybe-parenthize a))]
 
-    [(app (and (name (or 'cast))) (list a b))
-     (~a "CAST(" (recur a) " AS " (recur b) ")")]
+    [(app (name 'cast) (list a b))
+     (~a "CAST(" (maybe-parenthize a) " AS " (recur b) ")")]
+
+    [(app (name 'extract) (list a b))
+     (~a "EXTRACT(" (recur a) " FROM " (maybe-parenthize b) ")")]
 
     [(app (and (name (or
                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
@@ -86,10 +91,10 @@
                       '= '> '< '>= '<= '<> '!= 'like 'not-like 'in 'not-in 'is 'is-not 'is-distinct 'is-not-distinct
 
                       ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
-                      '+ '- '* '/ '% '<< '>>
+                      '+ '- '* '/ '% '<< '>> '~ '~* '!~ '!~*
 
                       ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
-                      'concat
+                      'concat 'similar-to 'not-similar-to
                       ))
                op)
           (list a b))
@@ -97,6 +102,12 @@
 
     [(app (name 'between) (list a b c))
      (~a (maybe-parenthize a) " BETWEEN " (maybe-parenthize b) " AND " (maybe-parenthize c))]
+
+    [(app (name 'position) (list a b))
+     (~a "POSITION(" (maybe-parenthize a) " IN " (maybe-parenthize b) ")")]
+
+    [(app (name 'trim) (list a b c))
+     (~a "TRIM(" (maybe-parenthize a) " " (maybe-parenthize b) " FROM " (maybe-parenthize c) ")")]
 
     [(app f args)
      (~a (recur f) "(" (string-join (map recur args) ", ") ")")]
