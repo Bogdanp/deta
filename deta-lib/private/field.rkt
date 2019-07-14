@@ -24,7 +24,8 @@
   #:transparent)
 
 (define (make-field #:id id
-                    #:name [name (symbol->string id)]
+                    #:name [name (id->column-name id)]
+                    #:kwd [kwd (symbol->keyword id)]
                     #:type type
                     #:getter getter
                     #:setter setter
@@ -34,8 +35,8 @@
                     #:nullable? nullable?
                     #:unique? unique?)
   (field id
-         (id->column-name name)
-         (string->keyword name)
+         name
+         kwd
          type
          getter
          setter
@@ -54,3 +55,6 @@
                    (~a "is_" (substring name 0 (sub1 (string-length name))))
                    name)])
     name))
+
+(define symbol->keyword
+  (compose1 string->keyword symbol->string))
