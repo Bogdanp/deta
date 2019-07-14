@@ -4,18 +4,7 @@
          gregor)
 
 (provide
- make-user
- user?
- user
- user-schema
- user-id
- user-username
- set-user-username
- update-user-username
- user-active?
- user-password-hash
- user-created-at
- user-updated-at)
+ (schema-out user))
 
 (define-schema user
   ([id id/f #:primary-key #:auto-increment]

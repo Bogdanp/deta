@@ -247,7 +247,8 @@
                                                          f.nullable?
                                                          f.unique?) ...)))))]))
 
-;; Heavily inspired from: https://github.com/racket/racket/blob/20e669f47842d47b085ddedc5782e4a95495653a/racket/collects/racket/private/reqprov.rkt#L978
+;; Heavily inspired from:
+;; https://github.com/racket/racket/blob/20e669f47842d47b085ddedc5782e4a95495653a/racket/collects/racket/private/reqprov.rkt#L978
 (define-syntax schema-out
   (make-provide-transformer
    (lambda (stx modes)
@@ -276,10 +277,11 @@
         (define stxs
           (append
            (list
+            #'struct-name
             (format-id #'struct-name "make-~a" #'struct-name)
             (format-id #'struct-name "~a-schema" #'struct-name)
-            (list-ref info 0)   ;; struct descriptor
-            (list-ref info 2))  ;; struct predicate
+            (list-ref info 0)
+            (list-ref info 2))
            accessors+setters+updaters))
 
         (for/list ([stx (in-list stxs)])
