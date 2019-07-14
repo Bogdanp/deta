@@ -283,12 +283,11 @@ CRUD operations to structs, which is out of scope for
   setter and updater named @tt{set-@emph{name}-@emph{field}} and
   @tt{update-@emph{name}-@emph{field}}, respectively.
 
-  If @racket[maybe-table-name] is provided, then that is used as the
-  name for the table.  Otherwise, an "s" is appended to the schema
-  name to pluralize it.  Currently, there are no other pluralization
-  rules.
+  If @racket[#:table] is provided, then that is used as the name for
+  the table.  Otherwise, an "s" is appended to the schema name to
+  pluralize it.  Currently, there are no other pluralization rules.
 
-  If @racket[maybe-virtual] is provided, then the resulting schema's
+  If @racket[#:virtual] is provided, then the resulting schema's
   entities will not be able to be persisted, nor will the schema be
   registered in the global registry.
 
@@ -296,12 +295,119 @@ CRUD operations to structs, which is out of scope for
   key and nullable.  Additionally, a syntax error is raised if a
   schema has multiple primary keys.
 
+  Every type has an associated contract so the @racket[#:contract]
+  option for fields is only necessary if you want to further restrict
+  the values that a field can contain.
+
   Example:
 
   @racketblock[
     (define-schema book
       ([id id/f #:primary-key #:auto-increment]
        [title string/f #:unique #:contract non-empty-string? #:wrapper string-titlecase]
-       [author string/f #:contract non-empty-string]))
+       [author string/f #:contract non-empty-string?]))
   ]
+}
+
+
+@subsection{Type}
+@defmodule[deta/type]
+
+These are all the field types currently supported by deta.  Note that
+not all database backends support all of these types.
+
+@defproc[(type? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] is a type.
+}
+
+@defthing[id/f type?]{
+  The type for identifiers.  Stored as an @tt{INTEGER}.
+
+  @emph{Supported by: SQLite and PostgreSQL.}
+}
+
+@defthing[integer/f type?]{
+  The type for exact integer values.  Stored as an @tt{INTEGER}.
+
+  @emph{Supported by: SQLite and PostgreSQL.}
+}
+
+@defthing[real/f type?]{
+  The type for real values.  Stored as a @tt{REAL}.
+
+  @emph{Supported by: SQLite and PostgreSQL.}
+}
+
+@defproc[(numeric/f [precision exact-integer?]
+                    [scale exact-integer?]) type?]{
+
+  The type for numeric values.  Stored as a @tt{NUMERIC}.
+
+  @emph{Supported by PostgreSQL.}
+}
+
+@defthing[string/f type?]{
+  The type for @racket[string] values.  Stored as a @tt{STRING}.
+
+  @emph{Supported by: SQLite and PostgreSQL.}
+}
+
+@defthing[binary/f type?]{
+  The type for @racket[bytes] values.  Stored as a @tt{BLOB}.
+
+  @emph{Supported by: SQLite and PostgreSQL.}
+}
+
+@defthing[symbol/f type?]{
+  The type for @racket[symbol] values.  Stored as a @tt{STRING}.
+
+  @emph{Supported by: SQLite and PostgreSQL.}
+}
+
+@defthing[boolean/f type?]{
+  The type for @racket[boolean] values.  Stored as a @tt{BOOLEAN}.
+
+  @emph{Supported by: SQLite and PostgreSQL.}
+}
+
+@defthing[date/f type?]{
+  The type for @racketmodname[gregor] @racket[date] values.  Stored as
+  a @tt{DATE}.
+
+  @emph{Supported by PostgreSQL.}
+}
+
+@defthing[time/f type?]{
+  The type for @racketmodname[gregor] @racket[time] values.  Stored as
+  a @tt{TIME}.
+
+  @emph{Supported by PostgreSQL.}
+}
+
+@defthing[datetime/f type?]{
+  The type for @racketmodname[gregor] @racket[datetime] values.  Stored as
+  a @tt{TIMESTAMP}.
+
+  @emph{Supported by PostgreSQL.}
+}
+
+@defthing[datetime-tz/f type?]{
+  The type for @racketmodname[gregor] @racket[datetime] values.  Stored as
+  a @tt{TIMESTAMP WITH TIMEZONE}.
+
+  @emph{Supported by PostgreSQL.}
+}
+
+@defthing[json/f type?]{
+  The type for @racketmodname[gregor] @racket[json] values.  Stored as
+  a @tt{JSON}.
+
+  @emph{Supported by PostgreSQL.}
+}
+
+@defthing[jsonb/f type?]{
+  The type for @racketmodname[gregor] @racket[jsonb] values.  Stored as
+  a @tt{JSONB}.
+
+  @emph{Supported by PostgreSQL.}
 }

@@ -11,6 +11,8 @@
          "private/type.rkt")
 
 (provide
+ type?
+
  id/f?
  id/f
 
