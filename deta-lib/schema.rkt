@@ -208,16 +208,18 @@
                     [((ctor-arg ...) ...) #'(f.ctor-arg ...)]
                     [meta-updater-name (format-id #'name "update-~a-meta" #'name)]
                     [struct-name #'name]
+                    [struct-ctor-name (gensym)]
                     [struct-pred (format-id #'name "~a?" #'name)]
                     [schema-name (format-id #'name "~a-schema" #'name)])
        #'(begin
            (struct struct-name entity (f.name ...)
+             #:constructor-name struct-ctor-name
              #:transparent)
 
            (define/contract (ctor-name ctor-arg ... ...)
              (make-ctor-contract [(f.ctor-kwd f.contract f.required?) ...] struct-pred)
-             (struct-name (make-meta schema-name)
-                          (f.wrapper f.name) ...))
+             (struct-ctor-name (make-meta schema-name)
+                               (f.wrapper f.name) ...))
 
            (define/contract (meta-updater-name e p)
              (-> entity? (-> meta? meta?) entity?)
