@@ -62,7 +62,15 @@
     [(as e alias)
      (~a (maybe-parenthize e) " AS " (quote/standard alias))]
 
-    [(app (and (name (or 'not 'interval)) op) (list a))
+    [(app (and (name (or
+                      ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
+                      'not
+
+                      ;; date ops: https://www.postgresql.org/docs/9.1/functions-datetime.html
+                      'date 'interval 'timestamp
+                      ))
+               op)
+          (list a))
      (~a (recur op) " " (maybe-parenthize a))]
 
     [(app (and (name (or

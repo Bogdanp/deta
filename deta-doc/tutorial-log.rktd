@@ -94,7 +94,7 @@
      conn
      (~>
       (from book #:as b)
-      (where (< b.published-on (cast "1955-01-01" date)))
+      (where (< b.published-on (date "1955-01-01")))
       (order-by ((b.published-on #:desc)))))))
   (book-title b))
  ((3)
@@ -117,10 +117,10 @@
 ((displayln
   (~>
    (from book #:as b)
-   (where (< b.published-on (cast "1955-01-01" date)))
+   (where (< b.published-on (date "1955-01-01")))
    (order-by ((b.published-on #:desc)))))
  ((3) 0 () 0 () () (c values c (void)))
- #"#<query: SELECT \"b\".\"id\", \"b\".\"title\", \"b\".\"author\", \"b\".\"published_on\" FROM \"books\" AS \"b\" WHERE \"b\".\"published_on\" < ('1955-01-01' :: DATE) ORDER BY \"b\".\"published_on\" DESC>\n"
+ #"#<query: SELECT \"b\".\"id\", \"b\".\"title\", \"b\".\"author\", \"b\".\"published_on\" FROM \"books\" AS \"b\" WHERE \"b\".\"published_on\" < (DATE '1955-01-01') ORDER BY \"b\".\"published_on\" DESC>\n"
  #"")
 ((define (books-before year)
    (in-rows

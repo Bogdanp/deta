@@ -141,7 +141,7 @@ And now let's query for all of the books published before 1955:
 
 (code:line)
 (for/list ([b (in-rows conn (~> (from book #:as b)
-                                (where (< b.published-on (cast "1955-01-01" date)))
+                                (where (< b.published-on (date "1955-01-01")))
                                 (order-by ([b.published-on #:desc]))))])
   (book-title b))
 ]
@@ -152,7 +152,7 @@ Sweet!  Here's the query we just ran:
 #:eval db-eval
 (displayln
  (~> (from book #:as b)
-     (where (< b.published-on (cast "1955-01-01" date)))
+     (where (< b.published-on (date "1955-01-01")))
      (order-by ([b.published-on #:desc]))))
 ]
 
