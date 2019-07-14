@@ -509,19 +509,19 @@ not all database backends support all of these types.
 @defthing[id/f type?]{
   The type for identifiers.  Stored as an @tt{INTEGER}.
 
-  @emph{Supported by: SQLite and PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[integer/f type?]{
   The type for exact integer values.  Stored as an @tt{INTEGER}.
 
-  @emph{Supported by: SQLite and PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[real/f type?]{
   The type for real values.  Stored as a @tt{REAL}.
 
-  @emph{Supported by: SQLite and PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defproc[(numeric/f [precision exact-integer?]
@@ -535,53 +535,53 @@ not all database backends support all of these types.
 @defthing[string/f type?]{
   The type for @racket[string] values.  Stored as a @tt{STRING}.
 
-  @emph{Supported by: SQLite and PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[binary/f type?]{
   The type for @racket[bytes] values.  Stored as a @tt{BLOB}.
 
-  @emph{Supported by: SQLite and PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[symbol/f type?]{
   The type for @racket[symbol] values.  Stored as a @tt{STRING}.
 
-  @emph{Supported by: SQLite and PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[boolean/f type?]{
   The type for @racket[boolean] values.  Stored as a @tt{BOOLEAN}.
 
-  @emph{Supported by: SQLite and PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[date/f type?]{
   The type for @racketmodname[gregor] @racket[date] values.  Stored as
   a @tt{DATE}.
 
-  @emph{Supported by PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[time/f type?]{
   The type for @racketmodname[gregor] @racket[time] values.  Stored as
   a @tt{TIME}.
 
-  @emph{Supported by PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[datetime/f type?]{
   The type for @racketmodname[gregor] @racket[datetime] values.  Stored as
   a @tt{TIMESTAMP}.
 
-  @emph{Supported by PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defthing[datetime-tz/f type?]{
   The type for @racketmodname[gregor] @racket[datetime] values.  Stored as
   a @tt{TIMESTAMP WITH TIMEZONE}.
 
-  @emph{Supported by PostgreSQL.}
+  @emph{Supported by SQLite and PostgreSQL.}
 }
 
 @defproc[(array/f [t type?]) type?]{
