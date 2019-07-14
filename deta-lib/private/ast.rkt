@@ -28,13 +28,14 @@
  expr?
  expr-terminal?
 
- (struct-out name)
- (struct-out scalar)
- (struct-out qualified)
- (struct-out as)
  (struct-out app)
+ (struct-out as)
+ (struct-out case-e)
  (struct-out column)
+ (struct-out name)
  (struct-out placeholder)
+ (struct-out qualified)
+ (struct-out scalar)
  (struct-out table))
 
 (struct expr ()
@@ -43,25 +44,28 @@
 (define (expr-terminal? e)
   (not (app? e)))
 
-(struct name expr (name)
-  #:transparent)
-
-(struct scalar expr (v)
-  #:transparent)
-
-(struct qualified expr (parent name)
+(struct app expr (f args)
   #:transparent)
 
 (struct as expr (e alias)
   #:transparent)
 
-(struct app expr (f args)
+(struct case-e expr (clauses else-clause)
   #:transparent)
 
 (struct column expr (e)
   #:transparent)
 
+(struct name expr (name)
+  #:transparent)
+
 (struct placeholder expr (v)
+  #:transparent)
+
+(struct qualified expr (parent name)
+  #:transparent)
+
+(struct scalar expr (v)
   #:transparent)
 
 (struct table expr (e)

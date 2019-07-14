@@ -245,7 +245,7 @@
 
   (define-syntax-class q-expr
     #:datum-literals (as list null)
-    #:literals (and or quote unquote)
+    #:literals (and case else or quote unquote)
     (pattern ref:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
@@ -269,6 +269,13 @@
 
     (pattern (and a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:name 'and) (list a.e b.e)))
+
+    (pattern (case [c:q-expr v:q-expr] ...+
+                   [else ve:q-expr])
+             #:with e #'(ast:case-e (list (cons c.e v.e) ...) ve.e))
+
+    (pattern (case [c:q-expr v:q-expr] ...+)
+             #:with e #'(ast:case-e (list (cons c.e v.e) ...) #f))
 
     (pattern (or a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:name 'or) (list a.e b.e)))

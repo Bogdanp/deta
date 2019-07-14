@@ -175,7 +175,22 @@
                    (~a "SELECT ((NOW()) "
                        "BETWEEN ((NOW()) - (INTERVAL '7 days')) "
                        "AND ((NOW()) + (INTERVAL '7 days'))) "
-                       "AS \"is_between\"")))
+                       "AS \"is_between\""))
+
+    (check-emitted (select
+                    (from "departments" #:as d)
+                    (case
+                      [(> (min d.employees) 0)
+                       (avg (/ d.expenses d.employees))]))
+                   "SELECT CASE WHEN (MIN(\"d\".\"employees\")) > 0 THEN AVG(\"d\".\"expenses\" / \"d\".\"employees\") END FROM \"departments\" AS \"d\"")
+
+    (check-emitted (select
+                    (from "departments" #:as d)
+                    (case
+                      [(> (min d.employees) 0)
+                       (avg (/ d.expenses d.employees))]
+                      [else 0]))
+                   "SELECT CASE WHEN (MIN(\"d\".\"employees\")) > 0 THEN AVG(\"d\".\"expenses\" / \"d\".\"employees\") ELSE 0 END FROM \"departments\" AS \"d\""))
 
    (test-suite
     "group-by"

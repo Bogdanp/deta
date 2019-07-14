@@ -29,6 +29,15 @@
     [(? string?)
      (quote/standard e)]
 
+    [(column e)
+     (recur e)]
+
+    [(table e)
+     (recur e)]
+
+    [(placeholder v)
+     (~a "$" (track-placeholder! v))]
+
     [(name 'bitwise-not)     "~"]
     [(name 'bitwise-and)     "&"]
     [(name 'bitwise-or )     "|"]
@@ -112,14 +121,15 @@
     [(app f args)
      (~a (recur f) "(" (string-join (map recur args) ", ") ")")]
 
-    [(column e)
-     (recur e)]
-
-    [(placeholder v)
-     (~a "$" (track-placeholder! v))]
-
-    [(table e)
-     (recur e)]))
+    [(case-e cases else-case)
+     (with-output-to-string
+       (lambda _
+         (display "CASE")
+         (for ([c (in-list cases)])
+           (display @~a{ WHEN @(recur (car c)) THEN @(recur (cdr c))}))
+         (when else-case
+           (display @~a{ ELSE @(recur else-case)}))
+         (display " END")))]))
 
 (define ((make-stmt-emitter recur emit-expr
                             #:supports-returning? [supports-returning? #f]) e)
