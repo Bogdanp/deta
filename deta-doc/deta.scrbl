@@ -23,6 +23,24 @@ Sort of like an ORM, but without "relationships" and all the bad bits.
 
 This is pre-1.0 software and the API may change without notice.
 
+
+@section[#:tag "principles"]{Principles}
+
+Despite the fact that both SQLite and PostgreSQL are currently
+supported by this library, the focus is on PostgreSQL and SQLite just
+serves as a check to ensure that nothing is @emph{too} PostgreSQL
+specific.
+
+Additionally, the purpose of deta is to make certain types of
+normally-tedious queries straightforward and simple.  It's not a goal
+of this library to be a general purpose SQL DSL and that means that
+for some queries you may have to resort to raw SQL or the
+@racketmodname[sql] library.  It is very much an "80% solution."
+
+If you're down with that, then by all means carry on an read the
+tutorial!
+
+
 @section[#:tag "tutorial"]{Tutorial}
 
 @; Blatantly copied from sql-lib!
