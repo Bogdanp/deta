@@ -45,7 +45,8 @@
 ;; insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- insert!)
+ insert!
+ insert-one!)
 
 (define/contract (insert! conn . entities)
   (-> connection? entity? ... (listof entity?))
@@ -53,6 +54,12 @@
   (define adapter (connection-adapter conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-persist? (entity-meta entity)))
     (insert-entity! adapter dialect conn entity)))
+
+(define/contract (insert-one! conn entity)
+  (-> connection? entity? (or/c false/c entity?))
+  (match (insert! conn entity)
+    [(list entity) entity]
+    [_ #f]))
 
 (define (insert-entity! adapter dialect conn entity)
   (define meta (entity-meta entity))
@@ -185,6 +192,7 @@
 
  in-rows
  in-row
+ lookup
 
  sql
  from
@@ -239,6 +247,10 @@
     (stop-before (in-rows conn q) (lambda _
                                     (begin0 consumed
                                       (set! consumed #t))))))
+
+(define/contract (lookup conn q)
+  (-> connection? query? (or/c false/c entity?))
+  (for/first ([e (in-row conn q)]) e))
 
 (begin-for-syntax
   (define column-reference-re

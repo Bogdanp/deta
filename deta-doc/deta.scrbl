@@ -282,6 +282,21 @@ CRUD operations to structs, which is out of scope for
   schemas.
 }
 
+@defproc[(insert-one! [conn connection?]
+                      [e entity?]) (or/c false/c entity?)]{
+
+  Attempts to insert @racket[e].  If it doesn't need to be persisted,
+  then @racket[#f] is returned.
+
+  Equivalent to:
+
+  @racketblock[
+    (match (insert! conn e)
+      [(list e) e]
+      [_ #f])
+  ]
+}
+
 @defproc[(update! [conn connection?]
                   [e entity?] ...) (listof entity?)]{
 
@@ -315,6 +330,19 @@ CRUD operations to structs, which is out of scope for
 
   A variant of @racket[in-rows] that stops after the first result.
   Does not modify the query to add a limit.
+}
+
+@defproc[(lookup [conn connection?]
+                 [q query?]) (or/c false/c entity?)]{
+
+  Retrieves the first result for @racket[q], if it exists.
+
+  Equivalent to:
+
+  @racketblock[
+    (for/first ([e (in-row conn q)])
+      e)
+  ]
 }
 
 
