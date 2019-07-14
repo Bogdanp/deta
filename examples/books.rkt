@@ -63,7 +63,6 @@
                      (book-stats-year stats)
                      (book-stats-books stats))))
 
-
 (void
  (apply delete! conn (sequence->list (books-between 1950 1970))))
 

@@ -11,6 +11,7 @@
          racket/sequence
          racket/set
          "adapter/adapter.rkt"
+         "adapter/connection.rkt"
          "adapter/postgresql.rkt"
          "adapter/sqlite3.rkt"
          (prefix-in ast: "private/ast.rkt")
@@ -212,16 +213,12 @@
 
 (define/contract (in-rows conn q)
   (-> connection? query? sequence?)
-  (define adapter (connection-adapter conn))
-  (define schema (query-projection q))
-  (define-values (query args)
-    (adapter-emit-query adapter (query-stmt q)))
-
+  (define schema (query-schema q))
   (sequence-map (lambda cols
                   (if schema
                       (make-entity-instance schema cols)
                       (apply values cols)))
-                (apply in-query conn query args)))
+                (in-query conn q)))
 
 (define/contract (in-row conn q)
   (-> connection? query? sequence?)
@@ -340,12 +337,3 @@
   (syntax-parse stx
     [(_ q:expr e:q-expr)
      #'(dyn:or-where q e.e)]))
-
-
-;; common ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (connection-adapter conn)
-  (match (dbsystem-name (connection-dbsystem conn))
-    ['postgresql postgresql-adapter]
-    ['sqlite3    sqlite3-adapter]
-    [_           (error 'connection-adapter "this connection type is not supported")]))

@@ -82,7 +82,7 @@
 
 (define/contract (project-onto q s)
   (-> query? schema? query?)
-  (struct-copy query q [projection s]))
+  (struct-copy query q [schema s]))
 
 (define/contract (where q e)
   (-> query? ast:expr? query?)
