@@ -299,6 +299,11 @@ CRUD operations to structs, which is out of scope for
   option for fields is only necessary if you want to further restrict
   the values that a field can contain.
 
+  When converting field names to SQL, dashes are replaced with
+  underscores and field names that end in question marks drop their
+  question mark and are prefixed with "is_".  @racket[admin?] becomes
+  @racket[is_admin].
+
   Example:
 
   @racketblock[
