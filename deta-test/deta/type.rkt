@@ -24,7 +24,7 @@
    (test-suite
     "array"
 
-    (test-case "can dump and load dumped values"
+    (test-case "can dump and load dumped values for postgresql"
       (define initial (vector (date 1996 5 29)
                               (date 2019 5 29)))
 
@@ -42,6 +42,28 @@
         (let ()
           (match-define (list (cons _ value))
             (type-load (field-type f) f dumped 'postgresql))
+          value))
+
+      (check-equal? loaded initial))
+
+    (test-case "can dump and load dumped values for sqlite3"
+      (define initial (vector (date 1996 5 29)
+                              (date 2019 5 29)))
+
+      (define f (field-ref 'dates-vec))
+      (define dumped
+        (let ()
+          (match-define (list (cons _ getter))
+            (type-dump (field-type f) f 'sqlite3))
+          (getter (make-kitchen-sink #:dates-vec initial))))
+
+      (check-equal? dumped (vector "1996-05-29"
+                                   "2019-05-29"))
+
+      (define loaded
+        (let ()
+          (match-define (list (cons _ value))
+            (type-load (field-type f) f dumped 'sqlite3))
           value))
 
       (check-equal? loaded initial)))))
