@@ -73,9 +73,9 @@
 (provide
  clause?
  (struct-out assignments)
- (struct-out fetch)
  (struct-out from)
  (struct-out group-by)
+ (struct-out limit)
  (struct-out offset)
  (struct-out order-by)
  (struct-out where))
@@ -86,13 +86,13 @@
 (struct assignments clause (pairs)
   #:transparent)
 
-(struct fetch clause (n)
-  #:transparent)
-
 (struct from clause (e)
   #:transparent)
 
 (struct group-by clause (columns)
+  #:transparent)
+
+(struct limit clause (n)
   #:transparent)
 
 (struct offset clause (n)
@@ -128,7 +128,7 @@
 (struct update stmt (table assignments where)
   #:transparent)
 
-(struct select stmt (columns from where group-by order-by offset fetch)
+(struct select stmt (columns from where group-by order-by offset limit)
   #:transparent)
 
 (define (make-select #:columns [columns null]
@@ -137,5 +137,5 @@
                      #:group-by [group-by #f]
                      #:order-by [order-by #f]
                      #:offset [offset #f]
-                     #:fetch [fetch #f])
-  (select columns from where group-by order-by offset fetch))
+                     #:limit [limit #f])
+  (select columns from where group-by order-by offset limit))

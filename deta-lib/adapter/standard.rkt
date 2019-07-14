@@ -101,12 +101,12 @@
 
 (define ((make-stmt-emitter recur emit-expr
                             #:supports-returning? [supports-returning? #f]
-                            #:fetch-before-offset? [fetch-before-offset? #f]) e)
+                            #:limit-before-offset? [limit-before-offset? #t]) e)
   (match e
     [(list exprs ...)
      (string-join (map emit-expr exprs) ", ")]
 
-    [(select columns from where group-by order-by offset fetch)
+    [(select columns from where group-by order-by offset limit)
      (with-output-to-string
        (lambda _
          (define columns:str
@@ -121,13 +121,13 @@
          (when order-by (display (~a " " (recur order-by))))
 
          (cond
-           [fetch-before-offset?
-            (when fetch  (display (~a " " (recur fetch))))
+           [limit-before-offset?
+            (when limit  (display (~a " " (recur limit))))
             (when offset (display (~a " " (recur offset))))]
 
            [else
             (when offset (display (~a " " (recur offset))))
-            (when fetch  (display (~a " " (recur fetch))))])))]
+            (when limit  (display (~a " " (recur limit))))])))]
 
     [(update table assignments where)
      (with-output-to-string
@@ -154,7 +154,7 @@
 
      @~a{SET @(string-join pair:strs ", ")}]
 
-    [(fetch n)        @~a{FETCH NEXT @n ROWS}]
+    [(limit n)        @~a{LIMIT @n}]
     [(from t)         @~a{FROM @(emit-expr t)}]
     [(where e)        @~a{WHERE @(emit-expr e)}]
     [(group-by cols)  @~a{GROUP BY @(recur cols)}]

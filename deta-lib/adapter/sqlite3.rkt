@@ -75,9 +75,7 @@
 
 (define (emit-stmt e)
   (match e
-    [(fetch n) (~a "LIMIT " n)]
     [_ (emit-stmt/standard e)]))
 
 (define emit-stmt/standard
-  (make-stmt-emitter emit-stmt emit-expr
-                     #:fetch-before-offset? #t))
+  (make-stmt-emitter emit-stmt emit-expr))

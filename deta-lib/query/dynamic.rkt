@@ -10,9 +10,9 @@
 (provide
  and-where
  as
- fetch
  from
  group-by
+ limit
  offset
  or-where
  order-by
@@ -53,11 +53,11 @@
     [(query _ stmt)
      (query #f (struct-copy ast:select stmt [columns (cons column0 columns)]))]))
 
-(define/contract (fetch q n)
+(define/contract (limit q n)
   (-> query? exact-integer? query?)
   (match q
     [(query schema stmt)
-     (query schema (struct-copy ast:select stmt [fetch (ast:fetch n)]))]))
+     (query schema (struct-copy ast:select stmt [limit (ast:limit n)]))]))
 
 (define/contract (group-by q column0 . columns)
   (-> query? ast:expr? ast:expr? ... query?)

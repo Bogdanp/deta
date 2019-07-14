@@ -23,15 +23,15 @@
    "sqlite3-sql"
 
    (test-suite
-    "fetch"
+    "limit"
 
     (check-emitted (~> (from "books" #:as b)
-                       (fetch 20))
+                       (limit 20))
                    "SELECT * FROM \"books\" AS \"b\" LIMIT 20")
 
     (check-emitted (~> (from "books" #:as b)
                        (offset 10)
-                       (fetch 20))
+                       (limit 20))
                    "SELECT * FROM \"books\" AS \"b\" LIMIT 20 OFFSET 10"))))
 
 (module+ test

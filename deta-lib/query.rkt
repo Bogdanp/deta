@@ -178,9 +178,9 @@
  in-rows
  in-row
 
- fetch
  from
  group-by
+ limit
  offset
  order-by
  select
@@ -303,10 +303,10 @@
     [(_ q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))
 
-(define-syntax (fetch stx)
+(define-syntax (limit stx)
   (syntax-parse stx
     [(_ q:expr n:number)
-     #'(dyn:fetch q n)]))
+     #'(dyn:limit q n)]))
 
 (define-syntax (group-by stx)
   (syntax-parse stx
