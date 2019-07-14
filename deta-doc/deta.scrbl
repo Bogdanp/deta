@@ -7,6 +7,7 @@
                      deta
                      gregor
                      (except-in racket/base date date?)
+                     racket/contract
                      racket/match
                      threading))
 
@@ -225,3 +226,82 @@ and I've found that that gets tedious quickly.
 On top of giving you composable queries, deta also automatically maps
 CRUD operations to structs, which is out of scope for
 @racketmodname[sql].
+
+
+@section[#:tag "reference"]{Reference}
+
+@subsection{Schema}
+@defmodule[deta/schema]
+
+@defproc[(entity? [e any/c]) boolean?]{
+  Returns @racket[#t] when @racket[e] is an instance of a schema
+  struct (i.e. an "entity").
+}
+
+@defform[(define-schema name
+           maybe-table-name
+           maybe-virtual
+           (field-definition ...+))
+         #:grammar
+         [(maybe-table-name (code:line)
+                            (code:line #:table string))
+          (maybe-virtual (code:line)
+                         (code:line #:virtual))
+          (field-definition (code:line [name type
+                                        maybe-primary-key
+                                        maybe-auto-increment
+                                        maybe-unique
+                                        maybe-nullable
+                                        maybe-contract
+                                        maybe-wrapper])
+                            (code:line [(name default) type
+                                        maybe-primary-key
+                                        maybe-auto-increment
+                                        maybe-unique
+                                        maybe-nullable
+                                        maybe-contract
+                                        maybe-wrapper]))
+          (maybe-primary-key (code:line)
+                             (code:line #:primary-key))
+          (maybe-auto-increment (code:line)
+                                (code:line #:auto-increment))
+          (maybe-unique (code:line)
+                        (code:line #:unique))
+          (maybe-nullable (code:line)
+                          (code:line #:nullable))
+          (maybe-contract (code:line)
+                          (code:line #:contract e))
+          (maybe-wrapper (code:line)
+                          (code:line #:wrapper e))]]{
+
+  Defines a schema named @racket[name].  The schema will have an
+  associated struct with the same name and a smart constructor called
+  @tt{make-@emph{name}}.  The struct's "dumb" constructor is hidden so
+  that invalid entities cannot be created.
+
+  For every defined field there will be an associated functional
+  setter and updater named @tt{set-@emph{name}-@emph{field}} and
+  @tt{update-@emph{name}-@emph{field}}, respectively.
+
+  If @racket[maybe-table-name] is provided, then that is used as the
+  name for the table.  Otherwise, an "s" is appended to the schema
+  name to pluralize it.  Currently, there are no other pluralization
+  rules.
+
+  If @racket[maybe-virtual] is provided, then the resulting schema's
+  entities will not be able to be persisted, nor will the schema be
+  registered in the global registry.
+
+  A syntax error is raised if you declare a field as both a primary
+  key and nullable.  Additionally, a syntax error is raised if a
+  schema has multiple primary keys.
+
+  Example:
+
+  @racketblock[
+    (define-schema book
+      ([id id/f #:primary-key #:auto-increment]
+       [title string/f #:unique #:contract non-empty-string? #:wrapper string-titlecase]
+       [author string/f #:contract non-empty-string]))
+  ]
+}
