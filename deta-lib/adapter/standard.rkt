@@ -33,7 +33,6 @@
     [(name 'bitwise-and)     "&"]
     [(name 'bitwise-or )     "|"]
     [(name 'bitwise-xor)     "#"]
-    [(name 'cast)            "::"]
     [(name 'concat)          "||"]
     [(name 'is-distinct)     "IS DISTINCT"]
     [(name 'is-not-distinct) "IS NOT DISTINCT"]
@@ -73,6 +72,9 @@
           (list a))
      (~a (recur op) " " (maybe-parenthize a))]
 
+    [(app (and (name (or 'cast))) (list a b))
+     (~a "CAST(" (recur a) " AS " (recur b) ")")]
+
     [(app (and (name (or
                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
                       'bitwise-not 'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
@@ -88,8 +90,6 @@
 
                       ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
                       'concat
-
-                      'cast
                       ))
                op)
           (list a b))

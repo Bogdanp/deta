@@ -74,7 +74,7 @@
     (check-emitted (select (date "1950-01-01")) "SELECT DATE '1950-01-01'")
     (check-emitted (select (interval "7 days")) "SELECT INTERVAL '7 days'")
     (check-emitted (select (timestamp "1950-01-01 00:00:00")) "SELECT TIMESTAMP '1950-01-01 00:00:00'")
-    (check-emitted (select (cast "1950-01-01" date)) "SELECT '1950-01-01' :: DATE")
+    (check-emitted (select (cast "1950-01-01" date)) "SELECT CAST('1950-01-01' AS DATE)")
     (check-emitted (select (as (between (now)
                                         (- (now) (interval "7 days"))
                                         (+ (now) (interval "7 days")))
