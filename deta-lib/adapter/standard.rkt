@@ -42,7 +42,6 @@
     [(name 'bitwise-and)     "&"]
     [(name 'bitwise-or )     "|"]
     [(name 'bitwise-xor)     "#"]
-    [(name 'concat)          "||"]
     [(name 'is-distinct)     "IS DISTINCT"]
     [(name 'is-not-distinct) "IS NOT DISTINCT"]
     [(name 'is-not)          "IS NOT"]
@@ -103,7 +102,7 @@
                       '+ '- '* '/ '% '<< '>> '~ '~* '!~ '!~*
 
                       ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
-                      'concat 'similar-to 'not-similar-to
+                      'similar-to 'not-similar-to
                       ))
                op)
           (list a b))

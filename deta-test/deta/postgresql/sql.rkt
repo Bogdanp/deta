@@ -97,7 +97,7 @@
                    "SELECT 1 | 2")
 
     (check-emitted (select (concat "hello " "world!"))
-                   "SELECT 'hello ' || 'world!'")
+                   "SELECT CONCAT('hello ', 'world!')")
 
     (check-emitted (select "quoting 'test'")
                    "SELECT 'quoting ''test'''")

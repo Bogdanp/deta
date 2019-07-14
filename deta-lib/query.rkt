@@ -180,6 +180,7 @@
  in-rows
  in-row
 
+ sql
  from
  group-by
  limit
@@ -295,6 +296,10 @@
                             (~optional (~and #:desc dir-desc))))
              #:with dir (if (attribute dir-desc) #''desc #''asc)
              #:with e #'(cons c.e dir))))
+
+(define-syntax (sql stx)
+  (syntax-parse stx
+    [(_ e:q-expr) #'e.e]))
 
 (define-syntax (from stx)
   (syntax-parse stx

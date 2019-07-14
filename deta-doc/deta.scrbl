@@ -307,6 +307,28 @@ CRUD operations to structs, which is out of scope for
 }
 
 @defform[
+  #:literals (as and case list or unquote)
+  (sql q-expr)
+  #:grammar
+  [(q-expr (as q-expr id)
+           (and q-expr q-expr)
+           (or q-expr q-expr)
+           (case [q-expr q-expr] ...)
+           (case [q-expr q-expr] ...+
+                 [else q-expr])
+           (list q-expr ...)
+           (unquote expr)
+           id
+           boolean
+           string
+           number
+           app)
+   (app (q-expr q-expr ...))]]{
+
+  Constructs an SQL expression.
+}
+
+@defform[
   (from schema #:as alias)
   #:grammar
   [(schema (code:line string)
