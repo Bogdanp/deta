@@ -7,6 +7,7 @@
          racket/string
          "../private/ast.rkt"
          "../private/field.rkt"
+         "../private/type.rkt"
          "../type.rkt"
          "adapter.rkt"
          "standard.rkt")
@@ -50,21 +51,11 @@
 (define (emit-field-ddl f)
   (with-output-to-string
     (lambda _
-      (display (~a (quote/standard (field-name f)) " " (field-type->sqlite3 (field-type f))))
+      (display (~a (quote/standard (field-name f)) " " (type-declaration (field-type f) 'sqlite3)))
       (unless (field-nullable? f) (display " NOT NULL"))
       (when (field-primary-key? f) (display " PRIMARY KEY"))
       (when (field-auto-increment? f) (display " AUTOINCREMENT"))
       (when (field-unique? f) (display " UNIQUE")))))
-
-(define (field-type->sqlite3 t)
-  (cond
-    [(id/f?          t) "INTEGER"]
-    [(integer/f?     t) "INTEGER"]
-    [(real/f?        t) "REAL"]
-    [(string/f?      t) "TEXT"]
-    [(binary/f?      t) "BLOB"]
-    [(symbol/f?      t) "TEXT"]
-    [else (raise-argument-error 'field-type->sqlite3 "unsupported type for DDL" t)]))
 
 (define (emit-expr e)
   (match e

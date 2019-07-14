@@ -7,6 +7,7 @@
          racket/string
          "../private/ast.rkt"
          "../private/field.rkt"
+         "../private/type.rkt"
          "../type.rkt"
          "adapter.rkt"
          "standard.rkt")
@@ -53,30 +54,12 @@
       (define type
         (if (field-auto-increment? f)
             "SERIAL"
-            (field-type->postgresql (field-type f))))
+            (type-declaration (field-type f) 'postgresql)))
 
       (display (~a (quote/standard (field-name f)) " " type))
       (unless (field-nullable? f) (display " NOT NULL"))
       (when (field-primary-key? f) (display " PRIMARY KEY"))
       (when (field-unique? f) (display " UNIQUE")))))
-
-(define (field-type->postgresql t)
-  (cond
-    [(id/f?          t) "INTEGER"]
-    [(integer/f?     t) "INTEGER"]
-    [(real/f?        t) "REAL"]
-    [(numeric/f?     t) @~a{NUMERIC(@(numeric/f-precision t), @(numeric/f-scale t))}]
-    [(string/f?      t) "TEXT"]
-    [(binary/f?      t) "BLOB"]
-    [(symbol/f?      t) "TEXT"]
-    [(boolean/f?     t) "BOOLEAN"]
-    [(date/f?        t) "DATE"]
-    [(time/f?        t) "TIME"]
-    [(datetime/f?    t) "TIMESTAMP"]
-    [(datetime-tz/f? t) "TIMESTAMPTZ"]
-    [(json/f?        t) "JSON"]
-    [(jsonb/f?       t) "JSONB"]
-    [else (raise-argument-error 'field-type->postgresql "unsupported type for DDL" t)]))
 
 (define (emit-expr e)
   (match e

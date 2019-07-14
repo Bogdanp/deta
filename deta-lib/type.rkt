@@ -1,10 +1,11 @@
-#lang racket/base
+#lang at-exp racket/base
 
 (require db
          gregor
          gregor/time
          json
          racket/contract
+         racket/format
          racket/generic
          racket/match
          "private/field.rkt"
@@ -24,8 +25,6 @@
 
  numeric/f?
  numeric/f
- numeric/f-precision
- numeric/f-scale
 
  string/f?
  string/f
@@ -64,6 +63,9 @@
       [(define (type-contract _)
          exact-nonnegative-integer?)
 
+       (define (type-declaration _ dialect)
+         "INTEGER")
+
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
 
@@ -79,6 +81,9 @@
       #:methods gen:type
       [(define (type-contract _)
          exact-integer?)
+
+       (define (type-declaration _ dialect)
+         "INTEGER")
 
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
@@ -96,6 +101,9 @@
       [(define (type-contract _)
          real?)
 
+       (define (type-declaration _ dialect)
+         "REAL")
+
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
 
@@ -105,12 +113,15 @@
 
     (values real-field? (real-field))))
 
-(define-values (numeric/f? numeric/f numeric/f-precision numeric/f-scale)
+(define-values (numeric/f? numeric/f)
   (let ()
     (struct numeric-field (precision scale)
       #:methods gen:type
       [(define (type-contract _)
          (or/c rational? +nan.0))
+
+       (define (type-declaration t dialect)
+         @~a{NUMERIC(@(numeric-field-precision t), @(numeric-field-scale t))})
 
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
@@ -119,10 +130,11 @@
          (list (cons (field-name f)
                      (field-getter f))))])
 
-    (values numeric-field?
-            numeric-field
-            numeric-field-precision
-            numeric-field-scale)))
+    (define/contract (make-numeric-field precision scale)
+      (-> exact-positive-integer? exact-nonnegative-integer? numeric-field?)
+      (numeric-field precision scale))
+
+    (values numeric-field? numeric-field)))
 
 (define-values (string/f? string/f)
   (let ()
@@ -130,6 +142,9 @@
       #:methods gen:type
       [(define (type-contract _)
          string?)
+
+       (define (type-declaration _ dialect)
+         "TEXT")
 
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
@@ -147,6 +162,9 @@
       [(define (type-contract _)
          bytes?)
 
+       (define (type-declaration _ dialect)
+         "BLOB")
+
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
 
@@ -162,6 +180,9 @@
       #:methods gen:type
       [(define (type-contract _)
          symbol?)
+
+       (define (type-declaration _ dialect)
+         "TEXT")
 
        (define (type-load _ f v)
          (list (cons (field-kwd f) (cond
@@ -185,6 +206,11 @@
       [(define (type-contract _)
          boolean?)
 
+       (define (type-declaration _ dialect)
+         (match dialect
+           ['sqlite3    "INTEGER"]
+           ['postgresql "BOOLEAN"]))
+
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
 
@@ -200,6 +226,11 @@
       #:methods gen:type
       [(define (type-contract _)
          date-provider?)
+
+       (define (type-declaration _ dialect)
+         (match dialect
+           ['sqlite3    "TEXT"]
+           ['postgresql "DATE"]))
 
        (define (type-load _ f v)
          (list (cons (field-kwd f)
@@ -223,6 +254,11 @@
       #:methods gen:type
       [(define (type-contract _)
          time-provider?)
+
+       (define (type-declaration _ dialect)
+         (match dialect
+           ['sqlite3    "TEXT"]
+           ['postgresql "TIME"]))
 
        (define (type-load _ f v)
          (list (cons (field-kwd f)
@@ -248,6 +284,11 @@
       #:methods gen:type
       [(define (type-contract _)
          datetime-provider?)
+
+       (define (type-declaration _ dialect)
+         (match dialect
+           ['sqlite3    "TEXT"]
+           ['postgresql "TIMESTAMP"]))
 
        (define (type-load _ f v)
          (list (cons (field-kwd f)
@@ -280,6 +321,11 @@
       [(define (type-contract _)
          moment-provider?)
 
+       (define (type-declaration _ dialect)
+         (match dialect
+           ['sqlite3    "TEXT"]
+           ['postgresql "TIMESTAMPTZ"]))
+
        (define (type-load _ f v)
          (list (cons (field-kwd f)
                      (moment (sql-timestamp-year       v)
@@ -306,12 +352,57 @@
 
     (values datetime-tz-field? (datetime-tz-field))))
 
+(define gen:type-declaration type-declaration)
+(define-values (array/f? array/f)
+  (let ()
+    (struct array-field (subtype size)
+      #:methods gen:type
+      [(define (type-contract t)
+         (vectorof (type-contract (array-field-subtype t))))
+
+       (define (type-declaration t dialect)
+         (match dialect
+           ['postgresql
+            (define subtype-declaration
+              (gen:type-declaration (array-field-subtype t) dialect))
+
+            (define size:str
+              (cond
+                [(array-field-size t) => number->string]
+                [else ""]))
+
+            (~a subtype-declaration  "[" size:str "]")]
+
+           [_ (raise-user-error 'array/f "not supported")]))
+
+       (define (type-load t f v)
+         (define subtype (array-field-subtype t))
+         (define v:loaded
+           (for/vector ([x (in-vector v)])
+             (match (type-load subtype f x)
+               [(list (cons _ x*)) x*])))
+
+         (list (cons (field-kwd f) v:loaded)))
+
+       (define (type-dump t f)
+         ;; FIXME
+         (error 'type-dump))])
+
+    (values array-field?
+            (lambda (subtype [size #f])
+              (array-field subtype size)))))
+
 (define-values (json/f? json/f)
   (let ()
     (struct json-field ()
       #:methods gen:type
       [(define (type-contract _)
          jsexpr?)
+
+       (define (type-declaration t dialect)
+         (match dialect
+           ['postgresql "JSON"]
+           [_ (raise-user-error 'json/f "not supported")]))
 
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
@@ -328,6 +419,11 @@
       #:methods gen:type
       [(define (type-contract _)
          jsexpr?)
+
+       (define (type-declaration t dialect)
+         (match dialect
+           ['postgresql "JSONB"]
+           [_ (raise-user-error 'json/f "not supported")]))
 
        (define (type-load _ f v)
          (list (cons (field-kwd f) v)))
