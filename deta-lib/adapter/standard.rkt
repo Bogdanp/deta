@@ -33,6 +33,7 @@
     [(name 'bitwise-and)     "&"]
     [(name 'bitwise-or )     "|"]
     [(name 'bitwise-xor)     "#"]
+    [(name 'cast)            "::"]
     [(name 'concat)          "||"]
     [(name 'is-distinct)     "IS DISTINCT"]
     [(name 'is-not-distinct) "IS NOT DISTINCT"]
@@ -79,6 +80,8 @@
 
                       ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
                       'concat
+
+                      'cast
                       ))
                op)
           (list a b))

@@ -71,6 +71,7 @@
     (check-emitted (select (in 1 (list 1 2 3))) "SELECT 1 IN (1, 2, 3)")
     (check-emitted (select (not-in 1 '(1 2 3))) "SELECT 1 NOT IN (1, 2, 3)")
     (check-emitted (select (not-in 1 (list 1 2 3))) "SELECT 1 NOT IN (1, 2, 3)")
+    (check-emitted (select (cast "1950-01-01" date)) "SELECT '1950-01-01' :: DATE")
     (check-emitted (select (as (between (now)
                                         (- (now) (interval "7 days"))
                                         (+ (now) (interval "7 days")))
