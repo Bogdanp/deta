@@ -137,15 +137,16 @@
               (cons get getters))))
 
   (define stmt
-    (ast:update (ast:table (schema-table-name schema))
-                (ast:assignments
-                 (for/list ([column (in-list columns)]
-                            [getter (in-list getters)])
-                   (cons (ast:column column)
-                         (ast:placeholder (getter entity)))))
-                (ast:where (ast:app (ast:name '=)
-                                    (list (ast:column (field-name pk))
-                                          (ast:placeholder ((field-getter pk) entity)))))))
+    (ast:make-update
+     #:table (ast:table (schema-table-name schema))
+     #:assignments (ast:assignments
+                    (for/list ([column (in-list columns)]
+                               [getter (in-list getters)])
+                      (cons (ast:column column)
+                            (ast:placeholder (getter entity)))))
+     #:where (ast:where (ast:app (ast:name '=)
+                                 (list (ast:column (field-name pk))
+                                       (ast:placeholder ((field-getter pk) entity)))))))
 
   (define-values (query args)
     (adapter-emit-query adapter stmt))
@@ -201,6 +202,7 @@
  offset
  order-by
  select
+ update
  where
  and-where
  or-where
@@ -266,13 +268,17 @@
     (cons (datum->syntax stx a)
           (datum->syntax stx (id->column-name b))))
 
-  (define-syntax-class q-expr
-    #:datum-literals (as list null)
-    #:literals (and case else or quote unquote)
+  (define-syntax-class q-ref
     (pattern ref:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
-                        #`(ast:qualified #,(car ref) #,(cdr ref))))
+                        #`(ast:qualified #,(car ref) #,(cdr ref)))))
+
+  (define-syntax-class q-expr
+    #:datum-literals (as list null)
+    #:literals (and case else or quote unquote)
+    (pattern ref:q-ref
+             #:with e #'ref.e)
 
     (pattern name:id
              #:with e #'(ast:name 'name))
@@ -313,9 +319,14 @@
     (pattern (f:q-expr arg:q-expr ...)
              #:with e #'(ast:app f.e (list arg.e ...))))
 
+  (define-syntax-class q-assignment
+    (pattern [column:id value:q-expr]
+             #:with e (with-syntax ([name (datum->syntax #'r (id->column-name (syntax->datum #'column)))])
+                        #'(cons (ast:column name) value.e))))
+
   (define-syntax-class q-order-pair
-    (pattern (c:q-expr (~or (~optional (~and #:asc dir-asc))
-                            (~optional (~and #:desc dir-desc))))
+    (pattern [c:q-expr (~or (~optional (~and #:asc dir-asc))
+                            (~optional (~and #:desc dir-desc)))]
              #:with dir (if (attribute dir-desc) #''desc #''asc)
              #:with e #'(cons c.e dir))))
 
@@ -325,8 +336,8 @@
 
 (define-syntax (from stx)
   (syntax-parse stx
-    [(_ schema:str #:as alias:id)
-     #'(dyn:from schema #:as 'alias)]
+    [(_ table:str #:as alias:id)
+     #'(dyn:from table #:as 'alias)]
 
     [(_ schema:id #:as alias:id)
      #'(dyn:from 'schema #:as 'alias)]))
@@ -358,6 +369,14 @@
   (syntax-parse stx
     [(_ q:expr (e:q-order-pair ...+))
      #'(dyn:order-by q e.e ...)]))
+
+(define-syntax (update stx)
+  (syntax-parse stx
+    [(_ table:str #:as alias:id #:set (ass:q-assignment ...+))
+     #'(dyn:update table #:as 'alias #:set (list ass.e ...))]
+
+    [(_ schema:id #:as alias:id #:set (ass:q-assignment ...+))
+     #'(dyn:update 'schema #:as 'alias #:set (list ass.e ...))]))
 
 (define-syntax (where stx)
   (syntax-parse stx

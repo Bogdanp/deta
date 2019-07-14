@@ -37,16 +37,26 @@
    (test-suite
     "update"
 
-    (check-emitted (ast:update (ast:table "users")
-                               (ast:assignments
-                                (list (cons (ast:column "username")
-                                            (ast:placeholder 1))
-                                      (cons (ast:column "password_hash")
-                                            (ast:placeholder 2))))
-                               (ast:where (ast:app (ast:name '=)
-                                                   (list (ast:column "id")
-                                                         (ast:placeholder 3)))))
-                   "UPDATE \"users\" SET \"username\" = $1, \"password_hash\" = $2 WHERE \"id\" = $3"))
+    (check-emitted (~> (update "users"
+                               #:as u
+                               #:set ([username ,1]
+                                      [password-hash ,2])))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2")
+
+    (check-emitted (~> (update "users"
+                               #:as u
+                               #:set ([username ,1]
+                                      [password-hash ,2]))
+                       (where (= u.id ,3)))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE \"u\".\"id\" = $3")
+
+    (check-emitted (~> (update "users"
+                               #:as u
+                               #:set ([username ,1]
+                                      [password-hash ,2]))
+                       (where (= u.id ,3))
+                       (or-where (= u.id ,4)))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE (\"u\".\"id\" = $3) OR (\"u\".\"id\" = $4)"))
 
    (test-suite
     "select"
@@ -190,64 +200,64 @@
                       [(> (min d.employees) 0)
                        (avg (/ d.expenses d.employees))]
                       [else 0]))
-                   "SELECT CASE WHEN (MIN(\"d\".\"employees\")) > 0 THEN AVG(\"d\".\"expenses\" / \"d\".\"employees\") ELSE 0 END FROM \"departments\" AS \"d\""))
+                   "SELECT CASE WHEN (MIN(\"d\".\"employees\")) > 0 THEN AVG(\"d\".\"expenses\" / \"d\".\"employees\") ELSE 0 END FROM \"departments\" AS \"d\"")
 
-   (test-suite
-    "group-by"
+    (test-suite
+     "group-by"
 
-    (check-emitted (~> (from "books" #:as b)
-                       (select b.year (count b.title))
-                       (group-by b.year))
-                   "SELECT \"b\".\"year\", COUNT(\"b\".\"title\") FROM \"books\" AS \"b\" GROUP BY \"b\".\"year\""))
+     (check-emitted (~> (from "books" #:as b)
+                        (select b.year (count b.title))
+                        (group-by b.year))
+                    "SELECT \"b\".\"year\", COUNT(\"b\".\"title\") FROM \"books\" AS \"b\" GROUP BY \"b\".\"year\""))
 
-   (test-suite
-    "order-by"
+    (test-suite
+     "order-by"
 
-    (check-emitted (~> (from "books" #:as b)
-                       (select b.title)
-                       (order-by ([b.year])))
-                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\"")
-    (check-emitted (~> (from "books" #:as b)
-                       (select b.title)
-                       (order-by ([b.year #:desc]
-                                  [b.title])))
-                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\"")
-    (check-emitted (~> (from "books" #:as b)
-                       (select b.title)
-                       (order-by ([b.year #:desc]
-                                  [b.title #:asc])))
-                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\""))
+     (check-emitted (~> (from "books" #:as b)
+                        (select b.title)
+                        (order-by ([b.year])))
+                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\"")
+     (check-emitted (~> (from "books" #:as b)
+                        (select b.title)
+                        (order-by ([b.year #:desc]
+                                   [b.title])))
+                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\"")
+     (check-emitted (~> (from "books" #:as b)
+                        (select b.title)
+                        (order-by ([b.year #:desc]
+                                   [b.title #:asc])))
+                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\""))
 
-   (test-suite
-    "offset"
+    (test-suite
+     "offset"
 
-    (check-emitted (~> (from "books" #:as b)
-                       (select b.title)
-                       (offset 20)
-                       (order-by ([b.title])))
-                   "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"title\" OFFSET 20"))
+     (check-emitted (~> (from "books" #:as b)
+                        (select b.title)
+                        (offset 20)
+                        (order-by ([b.title])))
+                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"title\" OFFSET 20"))
 
-   (test-suite
-    "limit"
+    (test-suite
+     "limit"
 
-    (check-emitted (~> (from "books" #:as b)
-                       (limit 20))
-                   "SELECT * FROM \"books\" AS \"b\" LIMIT 20")
+     (check-emitted (~> (from "books" #:as b)
+                        (limit 20))
+                    "SELECT * FROM \"books\" AS \"b\" LIMIT 20")
 
-    (check-emitted (~> (from "books" #:as b)
-                       (offset 10)
-                       (limit 20))
-                   "SELECT * FROM \"books\" AS \"b\" LIMIT 20 OFFSET 10"))
+     (check-emitted (~> (from "books" #:as b)
+                        (offset 10)
+                        (limit 20))
+                    "SELECT * FROM \"books\" AS \"b\" LIMIT 20 OFFSET 10"))
 
-   (test-suite
-    "placeholders"
+    (test-suite
+     "placeholders"
 
-    (check-emitted/placeholders (select ,42) "SELECT $1" '(42))
-    (let ([x 1]
-          [y "hello"])
-      (check-emitted/placeholders (select (<> ,x ,y))
-                                  "SELECT $1 <> $2"
-                                  '(1 "hello"))))))
+     (check-emitted/placeholders (select ,42) "SELECT $1" '(42))
+     (let ([x 1]
+           [y "hello"])
+       (check-emitted/placeholders (select (<> ,x ,y))
+                                   "SELECT $1 <> $2"
+                                   '(1 "hello")))))))
 
 (module+ test
   (require rackunit/text-ui)

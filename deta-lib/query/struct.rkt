@@ -15,7 +15,8 @@
 
  (contract-out
   [struct query ([schema (or/c false/c schema?)]
-                 [stmt ast:select?])]))
+                 [stmt (or/c ast:select?
+                             ast:update?)])]))
 
 (struct query (schema stmt)
   #:transparent

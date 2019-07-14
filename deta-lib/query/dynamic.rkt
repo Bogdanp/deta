@@ -18,6 +18,7 @@
  order-by
  project-onto
  select
+ update
  where)
 
 (define/contract (as e name)
@@ -84,11 +85,40 @@
   (-> query? schema? query?)
   (struct-copy query q [schema s]))
 
+(define/contract (update schema-or-name
+                         #:as alias
+                         #:set assignments
+                         #:where [where #f])
+  (->* ((or/c schema? string? symbol?)
+        #:as symbol?
+        #:set (listof (cons/c ast:expr? ast:expr?)))
+       (#:where (or/c ast:expr?))
+       query?)
+
+  (define alias:str (symbol->string alias))
+  (define-values (schema table-name)
+    (cond
+      [(string? schema-or-name)
+       (values #f schema-or-name)]
+
+      [else
+       (define schema (schema-registry-lookup schema-or-name))
+       (values schema (schema-table-name schema))]))
+
+  (query schema
+         (ast:make-update
+          #:table (ast:as (ast:table table-name) alias:str)
+          #:assignments (ast:assignments assignments)
+          #:where where)))
+
 (define/contract (where q e)
   (-> query? ast:expr? query?)
   (match q
-    [(query schema stmt)
-     (query schema (struct-copy ast:select stmt [where (ast:where e)]))]))
+    [(query schema (and (? ast:select?) stmt))
+     (query schema (struct-copy ast:select stmt [where (ast:where e)]))]
+
+    [(query schema (and (? ast:update?) stmt))
+     (query schema (struct-copy ast:update stmt [where (ast:where e)]))]))
 
 (define/contract (and-where q e)
   (-> query? ast:expr? query?)
@@ -96,8 +126,14 @@
     [(query schema (and (struct* ast:select ([where #f])) stmt))
      (query schema (struct-copy ast:select stmt [where e]))]
 
+    [(query schema (and (struct* ast:update ([where #f])) stmt))
+     (query schema (struct-copy ast:update stmt [where e]))]
+
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'and) (list e0 e)))]))]))
+     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'and) (list e0 e)))]))]
+
+    [(query schema (and (struct* ast:update ([where (ast:where e0)])) stmt))
+     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:name 'and) (list e0 e)))]))]))
 
 (define/contract (or-where q e)
   (-> query? ast:expr? query?)
@@ -105,5 +141,11 @@
     [(query schema (and (struct* ast:select ([where #f])) stmt))
      (query schema (struct-copy ast:select stmt [where e]))]
 
+    [(query schema (and (struct* ast:update ([where #f])) stmt))
+     (query schema (struct-copy ast:update stmt [where e]))]
+
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'or) (list e0 e)))]))]))
+     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'or) (list e0 e)))]))]
+
+    [(query schema (and (struct* ast:update ([where (ast:where e0)])) stmt))
+     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:name 'or) (list e0 e)))]))]))

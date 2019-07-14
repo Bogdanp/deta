@@ -380,7 +380,18 @@ CRUD operations to structs, which is out of scope for
   [(schema (code:line string)
            (code:line id))]]{
 
-  Creates a new @racket[query?] from a schema or a table name.
+  Creates a new @tt{SELECT} @racket[query?] from a schema or a table name.
+}
+
+@defform[
+  (update schema #:as alias #:set (assignment ...+))
+  #:grammar
+  [(schema (code:line string)
+           (code:line id))
+   (assignment [column q-expr])]]{
+
+  Creates a new @tt{UPDATE} @racket[query?] from a schema or a table
+  name.
 }
 
 @defform*[

@@ -144,53 +144,65 @@
 
        (check-true (res? r))
        (check-equal? (res-x r) 1)
-       (check-equal? (res-y r) "hello")))
+       (check-equal? (res-y r) "hello"))
+
+     (test-suite
+      "from"
+
+      (test-case "retrieves whole entities from the database"
+        (define all-users
+          (for/list ([u (in-rows (current-conn) (from user #:as u))])
+            (check-equal? (meta-state (entity-meta u)) 'persisted)
+            (check-true (user? u))))
+
+        (check-true (> (length all-users) 0))))
+
+     (test-suite
+      "where"
+
+      (test-case "restricts which entities are retrieved from the database"
+        (define query
+          (~> (from user #:as u)
+              (where u.active?)))
+
+        (define all-active-users
+          (for/list ([u (in-rows (current-conn) query)]) u))
+
+        (check-true (null? all-active-users))
+
+        (match-define (list active-user-jim active-user-bob)
+          (insert! (current-conn)
+                   (make-user #:username "active-user-jim@example.com"
+                              #:active? #t)
+                   (make-user #:username "active-user-bob@example.com"
+                              #:active? #t)))
+
+        (define all-active-users*
+          (for/list ([u (in-rows (current-conn) query)]) u))
+
+        (check-equal? (length all-active-users*) 2)
+
+        (define all-active-users-named-bob
+          (for/list ([u (in-rows (current-conn)
+                                 (~> query
+                                     (and-where (like u.username "%bob%"))))])
+            u))
+
+        (check-equal? (length all-active-users-named-bob) 1)
+        (check-equal? (user-id active-user-bob)
+                      (user-id (car all-active-users-named-bob))))))
 
     (test-suite
-     "from"
+     "update"
 
-     (test-case "retrieves whole entities from the database"
-       (define all-users
-         (for/list ([u (in-rows (current-conn) (from user #:as u))])
-           (check-equal? (meta-state (entity-meta u)) 'persisted)
-           (check-true (user? u))))
+     (test-case "can update arbitrary tables"
+       (query-exec (current-conn)
+                   (update user
+                           #:as u
+                           #:set ([active? #t])))
 
-       (check-true (> (length all-users) 0))))
-
-    (test-suite
-     "where"
-
-     (test-case "restricts which entities are retrieved from the database"
-       (define query
-         (~> (from user #:as u)
-             (where u.active?)))
-
-       (define all-active-users
-         (for/list ([u (in-rows (current-conn) query)]) u))
-
-       (check-true (null? all-active-users))
-
-       (match-define (list active-user-jim active-user-bob)
-         (insert! (current-conn)
-                  (make-user #:username "active-user-jim@example.com"
-                             #:active? #t)
-                  (make-user #:username "active-user-bob@example.com"
-                             #:active? #t)))
-
-       (define all-active-users*
-         (for/list ([u (in-rows (current-conn) query)]) u))
-
-       (check-equal? (length all-active-users*) 2)
-
-       (define all-active-users-named-bob
-         (for/list ([u (in-rows (current-conn)
-                                (~> query
-                                    (and-where (like u.username "%bob%"))))])
-           u))
-
-       (check-equal? (length all-active-users-named-bob) 1)
-       (check-equal? (user-id active-user-bob)
-                     (user-id (car all-active-users-named-bob))))))))
+       (for ([u (in-rows (current-conn) (from user #:as u))])
+         (check-true (user-active? u))))))))
 
 (module+ test
   (require rackunit/text-ui)

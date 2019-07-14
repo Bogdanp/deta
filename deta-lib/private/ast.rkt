@@ -115,6 +115,8 @@
  stmt?
  (struct-out delete)
  (struct-out insert)
+
+ make-update
  (struct-out update)
 
  make-select
@@ -131,6 +133,11 @@
 
 (struct update stmt (table assignments where)
   #:transparent)
+
+(define (make-update #:table table
+                     #:assignments assignments
+                     #:where [where #f])
+  (update table assignments where))
 
 (struct select stmt (columns from where group-by order-by offset limit)
   #:transparent)
