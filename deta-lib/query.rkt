@@ -64,10 +64,12 @@
     (for*/fold ([columns null]
                 [getters null])
                ([f (in-list (schema-fields schema))]
-                [p (in-value (type-dump (field-type f) f dialect))]
                 #:unless (field-auto-increment? f))
-      (values (append (map car p) columns)
-              (append (map cdr p) getters))))
+      (define-values (col get)
+        (type-dump (field-type f) f dialect))
+
+      (values (cons col columns)
+              (cons get getters))))
 
   (define pk (schema-primary-key schema))
   (define stmt
@@ -120,10 +122,12 @@
                 [getters null])
                ([f (in-list (schema-fields schema))]
                 #:when (set-member? changes (field-id f))
-                [p (in-value (type-dump (field-type f) f dialect))]
                 #:unless (field-auto-increment? f))
-      (values (append (map car p) columns)
-              (append (map cdr p) getters))))
+      (define-values (col get)
+        (type-dump (field-type f) f dialect))
+
+      (values (cons col columns)
+              (cons get getters))))
 
   (define stmt
     (ast:update (ast:table (schema-table-name schema))
@@ -200,7 +204,10 @@
     (for/fold ([pairs null])
               ([f (in-list (schema-fields schema))]
                [v (in-list cols)])
-      (append (type-load (field-type f) f v dialect) pairs)))
+      (define-values (kwd arg)
+        (type-load (field-type f) f v dialect))
+
+      (cons (cons kwd arg) pairs)))
 
   (define pairs/sorted
     (sort pairs keyword<? #:key car))

@@ -5,7 +5,6 @@
          deta/private/field
          deta/private/type
          gregor
-         racket/match
          rackunit)
 
 (define-schema kitchen-sink
@@ -31,7 +30,7 @@
       (define f (field-ref 'dates-vec))
       (define dumped
         (let ()
-          (match-define (list (cons _ getter))
+          (define-values (_ getter)
             (type-dump (field-type f) f 'postgresql))
           (getter (make-kitchen-sink #:dates-vec initial))))
 
@@ -40,7 +39,7 @@
 
       (define loaded
         (let ()
-          (match-define (list (cons _ value))
+          (define-values (_ value)
             (type-load (field-type f) f dumped 'postgresql))
           value))
 
@@ -53,7 +52,7 @@
       (define f (field-ref 'dates-vec))
       (define dumped
         (let ()
-          (match-define (list (cons _ getter))
+          (define-values (_ getter)
             (type-dump (field-type f) f 'sqlite3))
           (getter (make-kitchen-sink #:dates-vec initial))))
 
@@ -62,7 +61,7 @@
 
       (define loaded
         (let ()
-          (match-define (list (cons _ value))
+          (define-values (_ value)
             (type-load (field-type f) f dumped 'sqlite3))
           value))
 
