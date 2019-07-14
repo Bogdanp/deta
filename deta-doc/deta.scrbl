@@ -585,21 +585,19 @@ not all database backends support all of these types.
 }
 
 @defproc[(array/f [t type?]) type?]{
-  The type for array (@racket[vector]) values.  Stored as @tt{ARRAY}.
+  The type for @racket[vector] values.  Stored as @tt{ARRAY}.
 
   @emph{Supported by PostgreSQL.}
 }
 
 @defthing[json/f type?]{
-  The type for @racketmodname[gregor] @racket[json] values.  Stored as
-  a @tt{JSON}.
+  A type for @racket[json] values.  Stored as a @tt{JSON}.
 
   @emph{Supported by PostgreSQL.}
 }
 
 @defthing[jsonb/f type?]{
-  The type for @racketmodname[gregor] @racket[jsonb] values.  Stored as
-  a @tt{JSONB}.
+  A type for @racket[json] values.  Stored as a @tt{JSONB}.
 
   @emph{Supported by PostgreSQL.}
 }
