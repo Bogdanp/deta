@@ -66,10 +66,10 @@
        (define (type-declaration _ dialect)
          "INTEGER")
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 
@@ -85,10 +85,10 @@
        (define (type-declaration _ dialect)
          "INTEGER")
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 
@@ -104,10 +104,10 @@
        (define (type-declaration _ dialect)
          "REAL")
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 
@@ -123,10 +123,10 @@
        (define (type-declaration t dialect)
          @~a{NUMERIC(@(numeric-field-precision t), @(numeric-field-scale t))})
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 
@@ -146,10 +146,10 @@
        (define (type-declaration _ dialect)
          "TEXT")
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 
@@ -165,10 +165,10 @@
        (define (type-declaration _ dialect)
          "BLOB")
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 
@@ -184,12 +184,12 @@
        (define (type-declaration _ dialect)
          "TEXT")
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) (cond
                                      [(string? v) => string->symbol]
                                      [else v]))))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (compose1 (lambda (v)
                                  (cond
@@ -211,12 +211,24 @@
            ['sqlite3    "INTEGER"]
            ['postgresql "BOOLEAN"]))
 
-       (define (type-load _ f v)
-         (list (cons (field-kwd f) v)))
+       (define (type-load _ f v dialect)
+         (list (cons (field-kwd f) (match dialect
+                                     ['sqlite3    (= v 1)]
+                                     ['postgresql    v   ]))))
 
-       (define (type-dump _ f)
-         (list (cons (field-name f)
-                     (field-getter f))))])
+       (define (type-dump _ f dialect)
+         (define v
+           (match dialect
+             ['sqlite3
+              (compose1 (match-lambda
+                          [#f 0]
+                          [#t 1])
+                        (field-getter f))]
+
+             ['postgresql
+              (field-getter f)]))
+
+         (list (cons (field-name f) v)))])
 
     (values boolean-field? (boolean-field))))
 
@@ -232,19 +244,33 @@
            ['sqlite3    "TEXT"]
            ['postgresql "DATE"]))
 
-       (define (type-load _ f v)
-         (list (cons (field-kwd f)
-                     (date (sql-date-year  v)
-                           (sql-date-month v)
-                           (sql-date-day   v)))))
+       (define (type-load _ f v dialect)
+         (define v*
+           (match dialect
+             ['sqlite3
+              (iso8601->date v)]
 
-       (define (type-dump _ f)
-         (list (cons (field-name f)
-                     (compose1 (lambda (d)
-                                 (sql-date (->year  d)
-                                           (->month d)
-                                           (->day   d)))
-                               (field-getter f)))))])
+             ['postgresq
+              (date (sql-date-year  v)
+                    (sql-date-month v)
+                    (sql-date-day   v))]))
+
+         (list (cons (field-kwd f) v*)))
+
+       (define (type-dump _ f dialect)
+         (define v
+           (match dialect
+             ['sqlite3
+              (compose1 date->iso8601 ->date (field-getter f))]
+
+             ['postgresql
+              (compose1 (lambda (d)
+                          (sql-date (->year  d)
+                                    (->month d)
+                                    (->day   d)))
+                        (field-getter f))]))
+
+         (list (cons (field-name f) v)))])
 
     (values date-field? (date-field))))
 
@@ -260,21 +286,35 @@
            ['sqlite3    "TEXT"]
            ['postgresql "TIME"]))
 
-       (define (type-load _ f v)
-         (list (cons (field-kwd f)
-                     (time (sql-time-hour       v)
-                           (sql-time-minute     v)
-                           (sql-time-second     v)
-                           (sql-time-nanosecond v)))))
+       (define (type-load _ f v dialect)
+         (define v*
+           (match dialect
+             ['sqlite3
+              (iso8601->time v)]
 
-       (define (type-dump _ f)
-         (list (cons (field-name f)
-                     (compose1 (lambda (t)
-                                 (sql-time (->hours       t)
-                                           (->minutes     t)
-                                           (->seconds     t)
-                                           (->nanoseconds t)))
-                               (field-getter f)))))])
+             ['postgresql
+              (time (sql-time-hour       v)
+                    (sql-time-minute     v)
+                    (sql-time-second     v)
+                    (sql-time-nanosecond v))]))
+
+         (list (cons (field-kwd f) v*)))
+
+       (define (type-dump _ f dialect)
+         (define v
+           (match dialect
+             ['sqlite3
+              (compose1 time->iso8601 ->time (field-getter f))]
+
+             ['postgresql
+              (compose1 (lambda (t)
+                          (sql-time (->hours       t)
+                                    (->minutes     t)
+                                    (->seconds     t)
+                                    (->nanoseconds t)))
+                        (field-getter f))]))
+
+         (list (cons (field-name f) v)))])
 
     (values time-field? (time-field))))
 
@@ -290,27 +330,41 @@
            ['sqlite3    "TEXT"]
            ['postgresql "TIMESTAMP"]))
 
-       (define (type-load _ f v)
-         (list (cons (field-kwd f)
-                     (datetime (sql-timestamp-year       v)
-                               (sql-timestamp-month      v)
-                               (sql-timestamp-day        v)
-                               (sql-timestamp-hour       v)
-                               (sql-timestamp-minute     v)
-                               (sql-timestamp-second     v)
-                               (sql-timestamp-nanosecond v)))))
+       (define (type-load _ f v dialect)
+         (define v*
+           (match dialect
+             ['sqlite3
+              (iso8601->datetime v)]
 
-       (define (type-dump _ f)
-         (list (cons (field-name f)
-                     (compose1 (lambda (dt)
-                                 (sql-timestamp (->year        dt)
-                                                (->month       dt)
-                                                (->day         dt)
-                                                (->hours       dt)
-                                                (->minutes     dt)
-                                                (->seconds     dt)
-                                                (->nanoseconds dt)))
-                               (field-getter f)))))])
+             ['postgresql
+              (datetime (sql-timestamp-year       v)
+                        (sql-timestamp-month      v)
+                        (sql-timestamp-day        v)
+                        (sql-timestamp-hour       v)
+                        (sql-timestamp-minute     v)
+                        (sql-timestamp-second     v)
+                        (sql-timestamp-nanosecond v))]))
+
+         (list (cons (field-kwd f) v*)))
+
+       (define (type-dump _ f dialect)
+         (define v
+           (match dialect
+             ['sqlite3
+              (compose1 datetime->iso8601 ->datetime/local (field-getter f))]
+
+             ['postgresql
+              (compose1 (lambda (dt)
+                          (sql-timestamp (->year        dt)
+                                         (->month       dt)
+                                         (->day         dt)
+                                         (->hours       dt)
+                                         (->minutes     dt)
+                                         (->seconds     dt)
+                                         (->nanoseconds dt)))
+                        (field-getter f))]))
+
+         (list (cons (field-name f) v)))])
 
     (values datetime-field? (datetime-field))))
 
@@ -326,29 +380,43 @@
            ['sqlite3    "TEXT"]
            ['postgresql "TIMESTAMPTZ"]))
 
-       (define (type-load _ f v)
-         (list (cons (field-kwd f)
-                     (moment (sql-timestamp-year       v)
-                             (sql-timestamp-month      v)
-                             (sql-timestamp-day        v)
-                             (sql-timestamp-hour       v)
-                             (sql-timestamp-minute     v)
-                             (sql-timestamp-second     v)
-                             (sql-timestamp-nanosecond v)
-                             #:tz (sql-timestamp-tz    v)))))
+       (define (type-load _ f v dialect)
+         (define v*
+           (match dialect
+             ['sqlite3
+              (iso8601/tzid->moment v)]
 
-       (define (type-dump _ f)
-         (list (cons (field-name f)
-                     (compose1 (lambda (m)
-                                 (sql-timestamp (->year        m)
-                                                (->month       m)
-                                                (->day         m)
-                                                (->hours       m)
-                                                (->minutes     m)
-                                                (->seconds     m)
-                                                (->nanoseconds m)
-                                                (->utc-offset  m)))
-                               (field-getter f)))))])
+             ['postgresql
+              (moment (sql-timestamp-year       v)
+                      (sql-timestamp-month      v)
+                      (sql-timestamp-day        v)
+                      (sql-timestamp-hour       v)
+                      (sql-timestamp-minute     v)
+                      (sql-timestamp-second     v)
+                      (sql-timestamp-nanosecond v)
+                      #:tz (sql-timestamp-tz    v))]))
+
+         (list (cons (field-kwd f) v*)))
+
+       (define (type-dump _ f dialect)
+         (define v
+           (match dialect
+             ['sqlite3
+              (compose1 moment->iso8601/tzid ->moment (field-getter f))]
+
+             ['postgresql
+              (compose1 (lambda (m)
+                          (sql-timestamp (->year        m)
+                                         (->month       m)
+                                         (->day         m)
+                                         (->hours       m)
+                                         (->minutes     m)
+                                         (->seconds     m)
+                                         (->nanoseconds m)
+                                         (->utc-offset  m)))
+                        (field-getter f))]))
+
+         (list (cons (field-name f) v)))])
 
     (values datetime-tz-field? (datetime-tz-field))))
 
@@ -375,7 +443,7 @@
 
            [_ (raise-user-error 'array/f "not supported")]))
 
-       (define (type-load t f v)
+       (define (type-load t f v dialect)
          (define subtype (array-field-subtype t))
          (define v:loaded
            (for/vector ([x (in-vector v)])
@@ -384,7 +452,7 @@
 
          (list (cons (field-kwd f) v:loaded)))
 
-       (define (type-dump t f)
+       (define (type-dump t f dialect)
          ;; FIXME
          (error 'type-dump))])
 
@@ -404,10 +472,10 @@
            ['postgresql "JSON"]
            [_ (raise-user-error 'json/f "not supported")]))
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 
@@ -425,10 +493,10 @@
            ['postgresql "JSONB"]
            [_ (raise-user-error 'json/f "not supported")]))
 
-       (define (type-load _ f v)
+       (define (type-load _ f v dialect)
          (list (cons (field-kwd f) v)))
 
-       (define (type-dump _ f)
+       (define (type-dump _ f dialect)
          (list (cons (field-name f)
                      (field-getter f))))])
 

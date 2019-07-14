@@ -49,11 +49,12 @@
 
 (define/contract (insert! conn . entities)
   (-> connection? entity? ... (listof entity?))
+  (define dialect (dbsystem-name (connection-dbsystem conn)))
   (define adapter (connection-adapter conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-persist? (entity-meta entity)))
-    (insert-entity! adapter conn entity)))
+    (insert-entity! adapter dialect conn entity)))
 
-(define (insert-entity! adapter conn entity)
+(define (insert-entity! adapter dialect conn entity)
   (define meta (entity-meta entity))
   (define schema (meta-schema meta))
   (when (schema-virtual? schema)
@@ -63,7 +64,7 @@
     (for*/fold ([columns null]
                 [getters null])
                ([f (in-list (schema-fields schema))]
-                [p (in-value (type-dump (field-type f) f))]
+                [p (in-value (type-dump (field-type f) f dialect))]
                 #:unless (field-auto-increment? f))
       (values (append (map car p) columns)
               (append (map cdr p) getters))))
@@ -101,11 +102,12 @@
 
 (define/contract (update! conn . entities)
   (-> connection? entity? ... (listof entity?))
+  (define dialect (dbsystem-name (connection-dbsystem conn)))
   (define adapter (connection-adapter conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-update? (entity-meta entity)))
-    (update-entity! adapter conn entity)))
+    (update-entity! adapter dialect conn entity)))
 
-(define (update-entity! adapter conn entity)
+(define (update-entity! adapter dialect conn entity)
   (define meta (entity-meta entity))
   (define schema (meta-schema meta))
   (define pk (schema-primary-key schema))
@@ -118,7 +120,7 @@
                 [getters null])
                ([f (in-list (schema-fields schema))]
                 #:when (set-member? changes (field-id f))
-                [p (in-value (type-dump (field-type f) f))]
+                [p (in-value (type-dump (field-type f) f dialect))]
                 #:unless (field-auto-increment? f))
       (values (append (map car p) columns)
               (append (map cdr p) getters))))
@@ -193,12 +195,12 @@
 
  (rename-out [dyn:project-onto project-onto]))
 
-(define (make-entity-instance schema cols)
+(define (make-entity-instance dialect schema cols)
   (define pairs
     (for/fold ([pairs null])
               ([f (in-list (schema-fields schema))]
                [v (in-list cols)])
-      (append (type-load (field-type f) f v) pairs)))
+      (append (type-load (field-type f) f v dialect) pairs)))
 
   (define pairs/sorted
     (sort pairs keyword<? #:key car))
@@ -216,10 +218,11 @@
 
 (define/contract (in-rows conn q)
   (-> connection? query? sequence?)
+  (define dialect (dbsystem-name (connection-dbsystem conn)))
   (define schema (query-schema q))
   (sequence-map (lambda cols
                   (if schema
-                      (make-entity-instance schema cols)
+                      (make-entity-instance dialect schema cols)
                       (apply values cols)))
                 (in-query conn q)))
 
