@@ -307,7 +307,7 @@ CRUD operations to structs, which is out of scope for
 }
 
 @defform[
-  #:literals (as and case list or unquote)
+  #:literals (as and case else list or unquote)
   (sql q-expr)
   #:grammar
   [(q-expr (as q-expr id)
