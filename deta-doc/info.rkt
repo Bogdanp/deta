@@ -7,6 +7,14 @@
 (define build-deps '("db-lib"
                      "deta-lib"
                      "gregor-lib"
-                     "scribble-lib"))
+                     "sandbox-lib"
+                     "scribble-lib"
+                     "sql"
+                     "threading-lib"
+
+                     "db-doc"
+                     "gregor-doc"
+                     "racket-doc"
+                     "threading-doc"))
 
 (define update-implies '("deta-lib"))
