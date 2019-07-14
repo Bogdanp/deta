@@ -9,6 +9,7 @@
                      (except-in racket/base date date?)
                      racket/contract
                      racket/match
+                     racket/sequence
                      threading))
 
 @title{deta -- Functional Database Mapping}
@@ -176,7 +177,7 @@ a function:
   (book-title b))
 ]
 
-Any time the query combinators encounter an unquote (the comma), that
+Any time the query combinators encounter an @racket[unquote], that
 value gets replaced with a placeholder in the query and, when the
 query is eventually executed, the value is bound to its prepared
 statement.  Don't worry about it if that doesn't make too much sense
@@ -230,12 +231,152 @@ CRUD operations to structs, which is out of scope for
 
 @section[#:tag "reference"]{Reference}
 
+
+@subsection{Query}
+@defmodule[deta/query]
+
+@subsubsection{DDL}
+
+@defproc[(create-table! [conn connection?]
+                        [schema (or/c schema? symbol?)]) void?]{
+
+  Creates the table represented by @racket[schema] if it does not
+  exist.  If @racket[schema] is a symbol, then it is looked up in the
+  global registry.
+}
+
+@defproc[(drop-table! [conn connection?]
+                      [schema (or/c schema? symbol?)]) void?]{
+
+  Drops the table represented by @racket[schema] if it exists.
+}
+
+@subsubsection{Entity CRUD}
+
+@defproc[(insert! [conn connection?]
+                  [e entity?] ...) (listof entity?)]{
+
+  Attempts to insert any newly-created entities into the database,
+  returning the ones that were persisted.  Entities that have already
+  been persisted are ignored.
+
+  Raises a user error if any of the entities are based on virtual
+  schemas.
+}
+
+@defproc[(update! [conn connection?]
+                  [e entity?] ...) (listof entity?)]{
+
+  Attempts to update any modified entities.  Only updates the fields
+  that have changed since the entities were retrieved from the
+  database.  Returns those entities that have been updated.
+
+  Raises a user error if any of the entities don't have a primary key
+  field.
+}
+
+@defproc[(delete! [conn connection?]
+                  [e entity?] ...) (listof entity?)]{
+
+  Attempts to delete any previously-persisted entities.  Returns those
+  entities that have been deleted.
+
+  Raises a user error if any of the entities don't have a primary key
+  field.
+}
+
+@defproc[(in-rows [conn connection?]
+                  [q query?]) (sequence/c (or/c entity? any))]{
+
+  Queries the database and, based on @racket[q], either returns a
+  sequence of entities or a sequence of values.
+}
+
+@defproc[(in-row [conn connection?]
+                 [q query?]) (sequence/c (or/c entity? any))]{
+
+  A variant of @racket[in-rows] that stops after the first result.
+  Does not modify the query to add a limit.
+}
+
+
+@subsubsection{Query Combinators}
+
+@defproc[(query? [q any/c]) boolean?]{
+  Returns @racket[#t] when @racket[q] is a query.
+}
+
+@defform[
+  (from schema #:as alias)
+  #:grammar
+  [(schema (code:line string)
+           (code:line id))]]{
+
+  Creates a new @racket[query?] from a schema or a table name.
+}
+
+@defform*[
+  ((select q-expr ...+)
+   (select query q-expr ...+))
+]{
+  Refines the set of selected values in @racket[query].
+}
+
+@defform[(group-by query q-expr ...+)]{
+  Adds or replaces a @tt{GROUP BY} clause to @racket[query].
+}
+
+@defform[
+  (order-by query ([column maybe-direction] ...+))
+  #:grammar
+  [(maybe-direction (code:line)
+                    (code:line #:asc)
+                    (code:line #:desc))]]{
+  Adds or replaces an @tt{ORDER BY} clause to @racket[query].
+}
+
+@defform[(limit query n)]{
+  Adds or replaces a @tt{LIMIT @racket[n]} clause to @racket[query].
+}
+
+@defform[(offset query n)]{
+  Adds or replaces an @tt{OFFSET @racket[n]} clause to @racket[query].
+}
+
+@defform[(where query q-expr)]{
+  Adds or replaces a @tt{WHERE} clause to @racket[query].
+}
+
+@defform[(and-where query q-expr)]{
+  Wraps the @tt{WHERE} clause in @racket[query] to the result of
+  @tt{AND}-ing it with @racket[q-expr].
+}
+
+@defform[
+  (or-where query q-expr)
+  #:contracts
+  ([query query?]
+   [q-expr expr?])
+]{
+  Wraps the @tt{WHERE} clause in @racket[query] to the result of
+  @tt{OR}-ing it with @racket[q-expr].
+}
+
+@defproc[(project-onto [q query?]
+                       [s schema?]) query?]{
+  Changes the target schema for @racket[q] to @racket[s].
+}
+
 @subsection{Schema}
 @defmodule[deta/schema]
 
 @defproc[(entity? [e any/c]) boolean?]{
   Returns @racket[#t] when @racket[e] is an instance of a schema
   struct (i.e. an "entity").
+}
+
+@defproc[(schema? [s any/c]) boolean?]{
+  Returns @racket[#t] when @racket[s] is a schema.
 }
 
 @defform[(define-schema name
