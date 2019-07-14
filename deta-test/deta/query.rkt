@@ -50,7 +50,6 @@
            (display (select ,1))))
        "#<query: SELECT $1 1>")))
 
-
    (test-suite
     "insert!"
 

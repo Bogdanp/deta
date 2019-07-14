@@ -6,6 +6,7 @@
          json
          racket/contract
          racket/format
+         racket/function
          racket/generic
          racket/match
          "private/field.rkt"
@@ -50,11 +51,19 @@
  datetime-tz/f?
  datetime-tz/f
 
+ array/f?
+ array/f
+
  json/f?
  json/f
 
  jsonb/f?
  jsonb/f)
+
+(define gen:type-contract type-contract)
+(define gen:type-declaration type-declaration)
+(define gen:type-load type-load)
+(define gen:type-dump type-dump)
 
 (define-values (id/f? id/f)
   (let ()
@@ -250,7 +259,7 @@
              ['sqlite3
               (iso8601->date v)]
 
-             ['postgresq
+             ['postgresql
               (date (sql-date-year  v)
                     (sql-date-month v)
                     (sql-date-day   v))]))
@@ -420,13 +429,12 @@
 
     (values datetime-tz-field? (datetime-tz-field))))
 
-(define gen:type-declaration type-declaration)
 (define-values (array/f? array/f)
   (let ()
     (struct array-field (subtype size)
       #:methods gen:type
       [(define (type-contract t)
-         (vectorof (type-contract (array-field-subtype t))))
+         (vectorof (gen:type-contract (array-field-subtype t))))
 
        (define (type-declaration t dialect)
          (match dialect
@@ -447,14 +455,24 @@
          (define subtype (array-field-subtype t))
          (define v:loaded
            (for/vector ([x (in-vector v)])
-             (match (type-load subtype f x)
+             (match (gen:type-load subtype f x dialect)
                [(list (cons _ x*)) x*])))
 
          (list (cons (field-kwd f) v:loaded)))
 
        (define (type-dump t f dialect)
-         ;; FIXME
-         (error 'type-dump))])
+         (define subtype (array-field-subtype t))
+
+         (list (cons (field-kwd f)
+                     (compose1 (lambda (v)
+                                 (for/vector ([x (in-vector v)])
+                                   (define f*
+                                     (struct-copy field f [getter (const x)]))
+
+                                   (match (gen:type-dump subtype f* dialect)
+                                     [(list (cons _ dumper))
+                                      (dumper)])))
+                               (field-getter f)))))])
 
     (values array-field?
             (lambda (subtype [size #f])
