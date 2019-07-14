@@ -534,6 +534,32 @@ CRUD operations to structs, which is out of scope for
   ]
 }
 
+@defform[(schema-out schema)]{
+  Exports all bindings related to @racket[schema].
+
+  @interaction[
+  (module sub racket/base
+    (require deta)
+    (provide (schema-out album))
+
+    (define-schema album
+      #:virtual
+      ([id id/f #:primary-key #:auto-increment]
+       [title string/f]
+       [band string/f])))
+
+  (code:line)
+  (require 'sub)
+  (define an-album
+    (make-album #:title "Led Zeppelin"
+                #:band "Led Zeppelin"))
+
+  (code:line)
+  (album? an-album)
+  (album-title an-album)
+  (album-title (update-album-title an-album string-upcase))]
+}
+
 
 @subsection{Type}
 @defmodule[deta/type]

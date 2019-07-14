@@ -2,7 +2,10 @@
 
 (require (for-syntax racket/base
                      racket/contract
+                     racket/function
                      racket/list
+                     racket/provide-transform
+                     racket/struct-info
                      racket/syntax
                      syntax/parse
                      syntax/parse/experimental/template)
@@ -29,7 +32,8 @@
  schema-struct-pred
  schema-meta-updater
  schema-fields
- schema-primary-key)
+ schema-primary-key
+ schema-out)
 
 (struct entity (meta)
   #:transparent)
@@ -242,6 +246,44 @@
                                                          f.auto-increment?
                                                          f.nullable?
                                                          f.unique?) ...)))))]))
+
+;; Heavily inspired from: https://github.com/racket/racket/blob/20e669f47842d47b085ddedc5782e4a95495653a/racket/collects/racket/private/reqprov.rkt#L978
+(define-syntax schema-out
+  (make-provide-transformer
+   (lambda (stx modes)
+     (syntax-parse stx
+       [(_ struct-name:id)
+        (define id #'struct-name)
+        (define v (syntax-local-value id (const #f)))
+        (unless (struct-info? v)
+          (raise-syntax-error #f "identifier is not bound to struct type information" stx id))
+
+        (define info (extract-struct-info v))
+        (define accessors/without-super
+          (for/list ([stx (in-list (list-ref info 3))]
+                     #:when (and stx (not (member (syntax->datum stx)
+                                                  '(entity-meta)))))
+            stx))
+        (define accessors+setters+updaters
+          (for/fold ([all null])
+                    ([stx (in-list accessors/without-super)])
+            (append
+             (list stx
+                   (format-id #'struct-name "set-~a" stx)
+                   (format-id #'struct-name "update-~a" stx))
+             all)))
+
+        (define stxs
+          (append
+           (list
+            (format-id #'struct-name "make-~a" #'struct-name)
+            (format-id #'struct-name "~a-schema" #'struct-name)
+            (list-ref info 0)   ;; struct descriptor
+            (list-ref info 2))  ;; struct predicate
+           accessors+setters+updaters))
+
+        (for/list ([stx (in-list stxs)])
+          (make-export stx (syntax-e stx) 0 #f stx))]))))
 
 
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

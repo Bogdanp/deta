@@ -12,6 +12,18 @@
 (provide
  schema-tests)
 
+(module schema-out-test-sub racket/base
+  (require deta)
+  (provide (schema-out book))
+
+  (define-schema book
+    #:virtual
+    ([id id/f #:primary-key #:auto-increment]
+     [title string/f]
+     [author string/f])))
+
+(require 'schema-out-test-sub)
+
 (define schema-tests
   (test-suite
    "schema"
@@ -70,7 +82,23 @@
       (check-eq? (schema-registry-lookup 'user) user-schema))
 
     (test-case "returns a schema given itself"
-      (check-eq? (schema-registry-lookup user-schema) user-schema)))))
+      (check-eq? (schema-registry-lookup user-schema) user-schema)))
+
+   (test-suite
+    "schema-out"
+
+    (test-case "provides all schema-related identifiers"
+      (check-true (schema? book-schema))
+
+      (define a-book
+        (make-book #:title "The Lord of the Ring"
+                   #:author "J.R.R. Tolkien"))
+
+      (check-true (book? a-book))
+      (check-equal? (~> (set-book-title a-book "The Lord of the Rings")
+                        (update-book-title string-upcase)
+                        (book-title))
+                    "THE LORD OF THE RINGS")))))
 
 (module+ test
   (require rackunit/text-ui)
