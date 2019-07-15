@@ -152,12 +152,14 @@
          (when limit    (display (~a " " (recur limit))))
          (when offset   (display (~a " " (recur offset))))))]
 
-    [(update table assignments where)
+    [(update table assignments where returning)
      (with-output-to-string
        (lambda _
          (display @~a{UPDATE @(emit-expr table)})
          (when assignments (display (~a " " (recur assignments))))
-         (when where       (display (~a " " (recur where))))))]
+         (when where       (display (~a " " (recur where))))
+         (when (and returning supports-returning?)
+           (display @~a{ RETURNING @(recur returning)}))))]
 
     [(delete from where)
      @~a{DELETE @(recur from) @(recur where)}]
@@ -168,7 +170,7 @@
          (display @~a{INSERT INTO @(emit-expr table) (@(recur columns))})
          (display @~a{ VALUES (@(recur column-values))})
          (when (and returning supports-returning?)
-           (display @~a{ RETURNING @(emit-expr returning)}))))]
+           (display @~a{ RETURNING @(recur returning)}))))]
 
     [(assignments pairs)
      (define pair:strs

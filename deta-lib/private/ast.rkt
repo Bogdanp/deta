@@ -111,6 +111,8 @@
 (provide
  stmt?
  (struct-out delete)
+
+ make-insert
  (struct-out insert)
 
  make-update
@@ -128,13 +130,20 @@
 (struct insert stmt (into columns column-values returning)
   #:transparent)
 
-(struct update stmt (table assignments where)
+(define (make-insert #:into into
+                     #:columns columns
+                     #:values column-values
+                     #:returning [returning #f])
+  (insert into columns column-values returning))
+
+(struct update stmt (table assignments where returning)
   #:transparent)
 
 (define (make-update #:table table
                      #:assignments assignments
-                     #:where [where #f])
-  (update table assignments where))
+                     #:where [where #f]
+                     #:returning [returning #f])
+  (update table assignments where returning))
 
 (struct select stmt (columns from where group-by order-by offset limit)
   #:transparent)

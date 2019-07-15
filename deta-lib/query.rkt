@@ -77,11 +77,12 @@
 
   (define pk (schema-primary-key schema))
   (define stmt
-    (ast:insert (ast:table (schema-table-name schema))
-                (map ast:column columns)
-                (for/list ([getter (in-list getters)])
-                  (ast:placeholder (getter entity)))
-                (and pk (ast:column (field-name pk)))))
+    (ast:make-insert
+     #:into (ast:table (schema-table-name schema))
+     #:columns (map ast:column columns)
+     #:values (for/list ([getter (in-list getters)])
+                (ast:placeholder (getter entity)))
+     #:returning (and pk (list (ast:column (field-name pk))))))
 
   (define-values (query args)
     (adapter-emit-query adapter stmt))
