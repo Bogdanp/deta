@@ -8,65 +8,33 @@
          gregor
          rackunit)
 
-(define-schema kitchen-sink
-  #:virtual
-  ([dates-vec (array/f date/f) #:nullable]))
-
-(define (field-ref id)
-  (for/first ([f (schema-fields kitchen-sink-schema)]
-              #:when (eq? (field-id f) id))
-    f))
-
 (define type-tests
   (test-suite
    "type"
 
    (test-suite
-    "array"
+    "array/f"
 
-    (test-case "can dump and load dumped values for postgresql"
-      (define initial (vector (date 1996 5 29)
-                              (date 2019 5 29)))
+    (for ([dialect '(postgresql sqlite3)]
+          [expected (list (vector (sql-date 1996 5 29)
+                                  (sql-date 2019 5 29))
+                          (vector "1996-05-29"
+                                  "2019-05-29"))])
+      (test-case (format "can dump and load dumped values for ~a" dialect)
+        (define initial
+          (vector (date 1996 5 29)
+                  (date 2019 5 29)))
 
-      (define f (field-ref 'dates-vec))
-      (define dumped
-        (let ()
-          (define-values (_ getter)
-            (type-dump (field-type f) f 'postgresql))
-          (getter (make-kitchen-sink #:dates-vec initial))))
+        (define type (array/f date/f))
+        (define dumped
+          (type-dump type dialect initial))
 
-      (check-equal? dumped (vector (sql-date 1996 5 29)
-                                   (sql-date 2019 5 29)))
+        (check-equal? dumped expected)
 
-      (define loaded
-        (let ()
-          (define-values (_ value)
-            (type-load (field-type f) f dumped 'postgresql))
-          value))
+        (define loaded
+          (type-load type dialect dumped))
 
-      (check-equal? loaded initial))
-
-    (test-case "can dump and load dumped values for sqlite3"
-      (define initial (vector (date 1996 5 29)
-                              (date 2019 5 29)))
-
-      (define f (field-ref 'dates-vec))
-      (define dumped
-        (let ()
-          (define-values (_ getter)
-            (type-dump (field-type f) f 'sqlite3))
-          (getter (make-kitchen-sink #:dates-vec initial))))
-
-      (check-equal? dumped (vector "1996-05-29"
-                                   "2019-05-29"))
-
-      (define loaded
-        (let ()
-          (define-values (_ value)
-            (type-load (field-type f) f dumped 'sqlite3))
-          value))
-
-      (check-equal? loaded initial)))))
+        (check-equal? loaded initial))))))
 
 (module+ test
   (require rackunit/text-ui)

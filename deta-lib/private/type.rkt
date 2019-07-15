@@ -13,5 +13,5 @@
 (define-generics type
   (type-contract type)
   (type-declaration type dialect)
-  (type-load type f v dialect)
-  (type-dump type f dialect))
+  (type-load type dialect v)
+  (type-dump type dialect v))

@@ -6,9 +6,7 @@
          json
          racket/contract
          racket/format
-         racket/function
          racket/match
-         "private/field.rkt"
          "private/type.rkt")
 
 (provide
@@ -68,18 +66,10 @@
   (let ()
     (struct id-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         exact-nonnegative-integer?)
-
-       (define (type-declaration _ dialect)
-         "INTEGER")
-
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+      [(define (type-contract _) exact-nonnegative-integer?)
+       (define (type-declaration _ dialect) "INTEGER")
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (values id-field? (id-field))))
 
@@ -87,18 +77,10 @@
   (let ()
     (struct integer-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         exact-integer?)
-
-       (define (type-declaration _ dialect)
-         "INTEGER")
-
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+      [(define (type-contract _) exact-integer?)
+       (define (type-declaration _ dialect) "INTEGER")
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (values integer-field? (integer-field))))
 
@@ -106,18 +88,10 @@
   (let ()
     (struct real-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         real?)
-
-       (define (type-declaration _ dialect)
-         "REAL")
-
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+      [(define (type-contract _) real?)
+       (define (type-declaration _ dialect) "REAL")
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (values real-field? (real-field))))
 
@@ -125,18 +99,13 @@
   (let ()
     (struct numeric-field (precision scale)
       #:methods gen:type
-      [(define (type-contract _)
-         (or/c rational? +nan.0))
+      [(define (type-contract _) (or/c rational? +nan.0))
 
        (define (type-declaration t dialect)
          @~a{NUMERIC(@(numeric-field-precision t), @(numeric-field-scale t))})
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (define/contract (make-numeric-field precision scale)
       (-> exact-positive-integer? exact-nonnegative-integer? numeric-field?)
@@ -148,18 +117,10 @@
   (let ()
     (struct string-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         string?)
-
-       (define (type-declaration _ dialect)
-         "TEXT")
-
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+      [(define (type-contract _) string?)
+       (define (type-declaration _ dialect) "TEXT")
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (values string-field? (string-field))))
 
@@ -167,18 +128,10 @@
   (let ()
     (struct binary-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         bytes?)
-
-       (define (type-declaration _ dialect)
-         "BLOB")
-
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+      [(define (type-contract _) bytes?)
+       (define (type-declaration _ dialect) "BLOB")
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (values binary-field? (binary-field))))
 
@@ -186,25 +139,11 @@
   (let ()
     (struct symbol-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         symbol?)
+      [(define (type-contract _) symbol?)
+       (define (type-declaration _ dialect) "TEXT")
 
-       (define (type-declaration _ dialect)
-         "TEXT")
-
-       (define (type-load _ f v dialect)
-         (values (field-kwd f)
-                 (cond
-                   [(string? v) => string->symbol]
-                   [else v])))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (compose1 (lambda (v)
-                             (cond
-                               [(symbol? v) => symbol->string]
-                               [else v]))
-                           (field-getter f))))])
+       (define (type-load _ dialect v) (string->symbol v))
+       (define (type-dump _ dialect v) (symbol->string v))])
 
     (values symbol-field? (symbol-field))))
 
@@ -212,31 +151,22 @@
   (let ()
     (struct boolean-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         boolean?)
+      [(define (type-contract _) boolean?)
 
        (define (type-declaration _ dialect)
          (match dialect
            ['sqlite3    "INTEGER"]
            ['postgresql "BOOLEAN"]))
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f)
-                 (match dialect
-                   ['sqlite3    (= v 1)]
-                   ['postgresql    v   ])))
+       (define (type-load _ dialect v)
+         (match dialect
+           ['sqlite3    (= v 1)]
+           ['postgresql    v   ]))
 
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (match dialect
-                   ['sqlite3
-                    (compose1 (match-lambda
-                                [#f 0]
-                                [#t 1])
-                              (field-getter f))]
-
-                   ['postgresql
-                    (field-getter f)])))])
+       (define (type-dump _ dialect v)
+         (match dialect
+           ['sqlite3    (if v 1 0)]
+           ['postgresql     v     ]))])
 
     (values boolean-field? (boolean-field))))
 
@@ -244,37 +174,32 @@
   (let ()
     (struct date-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         date-provider?)
+      [(define (type-contract _) date-provider?)
 
        (define (type-declaration _ dialect)
          (match dialect
            ['sqlite3    "TEXT"]
            ['postgresql "DATE"]))
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f)
-                 (match dialect
-                   ['sqlite3
-                    (iso8601->date v)]
+       (define (type-load _ dialect v)
+         (match dialect
+           ['sqlite3
+            (iso8601->date v)]
 
-                   ['postgresql
-                    (date (sql-date-year  v)
-                          (sql-date-month v)
-                          (sql-date-day   v))])))
+           ['postgresql
+            (date (sql-date-year  v)
+                  (sql-date-month v)
+                  (sql-date-day   v))]))
 
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (match dialect
-                   ['sqlite3
-                    (compose1 date->iso8601 ->date (field-getter f))]
+       (define (type-dump _ dialect v)
+         (match dialect
+           ['sqlite3
+            (date->iso8601 (->date v))]
 
-                   ['postgresql
-                    (compose1 (lambda (d)
-                                (sql-date (->year  d)
-                                          (->month d)
-                                          (->day   d)))
-                              (field-getter f))])))])
+           ['postgresql
+            (sql-date (->year  v)
+                      (->month v)
+                      (->day   v))]))])
 
     (values date-field? (date-field))))
 
@@ -282,39 +207,34 @@
   (let ()
     (struct time-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         time-provider?)
+      [(define (type-contract _) time-provider?)
 
        (define (type-declaration _ dialect)
          (match dialect
            ['sqlite3    "TEXT"]
            ['postgresql "TIME"]))
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f)
-                 (match dialect
-                   ['sqlite3
-                    (iso8601->time v)]
+       (define (type-load _ dialect v)
+         (match dialect
+           ['sqlite3
+            (iso8601->time v)]
 
-                   ['postgresql
-                    (time (sql-time-hour       v)
-                          (sql-time-minute     v)
-                          (sql-time-second     v)
-                          (sql-time-nanosecond v))])))
+           ['postgresql
+            (time (sql-time-hour       v)
+                  (sql-time-minute     v)
+                  (sql-time-second     v)
+                  (sql-time-nanosecond v))]))
 
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (match dialect
-                   ['sqlite3
-                    (compose1 time->iso8601 ->time (field-getter f))]
+       (define (type-dump _ dialect v)
+         (match dialect
+           ['sqlite3
+            (time->iso8601 (->time v))]
 
-                   ['postgresql
-                    (compose1 (lambda (t)
-                                (sql-time (->hours       t)
-                                          (->minutes     t)
-                                          (->seconds     t)
-                                          (->nanoseconds t)))
-                              (field-getter f))])))])
+           ['postgresql
+            (sql-time (->hours       v)
+                      (->minutes     v)
+                      (->seconds     v)
+                      (->nanoseconds v))]))])
 
     (values time-field? (time-field))))
 
@@ -322,45 +242,40 @@
   (let ()
     (struct datetime-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         datetime-provider?)
+      [(define (type-contract _) datetime-provider?)
 
        (define (type-declaration _ dialect)
          (match dialect
            ['sqlite3    "TEXT"]
            ['postgresql "TIMESTAMP"]))
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f)
-                 (match dialect
-                   ['sqlite3
-                    (iso8601->datetime v)]
+       (define (type-load _ dialect v)
+         (match dialect
+           ['sqlite3
+            (iso8601->datetime v)]
 
-                   ['postgresql
-                    (datetime (sql-timestamp-year       v)
-                              (sql-timestamp-month      v)
-                              (sql-timestamp-day        v)
-                              (sql-timestamp-hour       v)
-                              (sql-timestamp-minute     v)
-                              (sql-timestamp-second     v)
-                              (sql-timestamp-nanosecond v))])))
+           ['postgresql
+            (datetime (sql-timestamp-year       v)
+                      (sql-timestamp-month      v)
+                      (sql-timestamp-day        v)
+                      (sql-timestamp-hour       v)
+                      (sql-timestamp-minute     v)
+                      (sql-timestamp-second     v)
+                      (sql-timestamp-nanosecond v))]))
 
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (match dialect
-                   ['sqlite3
-                    (compose1 datetime->iso8601 ->datetime/local (field-getter f))]
+       (define (type-dump _ dialect v)
+         (match dialect
+           ['sqlite3
+            (datetime->iso8601 (->datetime/local v))]
 
-                   ['postgresql
-                    (compose1 (lambda (dt)
-                                (sql-timestamp (->year        dt)
-                                               (->month       dt)
-                                               (->day         dt)
-                                               (->hours       dt)
-                                               (->minutes     dt)
-                                               (->seconds     dt)
-                                               (->nanoseconds dt)))
-                              (field-getter f))])))])
+           ['postgresql
+            (sql-timestamp (->year        v)
+                           (->month       v)
+                           (->day         v)
+                           (->hours       v)
+                           (->minutes     v)
+                           (->seconds     v)
+                           (->nanoseconds v))]))])
 
     (values datetime-field? (datetime-field))))
 
@@ -368,47 +283,42 @@
   (let ()
     (struct datetime-tz-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         moment-provider?)
+      [(define (type-contract _) moment-provider?)
 
        (define (type-declaration _ dialect)
          (match dialect
            ['sqlite3    "TEXT"]
            ['postgresql "TIMESTAMPTZ"]))
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f)
-                 (match dialect
-                   ['sqlite3
-                    (iso8601/tzid->moment v)]
+       (define (type-load _ dialect v)
+         (match dialect
+           ['sqlite3
+            (iso8601/tzid->moment v)]
 
-                   ['postgresql
-                    (moment (sql-timestamp-year       v)
-                            (sql-timestamp-month      v)
-                            (sql-timestamp-day        v)
-                            (sql-timestamp-hour       v)
-                            (sql-timestamp-minute     v)
-                            (sql-timestamp-second     v)
-                            (sql-timestamp-nanosecond v)
-                            #:tz (sql-timestamp-tz    v))])))
+           ['postgresql
+            (moment (sql-timestamp-year       v)
+                    (sql-timestamp-month      v)
+                    (sql-timestamp-day        v)
+                    (sql-timestamp-hour       v)
+                    (sql-timestamp-minute     v)
+                    (sql-timestamp-second     v)
+                    (sql-timestamp-nanosecond v)
+                    #:tz (sql-timestamp-tz    v))]))
 
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (match dialect
-                   ['sqlite3
-                    (compose1 moment->iso8601/tzid ->moment (field-getter f))]
+       (define (type-dump _ dialect v)
+         (match dialect
+           ['sqlite3
+            (moment->iso8601/tzid (->moment v))]
 
-                   ['postgresql
-                    (compose1 (lambda (m)
-                                (sql-timestamp (->year        m)
-                                               (->month       m)
-                                               (->day         m)
-                                               (->hours       m)
-                                               (->minutes     m)
-                                               (->seconds     m)
-                                               (->nanoseconds m)
-                                               (->utc-offset  m)))
-                              (field-getter f))])))])
+           ['postgresql
+            (sql-timestamp (->year        v)
+                           (->month       v)
+                           (->day         v)
+                           (->hours       v)
+                           (->minutes     v)
+                           (->seconds     v)
+                           (->nanoseconds v)
+                           (->utc-offset  v))]))])
 
     (values datetime-tz-field? (datetime-tz-field))))
 
@@ -434,29 +344,15 @@
 
            [_ (raise-user-error 'array/f "not supported")]))
 
-       (define (type-load t f v dialect)
+       (define (type-load t dialect v)
          (define subtype (array-field-subtype t))
-         (define v:loaded
-           (for/vector ([x (in-vector v)])
-             (define-values (_ x*)
-               (gen:type-load subtype f x dialect))
+         (for/vector ([x (in-vector v)])
+           (gen:type-load subtype dialect x)))
 
-             x*))
-
-         (values (field-kwd f) v:loaded))
-
-       (define (type-dump t f dialect)
+       (define (type-dump t dialect v)
          (define subtype (array-field-subtype t))
-
-         (values (field-kwd f)
-                 (compose1 (lambda (v)
-                             (for/vector ([x (in-vector v)])
-                               (define f* (struct-copy field f [getter (const x)]))
-                               (define-values (_ dumper)
-                                 (gen:type-dump subtype f* dialect))
-
-                               (dumper)))
-                           (field-getter f))))])
+         (for/vector ([x (in-vector v)])
+           (gen:type-dump subtype dialect x)))])
 
     (values array-field?
             (lambda (subtype [size #f])
@@ -466,20 +362,15 @@
   (let ()
     (struct json-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         jsexpr?)
+      [(define (type-contract _) jsexpr?)
 
        (define (type-declaration t dialect)
          (match dialect
            ['postgresql "JSON"]
            [_ (raise-user-error 'json/f "not supported")]))
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (values json-field? (json-field))))
 
@@ -487,19 +378,14 @@
   (let ()
     (struct jsonb-field ()
       #:methods gen:type
-      [(define (type-contract _)
-         jsexpr?)
+      [(define (type-contract _) jsexpr?)
 
        (define (type-declaration t dialect)
          (match dialect
            ['postgresql "JSONB"]
            [_ (raise-user-error 'json/f "not supported")]))
 
-       (define (type-load _ f v dialect)
-         (values (field-kwd f) v))
-
-       (define (type-dump _ f dialect)
-         (values (field-name f)
-                 (field-getter f)))])
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
 
     (values jsonb-field? (jsonb-field))))

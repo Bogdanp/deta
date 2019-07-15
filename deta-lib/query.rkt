@@ -65,24 +65,21 @@
   (when (schema-virtual? schema)
     (raise-user-error 'insert-entity! "cannot insert entity ~v because it has a virtual schema" entity))
 
-  (define-values (columns getters)
+  (define-values (columns column-values)
     (for*/fold ([columns null]
-                [getters null])
+                [column-values null])
                ([f (in-list (schema-fields schema))]
                 #:unless (field-auto-increment? f))
-      (define-values (col get)
-        (type-dump (field-type f) f dialect))
-
-      (values (cons col columns)
-              (cons get getters))))
+      (values (cons (field-name f) columns)
+              (cons (type-dump (field-type f) dialect ((field-getter f) entity))
+                    column-values))))
 
   (define pk (schema-primary-key schema))
   (define stmt
     (ast:make-insert
      #:into (ast:table (schema-table schema))
      #:columns (map ast:column columns)
-     #:values (for/list ([getter (in-list getters)])
-                (ast:placeholder (getter entity)))
+     #:values (map ast:placeholder column-values)
      #:returning (and pk (ast:returning (list (ast:column (field-name pk)))))))
 
   (define-values (query args)
@@ -130,26 +127,24 @@
     (raise-argument-error 'update-entity! "entity with primary key field" entity))
 
   (define changes (meta-changes meta))
-  (define-values (columns getters)
+  (define-values (columns column-values)
     (for*/fold ([columns null]
-                [getters null])
+                [column-values null])
                ([f (in-list (schema-fields schema))]
                 #:when (set-member? changes (field-id f))
                 #:unless (field-auto-increment? f))
-      (define-values (col get)
-        (type-dump (field-type f) f dialect))
-
-      (values (cons col columns)
-              (cons get getters))))
+      (values (cons (field-name f) columns)
+              (cons (type-dump (field-type f) dialect ((field-getter f) entity))
+                    column-values))))
 
   (define stmt
     (ast:make-update
      #:table (ast:table (schema-table schema))
      #:assignments (ast:assignments
                     (for/list ([column (in-list columns)]
-                               [getter (in-list getters)])
+                               [value (in-list column-values)])
                       (cons (ast:column column)
-                            (ast:placeholder (getter entity)))))
+                            (ast:placeholder value))))
      #:where (ast:where (ast:app (ast:ident '=)
                                  (list (ast:column (field-name pk))
                                        (ast:placeholder ((field-getter pk) entity)))))))
@@ -228,10 +223,9 @@
     (for/fold ([pairs null])
               ([f (in-list (schema-fields schema))]
                [v (in-list cols)])
-      (define-values (kwd arg)
-        (type-load (field-type f) f v dialect))
-
-      (cons (cons kwd arg) pairs)))
+      (cons (cons (field-kwd f)
+                  (type-load (field-type f) dialect v))
+            pairs)))
 
   (define pairs/sorted
     (sort pairs keyword<? #:key car))
