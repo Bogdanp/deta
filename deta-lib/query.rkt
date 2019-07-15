@@ -277,7 +277,7 @@
 
   (define-syntax-class q-expr
     #:datum-literals (as list null)
-    #:literals (and case else or quote unquote)
+    #:literals (and case else or unquote)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
@@ -312,15 +312,14 @@
     (pattern (or a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:ident 'or) (list a.e b.e)))
 
-    (pattern (~or (list v:q-expr ...)
-                  (quote (v:q-expr ...)))
-             #:with e #'(ast:scalar (list v.e ...)))
+    (pattern (list item:q-expr ...)
+             #:with e #'(ast:scalar (list item.e ...)))
 
     (pattern (unquote placeholder)
              #:with e #'(ast:placeholder placeholder))
 
-    (pattern (f:q-expr arg:q-expr ...)
-             #:with e #'(ast:app f.e (list arg.e ...))))
+    (pattern (fun:q-expr arg:q-expr ...)
+             #:with e #'(ast:app fun.e (list arg.e ...))))
 
   (define-syntax-class q-assignment
     (pattern [column:id value:q-expr]
@@ -328,10 +327,10 @@
                         #'(cons (ast:column name) value.e))))
 
   (define-syntax-class q-order-pair
-    (pattern [c:q-expr (~or (~optional (~and #:asc dir-asc))
-                            (~optional (~and #:desc dir-desc)))]
+    (pattern [column:q-expr (~or (~optional (~and #:asc  dir-asc ))
+                                 (~optional (~and #:desc dir-desc)))]
              #:with dir (if (attribute dir-desc) #''desc #''asc)
-             #:with e #'(cons c.e dir))))
+             #:with e #'(cons column.e dir))))
 
 (define-syntax (sql stx)
   (syntax-parse stx
