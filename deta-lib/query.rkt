@@ -10,16 +10,13 @@
          racket/match
          racket/sequence
          racket/set
-         "adapter/adapter.rkt"
-         "adapter/connection.rkt"
-         "adapter/postgresql.rkt"
-         "adapter/sqlite3.rkt"
+         "private/adapter/adapter.rkt"
          (prefix-in ast: "private/ast.rkt")
+         "private/connection.rkt"
          "private/field.rkt"
          "private/meta.rkt"
+         (prefix-in dyn: "private/query.rkt")
          "private/type.rkt"
-         (prefix-in dyn: "query/dynamic.rkt")
-         "query/struct.rkt"
          "schema.rkt")
 
 ;; ddl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -189,8 +186,6 @@
 ;; select ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- query?
-
  in-rows
  in-row
  lookup
@@ -207,6 +202,7 @@
  and-where
  or-where
 
+ (rename-out [dyn:query? query?])
  (rename-out [dyn:project-onto project-onto]))
 
 (define (make-entity-instance dialect schema cols)
@@ -234,9 +230,9 @@
   ((schema-meta-updater schema) e meta-track-persisted))
 
 (define/contract (in-rows conn q)
-  (-> connection? query? sequence?)
+  (-> connection? dyn:query? sequence?)
   (define dialect (dbsystem-name (connection-dbsystem conn)))
-  (define schema (query-schema q))
+  (define schema (dyn:query-schema q))
   (sequence-map (lambda cols
                   (if schema
                       (make-entity-instance dialect schema cols)
@@ -244,14 +240,14 @@
                 (in-query conn q)))
 
 (define/contract (in-row conn q)
-  (-> connection? query? sequence?)
+  (-> connection? dyn:query? sequence?)
   (let ([consumed #f])
     (stop-before (in-rows conn q) (lambda _
                                     (begin0 consumed
                                       (set! consumed #t))))))
 
 (define/contract (lookup conn q)
-  (-> connection? query? (or/c false/c entity?))
+  (-> connection? dyn:query? (or/c false/c entity?))
   (for/first ([e (in-row conn q)]) e))
 
 (begin-for-syntax
@@ -345,7 +341,7 @@
 (define-syntax (select stx)
   (syntax-parse stx
     [(_ e:q-expr ...+)
-     #'(dyn:select (make-empty-query) e.e ...)]
+     #'(dyn:select (dyn:make-empty-query) e.e ...)]
 
     [(_ q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))

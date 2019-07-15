@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require deta
-         deta/adapter/adapter
-         deta/adapter/sqlite3
-         deta/query/struct
+         deta/private/adapter/adapter
+         deta/private/adapter/sqlite3
+         (only-in deta/private/query query-stmt)
          (prefix-in ast: deta/private/ast)
          racket/format
          rackunit

@@ -5,26 +5,25 @@
          racket/match
          racket/port
          racket/string
-         "../private/ast.rkt"
-         "../private/field.rkt"
-         "../private/type.rkt"
+         "../ast.rkt"
+         "../field.rkt"
          "../type.rkt"
          "adapter.rkt"
          "standard.rkt")
 
 (provide
- sqlite3-adapter?
- sqlite3-adapter)
+ postgresql-adapter?
+ postgresql-adapter)
 
-(define-values (sqlite3-adapter? sqlite3-adapter)
+(define-values (postgresql-adapter? postgresql-adapter)
   (let ()
-    (struct sqlite3-adapter ()
+    (struct postgresql-adapter ()
       #:methods gen:adapter
-      [(define (adapter-supports-returning? _) #f)
+      [(define (adapter-supports-returning? _) #t)
 
        (define/contract (adapter-last-id-query _)
          (-> adapter? string?)
-         "SELECT last_insert_rowid()")
+         "SELECT lastval()")
 
        (define/contract (adapter-emit-ddl _ d)
          (-> adapter? ddl? string?)
@@ -34,7 +33,7 @@
          (-> adapter? stmt? string?)
          (emit-stmt s))])
 
-    (values sqlite3-adapter? (sqlite3-adapter))))
+    (values postgresql-adapter? (postgresql-adapter))))
 
 (define (emit-ddl d)
   (match d
@@ -51,10 +50,14 @@
 (define (emit-field-ddl f)
   (with-output-to-string
     (lambda _
-      (display (~a (quote/standard (field-name f)) " " (type-declaration (field-type f) 'sqlite3)))
+      (define type
+        (if (field-auto-increment? f)
+            "SERIAL"
+            (type-declaration (field-type f) 'postgresql)))
+
+      (display (~a (quote/standard (field-name f)) " " type))
       (unless (field-nullable? f) (display " NOT NULL"))
       (when (field-primary-key? f) (display " PRIMARY KEY"))
-      (when (field-auto-increment? f) (display " AUTOINCREMENT"))
       (when (field-unique? f) (display " UNIQUE")))))
 
 (define (emit-expr e)
@@ -69,4 +72,5 @@
     [_ (emit-stmt/standard e)]))
 
 (define emit-stmt/standard
-  (make-stmt-emitter emit-stmt emit-expr))
+  (make-stmt-emitter emit-stmt emit-expr
+                     #:supports-returning? #t))

@@ -5,26 +5,25 @@
          racket/match
          racket/port
          racket/string
-         "../private/ast.rkt"
-         "../private/field.rkt"
-         "../private/type.rkt"
+         "../ast.rkt"
+         "../field.rkt"
          "../type.rkt"
          "adapter.rkt"
          "standard.rkt")
 
 (provide
- postgresql-adapter?
- postgresql-adapter)
+ sqlite3-adapter?
+ sqlite3-adapter)
 
-(define-values (postgresql-adapter? postgresql-adapter)
+(define-values (sqlite3-adapter? sqlite3-adapter)
   (let ()
-    (struct postgresql-adapter ()
+    (struct sqlite3-adapter ()
       #:methods gen:adapter
-      [(define (adapter-supports-returning? _) #t)
+      [(define (adapter-supports-returning? _) #f)
 
        (define/contract (adapter-last-id-query _)
          (-> adapter? string?)
-         "SELECT lastval()")
+         "SELECT last_insert_rowid()")
 
        (define/contract (adapter-emit-ddl _ d)
          (-> adapter? ddl? string?)
@@ -34,7 +33,7 @@
          (-> adapter? stmt? string?)
          (emit-stmt s))])
 
-    (values postgresql-adapter? (postgresql-adapter))))
+    (values sqlite3-adapter? (sqlite3-adapter))))
 
 (define (emit-ddl d)
   (match d
@@ -51,14 +50,10 @@
 (define (emit-field-ddl f)
   (with-output-to-string
     (lambda _
-      (define type
-        (if (field-auto-increment? f)
-            "SERIAL"
-            (type-declaration (field-type f) 'postgresql)))
-
-      (display (~a (quote/standard (field-name f)) " " type))
+      (display (~a (quote/standard (field-name f)) " " (type-declaration (field-type f) 'sqlite3)))
       (unless (field-nullable? f) (display " NOT NULL"))
       (when (field-primary-key? f) (display " PRIMARY KEY"))
+      (when (field-auto-increment? f) (display " AUTOINCREMENT"))
       (when (field-unique? f) (display " UNIQUE")))))
 
 (define (emit-expr e)
@@ -73,5 +68,4 @@
     [_ (emit-stmt/standard e)]))
 
 (define emit-stmt/standard
-  (make-stmt-emitter emit-stmt emit-expr
-                     #:supports-returning? #t))
+  (make-stmt-emitter emit-stmt emit-expr))

@@ -7,7 +7,6 @@
          racket/contract
          racket/format
          racket/function
-         racket/generic
          racket/match
          "private/field.rkt"
          "private/type.rkt")

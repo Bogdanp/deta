@@ -4,7 +4,7 @@
          racket/match
          racket/port
          racket/string
-         "../private/ast.rkt"
+         "../ast.rkt"
          "adapter.rkt")
 
 ;; Implements a "standard" emitter for SQL from our AST.  I say

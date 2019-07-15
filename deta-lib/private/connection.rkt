@@ -3,9 +3,9 @@
 (require db
          racket/contract
          racket/match
-         "adapter.rkt"
-         "postgresql.rkt"
-         "sqlite3.rkt")
+         "adapter/adapter.rkt"
+         "adapter/postgresql.rkt"
+         "adapter/sqlite3.rkt")
 
 (provide
  connection-adapter)

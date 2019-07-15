@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require racket/contract
-         racket/generic)
+(require racket/generic)
 
 (provide
  gen:adapter

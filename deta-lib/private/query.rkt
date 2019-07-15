@@ -1,11 +1,52 @@
 #lang racket/base
 
-(require racket/contract
+(require db
+         (except-in racket/class
+                    field)
+         racket/contract
          racket/match
-         (prefix-in ast: "../private/ast.rkt")
-         "../private/field.rkt"
-         "../schema.rkt"
-         "struct.rkt")
+         racket/struct
+         "adapter/adapter.rkt"
+         "adapter/postgresql.rkt"
+         (prefix-in ast: "ast.rkt")
+         "connection.rkt"
+         "field.rkt"
+         "schema.rkt")
+
+;; struct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide
+ make-empty-query
+ (struct-out query))
+
+(struct query (schema stmt)
+  #:transparent
+  #:property prop:statement
+  (lambda (self c)
+    (define adapter (connection-adapter c))
+    (define-values (query args)
+      (adapter-emit-query adapter (query-stmt self)))
+
+    (define stmt
+      (send c prepare 'query query #t))
+
+    (cond
+      [(null? args) stmt]
+      [else (send stmt bind 'query args)]))
+
+  #:property prop:custom-write
+  (make-constructor-style-printer
+   (lambda (self) 'query)
+   (lambda (self)
+     (define-values (query args)
+       (adapter-emit-query postgresql-adapter (query-stmt self)))
+     (cons query args))))
+
+(define (make-empty-query)
+  (query #f (ast:make-select)))
+
+
+;; dynamic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
  and-where
