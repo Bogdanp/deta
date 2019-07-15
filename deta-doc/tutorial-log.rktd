@@ -123,16 +123,14 @@
  #"#<query: SELECT \"b\".\"id\", \"b\".\"title\", \"b\".\"author\", \"b\".\"published_on\" FROM \"books\" AS \"b\" WHERE \"b\".\"published_on\" < (DATE '1955-01-01') ORDER BY \"b\".\"published_on\" DESC>\n"
  #"")
 ((define (books-before year)
-   (in-entities
-    conn
-    (~>
-     (from book #:as b)
-     (where (< b.published-on ,(sql-date year 1 1)))
-     (order-by ((b.published-on #:desc))))))
+   (~>
+    (from book #:as b)
+    (where (< b.published-on ,(sql-date year 1 1)))
+    (order-by ((b.published-on #:desc)))))
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((for/list ((b (books-before 1950))) (book-title b))
+((for/list ((b (in-entities conn (books-before 1950)))) (book-title b))
  ((3)
   0
   ()
@@ -142,7 +140,7 @@
   (c values c (c (u . "The Catcher In The Rye") c (u . "1984"))))
  #""
  #"")
-((for/list ((b (books-before 1955))) (book-title b))
+((for/list ((b (in-entities conn (books-before 1955)))) (book-title b))
  ((3)
   0
   ()
@@ -164,20 +162,33 @@
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
+((define books-published-by-year
+   (~>
+    (from book #:as b)
+    (select
+     (as (cast (date_trunc "year" b.published-on) date) year)
+     (count b.title))
+    (group-by year)
+    (order-by ((year)))
+    (project-onto book-stats-schema)))
+ ((3) 0 () 0 () () (c values c (void)))
+ #""
+ #"")
 ((for
-  ((s
-    (in-entities
-     conn
-     (~>
-      (from book #:as b)
-      (select
-       (as (cast (date_trunc "year" b.published-on) date) year)
-       (count b.title))
-      (group-by year)
-      (order-by ((year)))
-      (project-onto book-stats-schema)))))
+  ((s (in-entities conn books-published-by-year)))
   (displayln
    (format "year: ~a books: ~a" (book-stats-year s) (book-stats-books s))))
  ((3) 0 () 0 () () (c values c (void)))
  #"year: #<date 1949-01-01> books: 2\nyear: #<date 1954-01-01> books: 1\nyear: #<date 1960-01-01> books: 1\n"
+ #"")
+((query-exec conn (delete (books-before 1950)))
+ ((3) 0 () 0 () () (c values c (void)))
+ #""
+ #"")
+((for
+  ((s (in-entities conn books-published-by-year)))
+  (displayln
+   (format "year: ~a books: ~a" (book-stats-year s) (book-stats-books s))))
+ ((3) 0 () 0 () () (c values c (void)))
+ #"year: #<date 1954-01-01> books: 1\nyear: #<date 1960-01-01> books: 1\n"
  #"")

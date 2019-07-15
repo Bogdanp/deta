@@ -191,16 +191,16 @@ a function:
 @interaction[
 #:eval db-eval
 (define (books-before year)
-  (in-entities conn (~> (from book #:as b)
-                        (where (< b.published-on ,(sql-date year 1 1)))
-                        (order-by ([b.published-on #:desc])))))
+  (~> (from book #:as b)
+      (where (< b.published-on ,(sql-date year 1 1)))
+      (order-by ([b.published-on #:desc]))))
 
 (code:line)
-(for/list ([b (books-before 1950)])
+(for/list ([b (in-entities conn (books-before 1950))])
   (book-title b))
 
 (code:line)
-(for/list ([b (books-before 1955)])
+(for/list ([b (in-entities conn (books-before 1955))])
   (book-title b))
 ]
 
@@ -225,21 +225,43 @@ that schema.
    [books integer/f]))
 
 (code:line)
-(for ([s (in-entities conn (~> (from book #:as b)
-                               (select (as
-                                         (cast (date_trunc "year" b.published-on) date)
-                                         year)
-                                       (count b.title))
-                               (group-by year)
-                               (order-by ([year]))
-                               (project-onto book-stats-schema)))])
+(define books-published-by-year
+  (~> (from book #:as b)
+      (select (as
+                (cast (date_trunc "year" b.published-on) date)
+                year)
+              (count b.title))
+      (group-by year)
+      (order-by ([year]))
+      (project-onto book-stats-schema)))
+
+(code:line)
+(for ([s (in-entities conn books-published-by-year)])
   (displayln (format "year: ~a books: ~a"
                      (book-stats-year s)
                      (book-stats-books s))))
 ]
 
-You now know the basics of deta.  Thanks for following along!  If you
-want to learn more, check out the reference documentation below.
+Finally, let's delete all the books published before 1950:
+
+@interaction[
+#:eval db-eval
+(query-exec conn (delete (books-before 1950)))
+]
+
+And re-run the last query:
+
+@interaction[
+#:eval db-eval
+(for ([s (in-entities conn books-published-by-year)])
+  (displayln (format "year: ~a books: ~a"
+                     (book-stats-year s)
+                     (book-stats-books s))))
+]
+
+That's it! You now know the basics of deta.  Thanks for following
+along!  If you want to learn more, check out the reference
+documentation below.
 
 
 @section[#:tag "versus"]{Compared to *}
@@ -251,9 +273,9 @@ The problem is that the generated queries are not composable at
 runtime.  You have to write macros upon macros to handle composition
 and I've found that that gets tedious quickly.
 
-On top of giving you composable queries, deta also automatically maps
-CRUD operations to structs, which is out of scope for
-@racketmodname[sql].
+On top of giving you composable queries -- as you can hopefully see
+from the tutorial --, deta also automatically maps CRUD operations to
+structs, which is out of scope for @racketmodname[sql].
 
 
 @section[#:tag "todos"]{Notes and TODOs}
@@ -498,9 +520,9 @@ hooks will be supported at some point.
   The first form (with the @racket[_]) generates a fresh query.
 
   @examples[
-  (require deta)
-  (select _ 1 2)
-  (select (from "users" #:as u) u.username)
+    (require deta)
+    (select _ 1 2)
+    (select (from "users" #:as u) u.username)
   ]
 }
 
