@@ -169,9 +169,9 @@ And now let's query for all of the books published before 1955:
 (require threading)
 
 (code:line)
-(for/list ([b (in-rows conn (~> (from book #:as b)
-                                (where (< b.published-on (date "1955-01-01")))
-                                (order-by ([b.published-on #:desc]))))])
+(for/list ([b (in-entities conn (~> (from book #:as b)
+                                    (where (< b.published-on (date "1955-01-01")))
+                                    (order-by ([b.published-on #:desc]))))])
   (book-title b))
 ]
 
@@ -191,9 +191,9 @@ a function:
 @interaction[
 #:eval db-eval
 (define (books-before year)
-  (in-rows conn (~> (from book #:as b)
-                    (where (< b.published-on ,(sql-date year 1 1)))
-                    (order-by ([b.published-on #:desc])))))
+  (in-entities conn (~> (from book #:as b)
+                        (where (< b.published-on ,(sql-date year 1 1)))
+                        (order-by ([b.published-on #:desc])))))
 
 (code:line)
 (for/list ([b (books-before 1950)])
@@ -225,14 +225,14 @@ that schema.
    [books integer/f]))
 
 (code:line)
-(for ([s (in-rows conn (~> (from book #:as b)
-                           (select (as
-                                     (cast (date_trunc "year" b.published-on) date)
-                                     year)
-                                   (count b.title))
-                           (group-by year)
-                           (order-by ([year]))
-                           (project-onto book-stats-schema)))])
+(for ([s (in-entities conn (~> (from book #:as b)
+                               (select (as
+                                         (cast (date_trunc "year" b.published-on) date)
+                                         year)
+                                       (count b.title))
+                               (group-by year)
+                               (order-by ([year]))
+                               (project-onto book-stats-schema)))])
   (displayln (format "year: ~a books: ~a"
                      (book-stats-year s)
                      (book-stats-books s))))
@@ -306,6 +306,24 @@ CRUD operations to structs, which is out of scope for
   ]
 }
 
+@defproc[(in-entities [conn connection?]
+                      [q query?]
+                      [#:batch-size batch-size (or/c exact-positive-integer? +inf.0) +inf.0]) sequence?]{
+
+  Queries the database and, based on @racket[q], either returns a
+  sequence of entities or a sequence of @racket[values].
+
+  @racket[#:batch-size] controls how many rows to fetch from the
+  databaase at a time.  It is analogous to @racket[in-query]'s
+  @racket[#:fetch] argument.
+}
+
+@defproc[(lookup [conn connection?]
+                 [q query?]) (or/c false/c entity?)]{
+
+  Retrieves the first result for @racket[q], if any.
+}
+
 @defproc[(update! [conn connection?]
                   [e entity?] ...) (listof entity?)]{
 
@@ -357,33 +375,6 @@ CRUD operations to structs, which is out of scope for
   ]
 }
 
-@defproc[(in-rows [conn connection?]
-                  [q query?]) (sequence/c (or/c entity? any))]{
-
-  Queries the database and, based on @racket[q], either returns a
-  sequence of entities or a sequence of values.
-}
-
-@defproc[(in-row [conn connection?]
-                 [q query?]) (sequence/c (or/c entity? any))]{
-
-  A variant of @racket[in-rows] that stops after the first result.
-  Does not modify the query to add a limit.
-}
-
-@defproc[(lookup [conn connection?]
-                 [q query?]) (or/c false/c entity?)]{
-
-  Retrieves the first result for @racket[q], if it exists.
-
-  Equivalent to:
-
-  @racketblock[
-    (for/first ([e (in-row conn q)])
-      e)
-  ]
-}
-
 
 @subsubsection{Query Combinators}
 
@@ -398,7 +389,7 @@ CRUD operations to structs, which is out of scope for
   [(q-expr (as q-expr id)
            (and q-expr q-expr)
            (or q-expr q-expr)
-           (case [q-expr q-expr] ...)
+           (case [q-expr q-expr] ...+)
            (case [q-expr q-expr] ...+
                  [else q-expr])
            (list q-expr ...)

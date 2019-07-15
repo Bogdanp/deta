@@ -90,7 +90,7 @@
 ((require threading) ((3) 0 () 0 () () (c values c (void))) #"" #"")
 ((for/list
   ((b
-    (in-rows
+    (in-entities
      conn
      (~>
       (from book #:as b)
@@ -123,7 +123,7 @@
  #"#<query: SELECT \"b\".\"id\", \"b\".\"title\", \"b\".\"author\", \"b\".\"published_on\" FROM \"books\" AS \"b\" WHERE \"b\".\"published_on\" < (DATE '1955-01-01') ORDER BY \"b\".\"published_on\" DESC>\n"
  #"")
 ((define (books-before year)
-   (in-rows
+   (in-entities
     conn
     (~>
      (from book #:as b)
@@ -166,7 +166,7 @@
  #"")
 ((for
   ((s
-    (in-rows
+    (in-entities
      conn
      (~>
       (from book #:as b)

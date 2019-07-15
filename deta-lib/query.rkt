@@ -201,8 +201,7 @@
 ;; select ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- in-rows
- in-row
+ in-entities
  lookup
 
  sql
@@ -244,26 +243,22 @@
 
   ((schema-meta-updater schema) e meta-track-persisted))
 
-(define/contract (in-rows conn q)
-  (-> connection? dyn:query? sequence?)
+(define/contract (in-entities conn q
+                              #:batch-size [batch-size +inf.0])
+  (->* (connection? dyn:query?)
+       (#:batch-size (or/c exact-positive-integer? +inf.0))
+       sequence?)
   (define dialect (dbsystem-name (connection-dbsystem conn)))
   (define schema (dyn:query-schema q))
   (sequence-map (lambda cols
                   (if schema
                       (make-entity-instance dialect schema cols)
                       (apply values cols)))
-                (in-query conn q)))
-
-(define/contract (in-row conn q)
-  (-> connection? dyn:query? sequence?)
-  (let ([consumed #f])
-    (stop-before (in-rows conn q) (lambda _
-                                    (begin0 consumed
-                                      (set! consumed #t))))))
+                (in-query conn q #:fetch batch-size)))
 
 (define/contract (lookup conn q)
   (-> connection? dyn:query? (or/c false/c entity?))
-  (for/first ([e (in-row conn q)]) e))
+  (for/first ([e (in-entities conn q #:batch-size 1)]) e))
 
 (begin-for-syntax
   (define column-reference-re

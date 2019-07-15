@@ -116,16 +116,16 @@
 
      (test-case "can retrieve arbitrary data"
        (define x
-         (for/first ([(x) (in-row (current-conn) (select 1))])
+         (for/first ([(x) (in-entities (current-conn) (select 1))])
            x))
 
        (check-equal? x 1))
 
      (test-case "can retrieve subsets of data from schemas"
        (define usernames
-         (for/list ([(username) (in-rows (current-conn)
-                                         (~> (from user #:as u)
-                                             (select u.username)))])
+         (for/list ([(username) (in-entities (current-conn)
+                                             (~> (from user #:as u)
+                                                 (select u.username)))])
            username))
 
        (check-true (not (null? usernames))))
@@ -137,9 +137,9 @@
           [y string/f]))
 
        (define r
-         (for/first ([r (in-row (current-conn)
-                                (~> (select 1 "hello")
-                                    (project-onto res-schema)))])
+         (for/first ([r (in-entities (current-conn)
+                                     (~> (select 1 "hello")
+                                         (project-onto res-schema)))])
            r))
 
        (check-true (res? r))
@@ -151,7 +151,7 @@
 
       (test-case "retrieves whole entities from the database"
         (define all-users
-          (for/list ([u (in-rows (current-conn) (from user #:as u))])
+          (for/list ([u (in-entities (current-conn) (from user #:as u))])
             (check-equal? (meta-state (entity-meta u)) 'persisted)
             (check-true (user? u))))
 
@@ -166,7 +166,7 @@
               (where u.active?)))
 
         (define all-active-users
-          (for/list ([u (in-rows (current-conn) query)]) u))
+          (for/list ([u (in-entities (current-conn) query)]) u))
 
         (check-true (null? all-active-users))
 
@@ -178,14 +178,14 @@
                               #:active? #t)))
 
         (define all-active-users*
-          (for/list ([u (in-rows (current-conn) query)]) u))
+          (for/list ([u (in-entities (current-conn) query)]) u))
 
         (check-equal? (length all-active-users*) 2)
 
         (define all-active-users-named-bob
-          (for/list ([u (in-rows (current-conn)
-                                 (~> query
-                                     (and-where (like u.username "%bob%"))))])
+          (for/list ([u (in-entities (current-conn)
+                                     (~> query
+                                         (and-where (like u.username "%bob%"))))])
             u))
 
         (check-equal? (length all-active-users-named-bob) 1)
@@ -201,7 +201,7 @@
                            #:as u
                            #:set ([active? #t])))
 
-       (for ([u (in-rows (current-conn) (from user #:as u))])
+       (for ([u (in-entities (current-conn) (from user #:as u))])
          (check-true (user-active? u))))))))
 
 (module+ test
