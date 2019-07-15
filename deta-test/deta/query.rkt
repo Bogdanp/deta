@@ -202,7 +202,21 @@
                            #:set ([active? #t])))
 
        (for ([u (in-entities (current-conn) (from user #:as u))])
-         (check-true (user-active? u))))))))
+         (check-true (user-active? u)))))
+
+    (test-suite
+     "delete"
+
+     (test-case "can delete arbitrary data"
+       (query-exec (current-conn)
+                   (~> (delete user #:as u)
+                       (where u.active?)))
+
+       (check-equal?
+        (query-value (current-conn)
+                     (~> (from user #:as u)
+                         (select (count *))))
+        0))))))
 
 (module+ test
   (require rackunit/text-ui)

@@ -187,10 +187,11 @@
     (raise-argument-error 'delete-entity! "entity with primary key field" entity))
 
   (define stmt
-    (ast:delete (ast:from (ast:table (schema-table schema)))
-                (ast:where (ast:app (ast:ident '=)
-                                    (list (ast:column (field-name pk))
-                                          (ast:placeholder ((field-getter pk) entity)))))))
+    (ast:make-delete
+     #:from (ast:from (ast:table (schema-table schema)))
+     #:where (ast:where (ast:app (ast:ident '=)
+                                 (list (ast:column (field-name pk))
+                                       (ast:placeholder ((field-getter pk) entity)))))))
 
   (define-values (query args)
     (adapter-emit-query adapter stmt))
@@ -206,6 +207,7 @@
  lookup
 
  sql
+ delete
  from
  group-by
  limit
@@ -338,6 +340,14 @@
 (define-syntax (sql stx)
   (syntax-parse stx
     [(_ e:q-expr) #'e.e]))
+
+(define-syntax (delete stx)
+  (syntax-parse stx
+    [(_ table:str #:as alias:id)
+     #'(dyn:delete table #:as 'alias)]
+
+    [(_ schema:id #:as alias:id)
+     #'(dyn:delete 'schema #:as 'alias)]))
 
 (define-syntax (from stx)
   (syntax-parse stx

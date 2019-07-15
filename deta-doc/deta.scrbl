@@ -293,7 +293,13 @@ supported in arbitrary queries:
   @item{@tt{RETURNING}}
 ]
 
-Arbitrary @delete-link{@tt{DELETE}} queries are not currently supported.
+The following @delete-link{@tt{DELETE}} clauses are not currently
+supported in arbitrary queries:
+
+@itemlist[
+  @item{@tt{WITH}}
+  @item{@tt{RETURNING}}
+]
 
 
 @section[#:tag "reference"]{Reference}
@@ -442,6 +448,15 @@ Arbitrary @delete-link{@tt{DELETE}} queries are not currently supported.
    (app (q-expr q-expr ...))]]{
 
   Constructs an SQL expression.
+}
+
+@defform[
+  (delete schema #:as alias)
+  #:grammar
+  [(schema (code:line string)
+           (code:line id))]]{
+
+  Creates a new @tt{DELETE} @racket[query?] from a schema or a table name.
 }
 
 @defform[

@@ -110,6 +110,8 @@
 
 (provide
  stmt?
+
+ make-delete
  (struct-out delete)
 
  make-insert
@@ -124,8 +126,13 @@
 (struct stmt ()
   #:transparent)
 
-(struct delete stmt (from where)
+(struct delete stmt (from where returning)
   #:transparent)
+
+(define (make-delete #:from from
+                     #:where [where #f]
+                     #:returning [returning #f])
+  (delete from where returning))
 
 (struct insert stmt (into columns column-values returning)
   #:transparent)

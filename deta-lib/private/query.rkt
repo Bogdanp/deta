@@ -49,6 +49,7 @@
 (provide
  and-where
  as
+ delete
  from
  group-by
  limit
@@ -65,6 +66,23 @@
   (ast:as e (cond
               [(string? name) name]
               [(symbol? name) (symbol->string name)])))
+
+(define/contract (delete schema-or-name #:as alias)
+  (-> (or/c schema? string? symbol?) #:as symbol? query?)
+
+  (define alias:str (symbol->string alias))
+  (define-values (schema table-name)
+    (cond
+      [(string? schema-or-name)
+       (values #f schema-or-name)]
+
+      [else
+       (define schema (schema-registry-lookup schema-or-name))
+       (values schema (schema-table schema))]))
+
+  (query schema
+         (ast:make-delete
+          #:from (ast:from (ast:as (ast:table table-name) alias:str)))))
 
 (define/contract (from schema-or-name #:as alias)
   (-> (or/c schema? string? symbol?) #:as symbol? query?)
@@ -157,7 +175,10 @@
      (query schema (struct-copy ast:select stmt [where (ast:where e)]))]
 
     [(query schema (and (? ast:update?) stmt))
-     (query schema (struct-copy ast:update stmt [where (ast:where e)]))]))
+     (query schema (struct-copy ast:update stmt [where (ast:where e)]))]
+
+    [(query schema (and (? ast:delete?) stmt))
+     (query schema (struct-copy ast:delete stmt [where (ast:where e)]))]))
 
 (define/contract (and-where q e)
   (-> query? ast:expr? query?)
@@ -168,11 +189,17 @@
     [(query schema (and (struct* ast:update ([where #f])) stmt))
      (query schema (struct-copy ast:update stmt [where e]))]
 
+    [(query schema (and (struct* ast:delete ([where #f])) stmt))
+     (query schema (struct-copy ast:delete stmt [where e]))]
+
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
      (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]
 
     [(query schema (and (struct* ast:update ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]))
+     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]
+
+    [(query schema (and (struct* ast:delete ([where (ast:where e0)])) stmt))
+     (query schema (struct-copy ast:delete stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]))
 
 (define/contract (or-where q e)
   (-> query? ast:expr? query?)
@@ -183,8 +210,14 @@
     [(query schema (and (struct* ast:update ([where #f])) stmt))
      (query schema (struct-copy ast:update stmt [where e]))]
 
+    [(query schema (and (struct* ast:delete ([where #f])) stmt))
+     (query schema (struct-copy ast:delete stmt [where e]))]
+
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
      (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:ident 'or) (list e0 e)))]))]
 
     [(query schema (and (struct* ast:update ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:ident 'or) (list e0 e)))]))]))
+     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:ident 'or) (list e0 e)))]))]
+
+    [(query schema (and (struct* ast:delete ([where (ast:where e0)])) stmt))
+     (query schema (struct-copy ast:delete stmt [where (ast:where (ast:app (ast:ident 'or) (list e0 e)))]))]))

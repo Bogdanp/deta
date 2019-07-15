@@ -175,8 +175,13 @@
          (when (and returning supports-returning?)
            (display @~a{ RETURNING @(recur returning)}))))]
 
-    [(delete from where)
-     @~a{DELETE @(recur from) @(recur where)}]
+    [(delete from where returning)
+     (with-output-to-string
+       (lambda _
+         (display @~a{DELETE @(recur from)})
+         (when where (display @~a{ @(recur where)}))
+         (when (and returning supports-returning?)
+           (display @~a{ RETURNING @(recur returning)}))))]
 
     [(insert table columns column-values returning)
      (with-output-to-string

@@ -35,30 +35,6 @@
    "postgresq-sql"
 
    (test-suite
-    "update"
-
-    (check-emitted (~> (update "users"
-                               #:as u
-                               #:set ([username ,1]
-                                      [password-hash ,2])))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2")
-
-    (check-emitted (~> (update "users"
-                               #:as u
-                               #:set ([username ,1]
-                                      [password-hash ,2]))
-                       (where (= u.id ,3)))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE \"u\".\"id\" = $3")
-
-    (check-emitted (~> (update "users"
-                               #:as u
-                               #:set ([username ,1]
-                                      [password-hash ,2]))
-                       (where (= u.id ,3))
-                       (or-where (= u.id ,4)))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE (\"u\".\"id\" = $3) OR (\"u\".\"id\" = $4)"))
-
-   (test-suite
     "select"
 
     (check-emitted (select 1)
@@ -265,7 +241,41 @@
            [y "hello"])
        (check-emitted/placeholders (select (<> ,x ,y))
                                    "SELECT $1 <> $2"
-                                   '(1 "hello")))))))
+                                   '(1 "hello")))))
+
+   (test-suite
+    "update"
+
+    (check-emitted (~> (update "users"
+                               #:as u
+                               #:set ([username ,1]
+                                      [password-hash ,2])))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2")
+
+    (check-emitted (~> (update "users"
+                               #:as u
+                               #:set ([username ,1]
+                                      [password-hash ,2]))
+                       (where (= u.id ,3)))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE \"u\".\"id\" = $3")
+
+    (check-emitted (~> (update "users"
+                               #:as u
+                               #:set ([username ,1]
+                                      [password-hash ,2]))
+                       (where (= u.id ,3))
+                       (or-where (= u.id ,4)))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE (\"u\".\"id\" = $3) OR (\"u\".\"id\" = $4)"))
+
+   (test-suite
+    "delete"
+
+    (check-emitted (delete "users" #:as u)
+                   "DELETE FROM \"users\" AS \"u\"")
+
+    (check-emitted (~> (delete "users" #:as u)
+                       (where (not u.active?)))
+                   "DELETE FROM \"users\" AS \"u\" WHERE NOT \"u\".\"is_active\""))))
 
 (module+ test
   (require rackunit/text-ui)
