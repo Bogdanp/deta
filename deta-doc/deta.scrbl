@@ -1,11 +1,13 @@
 #lang scribble/manual
 
 @(require scribble/example
+          racket/format
           racket/runtime-path
           racket/sandbox
           (for-label db
                      deta
                      gregor
+                     json
                      (except-in racket/base date date?)
                      racket/contract
                      racket/match
@@ -521,8 +523,8 @@ hooks will be supported at some point.
 
   @examples[
     (require deta)
-    (select _ 1 2)
-    (select (from "users" #:as u) u.username)
+    (displayln (select _ 1 2))
+    (displayln (select (from "users" #:as u) u.username))
   ]
 }
 
@@ -700,102 +702,50 @@ hooks will be supported at some point.
 These are all the field types currently supported by deta.  Note that
 not all database backends support all of these types.
 
-@defproc[(type? [v any/c]) boolean?]{
-  Returns @racket[#t] if @racket[v] is a type.
-}
+@subsubsection{Support Matrix}
 
-@defthing[id/f type?]{
-  The type for identifiers.  Stored as an @tt{INTEGER}.
+Here are all the types and how they map to the different backends.
 
-  @emph{Supported by SQLite and PostgreSQL.}
-}
+@tabular[
+  #:sep @hspace[2]
+  (list (list @bold{Field Type}       @bold{Racket Type}                   @bold{PostgreSQL Type}  @bold{SQLite Type})
+        (list @racket[id/f]           @racket[exact-nonnegative-integer?]  @tt{INTEGER / SERIAL}   @tt{INTEGER}      )
+        (list @racket[integer/f]      @racket[exact-integer?]              @tt{INTEGER}            @tt{INTEGER}      )
+        (list @racket[real/f]         @racket[real?]                       @tt{REAL}               @tt{REAL}         )
+        (list @racket[numeric/f]      @racket[(or/c rational? +nan.0)]     @tt{NUMERIC}            @tt{UNSUPPORTED}  )
+        (list @racket[string/f]       @racket[string?]                     @tt{TEXT}               @tt{TEXT}         )
+        (list @racket[binary/f]       @racket[bytes?]                      @tt{BLOB}               @tt{BLOB}         )
+        (list @racket[symbol/f]       @racket[symbol?]                     @tt{TEXT}               @tt{TEXT}         )
+        (list @racket[boolean/f]      @racket[boolean?]                    @tt{BOOLEAN}            @tt{INTEGER}      )
+        (list @racket[date/f]         @racket[date-provider?]              @tt{DATE}               @tt{TEXT}         )
+        (list @racket[time/f]         @racket[time-provider?]              @tt{TIME}               @tt{TEXT}         )
+        (list @racket[datetime/f]     @racket[datetime-provider?]          @tt{TIMESTAMP}          @tt{TEXT}         )
+        (list @racket[datetime-tz/f]  @racket[moment-provider?]            @tt{TIMESTMAPTZ}        @tt{TEXT}         )
+        (list @racket[array/f]        @racket[vector?]                     @tt{ARRAY}              @tt{UNSUPPORTED}  )
+        (list @racket[json/f]         @racket[jsexpr?]                     @tt{JSON}               @tt{UNSUPPORTED}  )
+        (list @racket[jsonb/f]        @racket[jsexpr?]                     @tt{JSONB}              @tt{UNSUPPORTED}  )
+        )]
 
-@defthing[integer/f type?]{
-  The type for exact integer values.  Stored as an @tt{INTEGER}.
+@subsubsection{Types}
 
-  @emph{Supported by SQLite and PostgreSQL.}
-}
+@deftogether[
+  (@defproc[(type? [v any/c]) boolean?]
+   @defthing[id/f type?]
+   @defthing[integer/f type?]
+   @defthing[real/f type?]
+   @defproc[(numeric/f [precision exact-integer?]
+                       [scale exact-integer?]) type?]
+   @defthing[string/f type?]
+   @defthing[binary/f type?]
+   @defthing[symbol/f type?]
+   @defthing[boolean/f type?]
+   @defthing[date/f type?]
+   @defthing[time/f type?]
+   @defthing[datetime/f type?]
+   @defthing[datetime-tz/f type?]
+   @defproc[(array/f [t type?]) type?]
+   @defthing[json/f type?]
+   @defthing[jsonb/f type?])]{
 
-@defthing[real/f type?]{
-  The type for real values.  Stored as a @tt{REAL}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defproc[(numeric/f [precision exact-integer?]
-                    [scale exact-integer?]) type?]{
-
-  The type for numeric values.  Stored as a @tt{NUMERIC}.
-
-  @emph{Supported by PostgreSQL.}
-}
-
-@defthing[string/f type?]{
-  The type for @racket[string] values.  Stored as a @tt{STRING}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defthing[binary/f type?]{
-  The type for @racket[bytes] values.  Stored as a @tt{BLOB}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defthing[symbol/f type?]{
-  The type for @racket[symbol] values.  Stored as a @tt{STRING}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defthing[boolean/f type?]{
-  The type for @racket[boolean] values.  Stored as a @tt{BOOLEAN}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defthing[date/f type?]{
-  The type for @racketmodname[gregor] @racket[date] values.  Stored as
-  a @tt{DATE}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defthing[time/f type?]{
-  The type for @racketmodname[gregor] @racket[time] values.  Stored as
-  a @tt{TIME}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defthing[datetime/f type?]{
-  The type for @racketmodname[gregor] @racket[datetime] values.  Stored as
-  a @tt{TIMESTAMP}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defthing[datetime-tz/f type?]{
-  The type for @racketmodname[gregor] @racket[datetime] values.  Stored as
-  a @tt{TIMESTAMP WITH TIMEZONE}.
-
-  @emph{Supported by SQLite and PostgreSQL.}
-}
-
-@defproc[(array/f [t type?]) type?]{
-  The type for @racket[vector] values.  Stored as @tt{ARRAY}.
-
-  @emph{Supported by PostgreSQL.}
-}
-
-@defthing[json/f type?]{
-  A type for @racket[json] values.  Stored as a @tt{JSON}.
-
-  @emph{Supported by PostgreSQL.}
-}
-
-@defthing[jsonb/f type?]{
-  A type for @racket[json] values.  Stored as a @tt{JSONB}.
-
-  @emph{Supported by PostgreSQL.}
+  The various types that deta supports.
 }
