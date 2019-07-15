@@ -63,10 +63,11 @@
                      (book-stats-year stats)
                      (book-stats-books stats))))
 
-(void
- (apply delete! conn (sequence->list (books-between 1950 1970))))
+(query-exec conn
+            (~> (delete book #:as b)
+                (where (between b.year-published 1950 1970))))
 
 (displayln "")
 (displayln "Books published between 1950 and 1970:")
-(for ([b (books-between 1950 1970)])
+(for ([b (in-entities conn (books-between 1950 1970))])
   (displayln (book-title b)))
