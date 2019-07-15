@@ -256,8 +256,47 @@ CRUD operations to structs, which is out of scope for
 @racketmodname[sql].
 
 
-@section[#:tag "reference"]{Reference}
+@section[#:tag "todos"]{Notes and TODOs}
 
+@(define (select-link label)
+   (hyperlink "https://www.postgresql.org/docs/11/sql-select.html" label))
+
+@(define (update-link label)
+   (hyperlink "https://www.postgresql.org/docs/11/sql-update.html" label))
+
+@(define (delete-link label)
+   (hyperlink "https://www.postgresql.org/docs/11/sql-delete.html" label))
+
+Subqueries are not currently supported, neither are @tt{VALUES}
+expressions.
+
+The following @select-link{@tt{SELECT}} clauses are not currently
+supported:
+
+@itemlist[
+  @item{@tt{WITH}}
+  @item{@tt{JOIN}}
+  @item{@tt{HAVING}}
+  @item{@tt{WINDOW}}
+  @item{@tt{UNION}}
+  @item{@tt{INTERSECT}}
+  @item{@tt{EXCEPT}}
+  @item{@tt{FOR UPDATE}}
+]
+
+The following @update-link{@tt{UPDATE}} clauses are not currently
+supported in arbitrary queries:
+
+@itemlist[
+  @item{@tt{WITH}}
+  @item{@tt{FROM}}
+  @item{@tt{RETURNING}}
+]
+
+Arbitrary @delete-link{@tt{DELETE}} queries are not currently supported.
+
+
+@section[#:tag "reference"]{Reference}
 
 @subsection{Query}
 @defmodule[deta/query]
