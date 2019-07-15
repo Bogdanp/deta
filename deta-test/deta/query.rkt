@@ -29,10 +29,10 @@
     "prop:statement"
 
     (test-case "queries can be executed by the standard query functions"
-      (check-equal? (query-value (current-conn) (select 1)) 1))
+      (check-equal? (query-value (current-conn) (select _ 1)) 1))
 
     (test-case "queries with placeholders can be executed by the standard query functions"
-      (check-equal? (query-value (current-conn) (select (cast ,1 int))) 1)))
+      (check-equal? (query-value (current-conn) (select _ (cast ,1 int))) 1)))
 
    (test-suite
     "prop:custom-write"
@@ -41,13 +41,13 @@
       (check-equal?
        (with-output-to-string
          (lambda _
-           (display (select 1))))
+           (display (select _ 1))))
        "#<query: SELECT 1>")
 
       (check-equal?
        (with-output-to-string
          (lambda _
-           (display (select ,1))))
+           (display (select _ ,1))))
        "#<query: SELECT $1 1>")))
 
    (test-suite
@@ -116,7 +116,7 @@
 
      (test-case "can retrieve arbitrary data"
        (define x
-         (for/first ([(x) (in-entities (current-conn) (select 1))])
+         (for/first ([(x) (in-entities (current-conn) (select _ 1))])
            x))
 
        (check-equal? x 1))
@@ -138,7 +138,7 @@
 
        (define r
          (for/first ([r (in-entities (current-conn)
-                                     (~> (select 1 "hello")
+                                     (~> (select _ 1 "hello")
                                          (project-onto res-schema)))])
            r))
 
@@ -197,9 +197,8 @@
 
      (test-case "can update arbitrary tables"
        (query-exec (current-conn)
-                   (update user
-                           #:as u
-                           #:set ([active? #t])))
+                   (~> (from user #:as u)
+                       (update [active? #t])))
 
        (for ([u (in-entities (current-conn) (from user #:as u))])
          (check-true (user-active? u)))))
@@ -208,15 +207,13 @@
      "delete"
 
      (test-case "can delete arbitrary data"
-       (query-exec (current-conn)
-                   (~> (delete user #:as u)
-                       (where u.active?)))
+       (define q
+         (~> (from user #:as u)
+             (where u.active?)))
 
-       (check-equal?
-        (query-value (current-conn)
-                     (~> (from user #:as u)
-                         (select (count *))))
-        0))))))
+       (query-exec (current-conn) (delete q))
+       (check-equal? (query-value (current-conn)
+                                  (select q (count *))) 0))))))
 
 (module+ test
   (require rackunit/text-ui)

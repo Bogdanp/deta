@@ -457,13 +457,13 @@ hooks will be supported at some point.
   Constructs an SQL expression.
 }
 
-@defform[
-  (delete schema #:as alias)
-  #:grammar
-  [(schema (code:line string)
-           (code:line id))]]{
+@defproc[(delete [q query?]) query?]{
 
-  Creates a new @tt{DELETE} @racket[query?] from a schema or a table name.
+  Converts @racket[q] into a @tt{DELETE} query, preserving its
+  @tt{FROM} and @tt{WHERE} clauses.
+
+  An error is raised if @racket[q] is anything other than a
+  @tt{SELECT} query.
 }
 
 @defform[
@@ -476,21 +476,32 @@ hooks will be supported at some point.
 }
 
 @defform[
-  (update schema #:as alias #:set (assignment ...+))
+  (update query assignment ...+)
   #:grammar
-  [(schema (code:line string)
-           (code:line id))
-   (assignment [column q-expr])]]{
+  [(assignment [column q-expr])]]{
 
-  Creates a new @tt{UPDATE} @racket[query?] from a schema or a table
-  name.
+  Converts @racket[query] into an @tt{UPDATE} query, preserving its
+  @tt{FROM} clause, making it the target table for the update, and its
+  @tt{WHERE} clause.
+
+  An error is raised if @racket[q] is anything other than a
+  @tt{SELECT} query.
 }
 
 @defform*[
-  ((select q-expr ...+)
+  #:literals (_)
+  ((select _ q-expr ...+)
    (select query q-expr ...+))
 ]{
   Refines the set of selected values in @racket[query].
+
+  The first form (with the @racket[_]) generates a fresh query.
+
+  @examples[
+  (require deta)
+  (select _ 1 2)
+  (select (from "users" #:as u) u.username)
+  ]
 }
 
 @defform[(group-by query q-expr ...+)]{

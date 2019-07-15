@@ -207,7 +207,6 @@
  lookup
 
  sql
- delete
  from
  group-by
  limit
@@ -221,6 +220,7 @@
  or-where
 
  (rename-out [dyn:query? query?])
+ (rename-out [dyn:delete delete])
  (rename-out [dyn:project-onto project-onto]))
 
 (define (make-entity-instance dialect schema cols)
@@ -342,14 +342,6 @@
   (syntax-parse stx
     [(_ e:q-expr) #'e.e]))
 
-(define-syntax (delete stx)
-  (syntax-parse stx
-    [(_ table:str #:as alias:id)
-     #'(dyn:delete table #:as 'alias)]
-
-    [(_ schema:id #:as alias:id)
-     #'(dyn:delete 'schema #:as 'alias)]))
-
 (define-syntax (from stx)
   (syntax-parse stx
     [(_ table:str #:as alias:id)
@@ -360,10 +352,11 @@
 
 (define-syntax (select stx)
   (syntax-parse stx
-    [(_ e:q-expr ...+)
+    #:datum-literals (_)
+    [(select _ e:q-expr ...+)
      #'(dyn:select (dyn:make-empty-query) e.e ...)]
 
-    [(_ q:expr e:q-expr ...+)
+    [(select q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))
 
 (define-syntax (limit stx)
@@ -393,11 +386,8 @@
 
 (define-syntax (update stx)
   (syntax-parse stx
-    [(_ table:str #:as alias:id #:set (ass:q-assignment ...+))
-     #'(dyn:update table #:as 'alias #:set (list ass.e ...))]
-
-    [(_ schema:id #:as alias:id #:set (ass:q-assignment ...+))
-     #'(dyn:update 'schema #:as 'alias #:set (list ass.e ...))]))
+    [(_ q:expr ass:q-assignment ...+)
+     #'(dyn:update q ass.e ...)]))
 
 (define-syntax (where stx)
   (syntax-parse stx

@@ -63,9 +63,7 @@
                      (book-stats-year stats)
                      (book-stats-books stats))))
 
-(query-exec conn
-            (~> (delete book #:as b)
-                (where (between b.year-published 1950 1970))))
+(query-exec conn (delete (books-between 1950 1970)))
 
 (displayln "")
 (displayln "Books published between 1950 and 1970:")

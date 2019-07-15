@@ -68,22 +68,13 @@
               [(string? name) name]
               [(symbol? name) (symbol->string name)])))
 
-(define/contract (delete schema-or-name #:as alias)
-  (-> (or/c schema? string? symbol?) #:as symbol? query?)
-
-  (define alias:str (symbol->string alias))
-  (define-values (schema table-name)
-    (cond
-      [(string? schema-or-name)
-       (values #f schema-or-name)]
-
-      [else
-       (define schema (schema-registry-lookup schema-or-name))
-       (values schema (schema-table schema))]))
-
-  (query schema
-         (ast:make-delete
-          #:from (ast:from (ast:as (ast:table table-name) alias:str)))))
+(define/contract (delete q)
+  (-> query? query?)
+  (match q
+    [(query schema (and (struct* ast:select ([from from] [where where])) stmt))
+     (query schema (ast:make-delete
+                    #:from from
+                    #:where where))]))
 
 (define/contract (from schema-or-name #:as alias)
   (-> (or/c schema? string? symbol?) #:as symbol? query?)
@@ -155,31 +146,15 @@
     [(query schema (and (? ast:delete?) stmt))
      (query schema (struct-copy ast:delete stmt [returning (ast:returning (cons e0 es))]))]))
 
-(define/contract (update schema-or-name
-                         #:as alias
-                         #:set assignments
-                         #:where [where #f])
-  (->* ((or/c schema? string? symbol?)
-        #:as symbol?
-        #:set (listof (cons/c ast:expr? ast:expr?)))
-       (#:where (or/c ast:expr?))
-       query?)
-
-  (define alias:str (symbol->string alias))
-  (define-values (schema table-name)
-    (cond
-      [(string? schema-or-name)
-       (values #f schema-or-name)]
-
-      [else
-       (define schema (schema-registry-lookup schema-or-name))
-       (values schema (schema-table schema))]))
-
-  (query schema
-         (ast:make-update
-          #:table (ast:as (ast:table table-name) alias:str)
-          #:assignments (ast:assignments assignments)
-          #:where where)))
+(define/contract (update q . ss)
+  (-> query? (cons/c ast:expr? ast:expr?) ... query?)
+  (match q
+    [(query schema (struct* ast:select ([from (ast:from table)]
+                                        [where where])))
+     (query schema (ast:make-update
+                    #:table table
+                    #:assignments (ast:assignments ss)
+                    #:where where))]))
 
 (define/contract (where q e)
   (-> query? ast:expr? query?)
