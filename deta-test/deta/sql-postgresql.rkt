@@ -115,6 +115,9 @@
     (check-emitted (select _ (like u.a "hello%"))
                    "SELECT \"u\".\"a\" LIKE 'hello%'")
 
+    (check-emitted (select _ (ilike u.a "hello%"))
+                   "SELECT \"u\".\"a\" ILIKE 'hello%'")
+
     (check-emitted (select _ (not-like u.a "hello%"))
                    "SELECT \"u\".\"a\" NOT LIKE 'hello%'")
 

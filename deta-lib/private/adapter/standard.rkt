@@ -30,11 +30,8 @@
     [(? string?)
      (quote/standard e)]
 
-    [(column e)
-     (recur e)]
-
-    [(table e)
-     (recur e)]
+    [(table e)  (recur e)]
+    [(column e) (recur e)]
 
     [(placeholder v)
      (~a "$" (track-placeholder! v))]
@@ -104,7 +101,7 @@
                        'and 'or
 
                        ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
-                       '= '> '< '>= '<= '<> '!= 'like 'not-like 'in 'not-in 'is 'is-not 'is-distinct 'is-not-distinct
+                       '= '> '< '>= '<= '<> '!= 'ilike 'like 'not-like 'in 'not-in 'is 'is-not 'is-distinct 'is-not-distinct
 
                        ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
                        '+ '- '* '/ '% '<< '>> '~ '~* '!~ '!~*
