@@ -301,6 +301,9 @@ supported in arbitrary queries:
   @item{@tt{RETURNING}}
 ]
 
+Arbitrary column constraints and @emph{before-{delete,persist}} style
+hooks will be supported at some point.
+
 
 @section[#:tag "reference"]{Reference}
 
@@ -428,7 +431,7 @@ supported in arbitrary queries:
 }
 
 @defform[
-  #:literals (as and case else list or unquote)
+  #:literals (array as and case else list or unquote)
   (sql q-expr)
   #:grammar
   [(q-expr (array q-expr ...)
