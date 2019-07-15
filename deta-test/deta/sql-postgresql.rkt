@@ -265,7 +265,12 @@
                                       [password-hash ,2]))
                        (where (= u.id ,3))
                        (or-where (= u.id ,4)))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE (\"u\".\"id\" = $3) OR (\"u\".\"id\" = $4)"))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE (\"u\".\"id\" = $3) OR (\"u\".\"id\" = $4)")
+
+    (check-emitted (~> (update "users" #:as u #:set ([username "bill"]))
+                       (where (= u.id 1))
+                       (returning u.username))
+                   "UPDATE \"users\" AS \"u\" SET \"username\" = 'bill' WHERE \"u\".\"id\" = 1 RETURNING \"u\".\"username\""))
 
    (test-suite
     "delete"
@@ -275,7 +280,12 @@
 
     (check-emitted (~> (delete "users" #:as u)
                        (where (not u.active?)))
-                   "DELETE FROM \"users\" AS \"u\" WHERE NOT \"u\".\"is_active\""))))
+                   "DELETE FROM \"users\" AS \"u\" WHERE NOT \"u\".\"is_active\"")
+
+    (check-emitted (~> (delete "users" #:as u)
+                       (where u.active?)
+                       (returning u.id))
+                   "DELETE FROM \"users\" AS \"u\" WHERE \"u\".\"is_active\" RETURNING \"u\".\"id\""))))
 
 (module+ test
   (require rackunit/text-ui)

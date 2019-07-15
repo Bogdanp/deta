@@ -83,7 +83,7 @@
      #:columns (map ast:column columns)
      #:values (for/list ([getter (in-list getters)])
                 (ast:placeholder (getter entity)))
-     #:returning (and pk (list (ast:column (field-name pk))))))
+     #:returning (and pk (ast:returning (list (ast:column (field-name pk)))))))
 
   (define-values (query args)
     (adapter-emit-query adapter stmt))
@@ -213,6 +213,7 @@
  limit
  offset
  order-by
+ returning
  select
  update
  where
@@ -384,6 +385,11 @@
   (syntax-parse stx
     [(_ q:expr (e:q-order-pair ...+))
      #'(dyn:order-by q e.e ...)]))
+
+(define-syntax (returning stx)
+  (syntax-parse stx
+    [(_ q:expr e:q-expr ...+)
+     #'(dyn:returning q e.e ...)]))
 
 (define-syntax (update stx)
   (syntax-parse stx

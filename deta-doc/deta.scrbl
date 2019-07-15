@@ -258,6 +258,9 @@ CRUD operations to structs, which is out of scope for
 
 @section[#:tag "todos"]{Notes and TODOs}
 
+@(define (insert-link label)
+   (hyperlink "https://www.postgresql.org/docs/11/sql-insert.html" label))
+
 @(define (select-link label)
    (hyperlink "https://www.postgresql.org/docs/11/sql-select.html" label))
 
@@ -290,7 +293,6 @@ supported in arbitrary queries:
 @itemlist[
   @item{@tt{WITH}}
   @item{@tt{FROM}}
-  @item{@tt{RETURNING}}
 ]
 
 The following @delete-link{@tt{DELETE}} clauses are not currently
@@ -298,8 +300,10 @@ supported in arbitrary queries:
 
 @itemlist[
   @item{@tt{WITH}}
-  @item{@tt{RETURNING}}
 ]
+
+Arbitrary @insert-link{@tt{INSERT}} statements are not currently
+supported.
 
 Arbitrary column constraints and @emph{before-{delete,persist}} style
 hooks will be supported at some point.
@@ -519,12 +523,7 @@ hooks will be supported at some point.
   @tt{AND}-ing it with @racket[q-expr].
 }
 
-@defform[
-  (or-where query q-expr)
-  #:contracts
-  ([query query?]
-   [q-expr expr?])
-]{
+@defform[(or-where query q-expr)]{
   Wraps the @tt{WHERE} clause in @racket[query] to the result of
   @tt{OR}-ing it with @racket[q-expr].
 }
@@ -532,6 +531,10 @@ hooks will be supported at some point.
 @defproc[(project-onto [q query?]
                        [s schema?]) query?]{
   Changes the target schema for @racket[q] to @racket[s].
+}
+
+@defform[(returning query q-expr ...+)]{
+  Adds or replaces a @tt{RETURNING} clause to @racket[query].
 }
 
 @subsection{Schema}

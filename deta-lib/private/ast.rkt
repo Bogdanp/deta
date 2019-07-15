@@ -79,6 +79,7 @@
  (struct-out limit)
  (struct-out offset)
  (struct-out order-by)
+ (struct-out returning)
  (struct-out where))
 
 (struct clause ()
@@ -100,6 +101,9 @@
   #:transparent)
 
 (struct order-by clause (pairs)
+  #:transparent)
+
+(struct returning clause (es)
   #:transparent)
 
 (struct where clause (e)

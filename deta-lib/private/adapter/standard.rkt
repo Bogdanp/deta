@@ -173,15 +173,16 @@
          (when assignments (display (~a " " (recur assignments))))
          (when where       (display (~a " " (recur where))))
          (when (and returning supports-returning?)
-           (display @~a{ RETURNING @(recur returning)}))))]
+           (display (~a " " (recur returning))))))]
 
     [(delete from where returning)
      (with-output-to-string
        (lambda _
          (display @~a{DELETE @(recur from)})
-         (when where (display @~a{ @(recur where)}))
+         (when where
+           (display (~a " " (recur where))))
          (when (and returning supports-returning?)
-           (display @~a{ RETURNING @(recur returning)}))))]
+           (display (~a " " (recur returning))))))]
 
     [(insert table columns column-values returning)
      (with-output-to-string
@@ -189,7 +190,7 @@
          (display @~a{INSERT INTO @(emit-expr table) (@(recur columns))})
          (display @~a{ VALUES (@(recur column-values))})
          (when (and returning supports-returning?)
-           (display @~a{ RETURNING @(recur returning)}))))]
+           (display (~a " " (recur returning))))))]
 
     [(assignments pairs)
      (define pair:strs
@@ -203,6 +204,7 @@
     [(where e)        @~a{WHERE @(emit-expr e)}]
     [(group-by cols)  @~a{GROUP BY @(recur cols)}]
     [(offset n)       @~a{OFFSET @n}]
+    [(returning es)   @~a{RETURNING @(recur es)}]
 
     [(order-by pairs)
      (define pair:strs

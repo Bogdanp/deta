@@ -57,6 +57,7 @@
  or-where
  order-by
  project-onto
+ returning
  select
  update
  where)
@@ -141,6 +142,18 @@
 (define/contract (project-onto q s)
   (-> query? schema? query?)
   (struct-copy query q [schema s]))
+
+(define/contract (returning q e0 . es)
+  (-> query? ast:expr? ast:expr? ... query?)
+  (match q
+    [(query schema (and (? ast:insert?) stmt))
+     (query schema (struct-copy ast:insert stmt [returning (ast:returning (cons e0 es))]))]
+
+    [(query schema (and (? ast:update?) stmt))
+     (query schema (struct-copy ast:update stmt [returning (ast:returning (cons e0 es))]))]
+
+    [(query schema (and (? ast:delete?) stmt))
+     (query schema (struct-copy ast:delete stmt [returning (ast:returning (cons e0 es))]))]))
 
 (define/contract (update schema-or-name
                          #:as alias
