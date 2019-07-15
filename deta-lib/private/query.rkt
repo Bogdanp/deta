@@ -1,8 +1,6 @@
 #lang racket/base
 
 (require db
-         (except-in racket/class
-                    field)
          racket/contract
          racket/match
          racket/struct
@@ -27,12 +25,12 @@
     (define-values (query args)
       (adapter-emit-query adapter (query-stmt self)))
 
-    (define stmt
-      (send c prepare 'query query #t))
+    (define prepared
+      (prepare c query))
 
     (cond
-      [(null? args) stmt]
-      [else (send stmt bind 'query args)]))
+      [(null? args) prepared]
+      [else (bind-prepared-statement prepared args)]))
 
   #:property prop:custom-write
   (make-constructor-style-printer
