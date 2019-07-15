@@ -3,6 +3,7 @@
 (require db
          deta
          deta/private/field
+         deta/private/schema
          deta/private/type
          gregor
          rackunit)

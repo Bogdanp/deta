@@ -78,7 +78,7 @@
       [else
        (define schema (schema-registry-lookup schema-or-name))
        (values schema
-               (schema-table-name schema)
+               (schema-table schema)
                (for/list ([f (in-list (schema-fields schema))])
                  (ast:column (ast:qualified alias:str (field-name f)))))]))
 
@@ -142,7 +142,7 @@
 
       [else
        (define schema (schema-registry-lookup schema-or-name))
-       (values schema (schema-table-name schema))]))
+       (values schema (schema-table schema))]))
 
   (query schema
          (ast:make-update

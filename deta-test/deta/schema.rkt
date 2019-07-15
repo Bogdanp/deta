@@ -2,6 +2,7 @@
 
 (require deta
          deta/private/meta
+         deta/private/schema
          gregor
          racket/match
          racket/set
@@ -32,7 +33,7 @@
     "define-schema"
 
     (test-case "registers schema metadata in the registry"
-      (check-eq? user-schema (schema-registry-ref 'user)))
+      (check-eq? user-schema (schema-registry-lookup 'user)))
 
     (test-case "raises an error if two schemas are defined with the same name"
       (check-exn

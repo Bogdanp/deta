@@ -8,28 +8,21 @@
 
 (provide
  make-schema
- schema?
- schema-name
- schema-table-name
- schema-virtual?
- schema-struct-ctor
- schema-struct-pred
- schema-meta-updater
- schema-fields
- schema-primary-key)
+ (struct-out schema))
 
 (struct schema
-  (name
-   table-name
+  (id
+   table
    virtual?
    struct-ctor
    struct-pred
    meta-updater
-   fields)
+   fields
+   primary-key)
   #:transparent)
 
-(define (make-schema #:name name
-                     #:table-name table-name
+(define (make-schema #:id id
+                     #:table table
                      #:virtual? virtual?
                      #:struct-ctor struct-ctor
                      #:struct-pred struct-pred
@@ -37,55 +30,45 @@
                      #:fields fields)
 
   (define the-schema
-    (schema name
-            table-name
+    (schema id
+            table
             virtual?
             struct-ctor
             struct-pred
             meta-updater
-            fields))
+            fields
+            (findf field-primary-key? fields)))
 
   (begin0 the-schema
     (unless virtual?
-      (register! name the-schema))))
-
-(define/contract (schema-primary-key schema)
-  (-> schema? (or/c false/c field?))
-  (for/first ([f (in-list (schema-fields schema))]
-              #:when (field-primary-key? f))
-    f))
+      (register! id the-schema))))
 
 
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- schema-registry-ref
  schema-registry-lookup)
 
 (define/contract schema-registry
   (parameter/c (hash/c symbol? schema?))
   (make-parameter (hasheq)))
 
-(define (register! name schema)
+(define (register! id schema)
   (define registry (schema-registry))
-  (when (hash-has-key? registry name)
-    (raise-user-error 'register! "schema ~a conflicts with a previous one" name))
+  (when (hash-has-key? registry id)
+    (raise-user-error 'register! "schema ~a conflicts with a previous one" id))
 
   (schema-registry
-   (hash-set registry name schema)))
+   (hash-set registry id schema)))
 
-(define/contract (schema-registry-ref name)
-  (-> symbol? (or/c false/c schema?))
-  (hash-ref (schema-registry) name #f))
-
-(define/contract (schema-registry-lookup schema-or-name)
+(define/contract (schema-registry-lookup schema-or-id)
   (-> (or/c schema? symbol?) schema?)
   (define schema
-    (match schema-or-name
-      [(? schema?)                      schema-or-name ]
-      [(? symbol?) (schema-registry-ref schema-or-name)]))
+    (match schema-or-id
+      [(? schema?)                             schema-or-id ]
+      [(? symbol?) (hash-ref (schema-registry) schema-or-id)]))
 
   (unless schema
-    (raise-argument-error 'lookup-schema "unregistered schema" schema-or-name))
+    (raise-argument-error 'lookup-schema "unregistered schema" schema-or-id))
 
   schema)

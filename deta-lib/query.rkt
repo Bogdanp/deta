@@ -13,11 +13,12 @@
          "private/adapter/adapter.rkt"
          (prefix-in ast: "private/ast.rkt")
          "private/connection.rkt"
+         "private/entity.rkt"
          "private/field.rkt"
          "private/meta.rkt"
          (prefix-in dyn: "private/query.rkt")
-         "private/type.rkt"
-         "schema.rkt")
+         "private/schema.rkt"
+         "private/type.rkt")
 
 ;; ddl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,14 +30,14 @@
   (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (ast:create-table-ddl (schema-table-name schema)
+                                     (ast:create-table-ddl (schema-table schema)
                                                            (schema-fields schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
   (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (ast:drop-table-ddl (schema-table-name schema)))))
+                                     (ast:drop-table-ddl (schema-table schema)))))
 
 
 ;; insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,7 +79,7 @@
   (define pk (schema-primary-key schema))
   (define stmt
     (ast:make-insert
-     #:into (ast:table (schema-table-name schema))
+     #:into (ast:table (schema-table schema))
      #:columns (map ast:column columns)
      #:values (for/list ([getter (in-list getters)])
                 (ast:placeholder (getter entity)))
@@ -143,7 +144,7 @@
 
   (define stmt
     (ast:make-update
-     #:table (ast:table (schema-table-name schema))
+     #:table (ast:table (schema-table schema))
      #:assignments (ast:assignments
                     (for/list ([column (in-list columns)]
                                [getter (in-list getters)])
@@ -186,7 +187,7 @@
     (raise-argument-error 'delete-entity! "entity with primary key field" entity))
 
   (define stmt
-    (ast:delete (ast:from (ast:table (schema-table-name schema)))
+    (ast:delete (ast:from (ast:table (schema-table schema)))
                 (ast:where (ast:app (ast:name '=)
                                     (list (ast:column (field-name pk))
                                           (ast:placeholder ((field-getter pk) entity)))))))
