@@ -4,6 +4,7 @@
          racket/match
          racket/port
          racket/string
+         racket/vector
          "../ast.rkt"
          "adapter.rkt")
 
@@ -62,6 +63,13 @@
     [(scalar (and (? string?) v))
      (~a "'" (string-replace v "'" "''") "'")]
 
+    [(scalar (and (? vector?) v))
+     (define items
+       (for/list ([e (in-vector v)])
+         (recur e)))
+
+     (~a "ARRAY[" (string-join items ", ") "]")]
+
     [(scalar v)
      (~v v)]
 
@@ -107,6 +115,12 @@
                op)
           (list a b))
      (~a (maybe-parenthize a) " " (recur op) " " (maybe-parenthize b))]
+
+    [(app (ident 'array-ref) (list a b))
+     (~a "(" (recur a) ")[" (maybe-parenthize b) "]")]
+
+    [(app (ident 'array-slice) (list a b c))
+     (~a "(" (recur a) ")[" (maybe-parenthize b) ":" (maybe-parenthize c) "]")]
 
     [(app (ident 'between) (list a b c))
      (~a (maybe-parenthize a) " BETWEEN " (maybe-parenthize b) " AND " (maybe-parenthize c))]

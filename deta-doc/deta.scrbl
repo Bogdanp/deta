@@ -386,7 +386,8 @@ CRUD operations to structs, which is out of scope for
   #:literals (as and case else list or unquote)
   (sql q-expr)
   #:grammar
-  [(q-expr (as q-expr id)
+  [(q-expr (array q-expr ...)
+           (as q-expr id)
            (and q-expr q-expr)
            (or q-expr q-expr)
            (case [q-expr q-expr] ...+)

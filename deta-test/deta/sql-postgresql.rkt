@@ -148,6 +148,20 @@
     (check-emitted (select (not-in 1 (list 1 2 3)))
                    "SELECT 1 NOT IN (1, 2, 3)")
 
+    (check-emitted (select (array 1 2 3))
+                   "SELECT ARRAY[1, 2, 3]")
+
+    (check-emitted (select (array-ref (array 1 2 3) 2))
+                   "SELECT (ARRAY[1, 2, 3])[2]")
+
+    (check-emitted (select (array-slice (array 1 2 3) 2 5))
+                   "SELECT (ARRAY[1, 2, 3])[2:5]")
+
+    (check-emitted (select (array (array "a")
+                                  (array "b")
+                                  (array "c")))
+                   "SELECT ARRAY[ARRAY['a'], ARRAY['b'], ARRAY['c']]")
+
     (check-emitted (select (date "1950-01-01"))
                    "SELECT DATE '1950-01-01'")
 

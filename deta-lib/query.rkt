@@ -276,7 +276,7 @@
           (datum->syntax stx (id->column-name b))))
 
   (define-syntax-class q-expr
-    #:datum-literals (as list null)
+    #:datum-literals (array as list null)
     #:literals (and case else or unquote)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
@@ -295,6 +295,9 @@
     (pattern n:number
              #:when (rational? (syntax->datum #'n))
              #:with e #'(ast:scalar n))
+
+    (pattern (array item:q-expr ...)
+             #:with e #'(ast:scalar (vector item.e ...)))
 
     (pattern (as a:q-expr b:id)
              #:with e #'(ast:as a.e 'b))
