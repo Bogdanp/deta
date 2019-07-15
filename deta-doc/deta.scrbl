@@ -21,7 +21,9 @@ This library automatically maps database tables to Racket structs and
 lets you perform CRUD operations on them as well as arbitrary queries.
 Sort of like an ORM, but without "relationships" and all the bad bits.
 
-This is pre-1.0 software and the API may change without notice.
+The API is currently fairly stable, but it may change before 1.0.
+Watch the GitHub repository if you want to stay on top of potential
+changes.
 
 
 @section[#:tag "principles"]{Principles}
