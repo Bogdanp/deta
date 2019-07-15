@@ -314,6 +314,21 @@ CRUD operations to structs, which is out of scope for
   field.
 }
 
+@defproc[(update-one! [conn connection?]
+                      [e entity?]) (or/c false/c entity?)]{
+
+  Attempts to update @racket[e].  If it doesn't need to be updated,
+  then @racket[#f] is returned.
+
+  Equivalent to:
+
+  @racketblock[
+    (match (update! conn e)
+      [(list e) e]
+      [_ #f])
+  ]
+}
+
 @defproc[(delete! [conn connection?]
                   [e entity?] ...) (listof entity?)]{
 
@@ -322,6 +337,21 @@ CRUD operations to structs, which is out of scope for
 
   Raises a user error if any of the entities don't have a primary key
   field.
+}
+
+@defproc[(delete-one! [conn connection?]
+                      [e entity?]) (or/c false/c entity?)]{
+
+  Attempts to delete @racket[e].  If it doesn't need to be deleted,
+  then @racket[#f] is returned.
+
+  Equivalent to:
+
+  @racketblock[
+    (match (delete! conn e)
+      [(list e) e]
+      [_ #f])
+  ]
 }
 
 @defproc[(in-rows [conn connection?]

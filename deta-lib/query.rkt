@@ -105,7 +105,8 @@
 ;; update ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- update!)
+ update!
+ update-one!)
 
 (define/contract (update! conn . entities)
   (-> connection? entity? ... (listof entity?))
@@ -113,6 +114,12 @@
   (define adapter (connection-adapter conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-update? (entity-meta entity)))
     (update-entity! adapter dialect conn entity)))
+
+(define/contract (update-one! conn entity)
+  (-> connection? entity? (or/c false/c entity?))
+  (match (update! conn entity)
+    [(list e) e]
+    [_ #f]))
 
 (define (update-entity! adapter dialect conn entity)
   (define meta (entity-meta entity))
@@ -156,13 +163,20 @@
 ;; delete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- delete!)
+ delete!
+ delete-one!)
 
 (define/contract (delete! conn . entities)
   (-> connection? entity? ... (listof entity?))
   (define adapter (connection-adapter conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-delete? (entity-meta entity)))
     (delete-entity! adapter conn entity)))
+
+(define/contract (delete-one! conn entity)
+  (-> connection? entity? (or/c false/c entity?))
+  (match (delete! conn entity)
+    [(list e) e]
+    [_ #f]))
 
 (define (delete-entity! adapter conn entity)
   (define meta (entity-meta entity))
