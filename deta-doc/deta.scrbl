@@ -39,6 +39,10 @@ of this library to be a general purpose SQL DSL and that means that
 for some queries you may have to resort to raw SQL or the
 @racketmodname[sql] library.  It is very much an "80% solution."
 
+Being externally-extensible is also not a goal.  The SQL AST as well
+as all of the adapter code is considered private and any new adapters
+(like MySQL) will have to be added to the library itself.
+
 If you're down with that, then by all means carry on an read the
 tutorial!
 
