@@ -11,5 +11,6 @@
    [username string/f #:unique]
    [(active? #f) boolean/f]
    [password-hash string/f #:nullable]
+   [(verified? #f) boolean/f #:name "verified"]
    [(created-at (now/moment)) datetime-tz/f]
    [(updated-at (now/moment)) datetime-tz/f]))

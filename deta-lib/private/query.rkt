@@ -169,10 +169,10 @@
      (query schema (struct-copy ast:update stmt [where e]))]
 
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'and) (list e0 e)))]))]
+     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]
 
     [(query schema (and (struct* ast:update ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:name 'and) (list e0 e)))]))]))
+     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]))
 
 (define/contract (or-where q e)
   (-> query? ast:expr? query?)
@@ -184,7 +184,7 @@
      (query schema (struct-copy ast:update stmt [where e]))]
 
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:name 'or) (list e0 e)))]))]
+     (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:ident 'or) (list e0 e)))]))]
 
     [(query schema (and (struct* ast:update ([where (ast:where e0)])) stmt))
-     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:name 'or) (list e0 e)))]))]))
+     (query schema (struct-copy ast:update stmt [where (ast:where (ast:app (ast:ident 'or) (list e0 e)))]))]))

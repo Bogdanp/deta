@@ -24,7 +24,7 @@
   #:transparent)
 
 (define (make-field #:id id
-                    #:name [name (id->column-name id)]
+                    #:name name
                     #:kwd [kwd (symbol->keyword id)]
                     #:type type
                     #:getter getter

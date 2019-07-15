@@ -5,6 +5,7 @@
          deta/private/schema
          gregor
          racket/match
+         racket/port
          racket/set
          rackunit
          threading
@@ -68,7 +69,17 @@
     (test-case "defined structs have associated metadata"
       (define m (entity-meta (make-user #:username "bogdan")))
       (check-eq? (meta-state m) 'created)
-      (check-equal? (meta-changes m) (seteq))))
+      (check-equal? (meta-changes m) (seteq)))
+
+    ;; XFAIL: Custom field names are not currently replaced.
+    #;
+    (test-case "schema fields can have custom names"
+      (define q
+        (with-output-to-string
+          (lambda _
+            (display (select (from user #:as u) u.valid?)))))
+
+      (check-equal? q "#<query: SELECT \"u\".\"valid\" FROM \"users\" AS \"u\">")))
 
    (test-suite
     "schema-registry-lookup"

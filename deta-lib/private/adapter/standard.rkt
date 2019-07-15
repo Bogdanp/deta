@@ -38,19 +38,19 @@
     [(placeholder v)
      (~a "$" (track-placeholder! v))]
 
-    [(name 'bitwise-not)     "~"]
-    [(name 'bitwise-and)     "&"]
-    [(name 'bitwise-or )     "|"]
-    [(name 'bitwise-xor)     "#"]
-    [(name 'is-distinct)     "IS DISTINCT"]
-    [(name 'is-not-distinct) "IS NOT DISTINCT"]
-    [(name 'is-not)          "IS NOT"]
-    [(name 'not-in)          "NOT IN"]
-    [(name 'not-like)        "NOT LIKE"]
-    [(name 'not-similar-to)  "NOT SIMILAR TO"]
-    [(name 'similar-to)      "SIMILAR TO"]
+    [(ident 'bitwise-not)     "~"]
+    [(ident 'bitwise-and)     "&"]
+    [(ident 'bitwise-or )     "|"]
+    [(ident 'bitwise-xor)     "#"]
+    [(ident 'is-distinct)     "IS DISTINCT"]
+    [(ident 'is-not-distinct) "IS NOT DISTINCT"]
+    [(ident 'is-not)          "IS NOT"]
+    [(ident 'not-in)          "NOT IN"]
+    [(ident 'not-like)        "NOT LIKE"]
+    [(ident 'not-similar-to)  "NOT SIMILAR TO"]
+    [(ident 'similar-to)      "SIMILAR TO"]
 
-    [(name n)
+    [(ident n)
      (string-upcase (symbol->string n))]
 
     [(scalar #t) "TRUE"]
@@ -71,50 +71,50 @@
     [(as e alias)
      (~a (maybe-parenthize e) " AS " (quote/standard alias))]
 
-    [(app (and (name (or
-                      ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
-                      'not
+    [(app (and (ident (or
+                       ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
+                       'not
 
-                      ;; date ops: https://www.postgresql.org/docs/9.1/functions-datetime.html
-                      'date 'time 'timestamp 'interval
-                      ))
+                       ;; date ops: https://www.postgresql.org/docs/9.1/functions-datetime.html
+                       'date 'time 'timestamp 'interval
+                       ))
                op)
           (list a))
      (~a (recur op) " " (maybe-parenthize a))]
 
-    [(app (name 'cast) (list a b))
+    [(app (ident 'cast) (list a b))
      (~a "CAST(" (maybe-parenthize a) " AS " (recur b) ")")]
 
-    [(app (name 'extract) (list a b))
+    [(app (ident 'extract) (list a b))
      (~a "EXTRACT(" (recur a) " FROM " (maybe-parenthize b) ")")]
 
-    [(app (and (name (or
-                      ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
-                      'bitwise-not 'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
+    [(app (and (ident (or
+                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
+                       'bitwise-not 'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
 
-                      ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
-                      'and 'or
+                       ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
+                       'and 'or
 
-                      ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
-                      '= '> '< '>= '<= '<> '!= 'like 'not-like 'in 'not-in 'is 'is-not 'is-distinct 'is-not-distinct
+                       ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
+                       '= '> '< '>= '<= '<> '!= 'like 'not-like 'in 'not-in 'is 'is-not 'is-distinct 'is-not-distinct
 
-                      ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
-                      '+ '- '* '/ '% '<< '>> '~ '~* '!~ '!~*
+                       ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
+                       '+ '- '* '/ '% '<< '>> '~ '~* '!~ '!~*
 
-                      ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
-                      'similar-to 'not-similar-to
-                      ))
+                       ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
+                       'similar-to 'not-similar-to
+                       ))
                op)
           (list a b))
      (~a (maybe-parenthize a) " " (recur op) " " (maybe-parenthize b))]
 
-    [(app (name 'between) (list a b c))
+    [(app (ident 'between) (list a b c))
      (~a (maybe-parenthize a) " BETWEEN " (maybe-parenthize b) " AND " (maybe-parenthize c))]
 
-    [(app (name 'position) (list a b))
+    [(app (ident 'position) (list a b))
      (~a "POSITION(" (maybe-parenthize a) " IN " (maybe-parenthize b) ")")]
 
-    [(app (name 'trim) (list a b c))
+    [(app (ident 'trim) (list a b c))
      (~a "TRIM(" (maybe-parenthize a) " " (maybe-parenthize b) " FROM " (maybe-parenthize c) ")")]
 
     [(app f args)

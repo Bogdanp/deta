@@ -8,7 +8,8 @@
 
 (provide
  make-schema
- (struct-out schema))
+ (struct-out schema)
+ schema-ref)
 
 (struct schema
   (id
@@ -42,6 +43,11 @@
   (begin0 the-schema
     (unless virtual?
       (register! id the-schema))))
+
+(define (schema-ref s id)
+  (findf (lambda (f)
+           (eq? (field-id f) id))
+         (schema-fields s)))
 
 
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

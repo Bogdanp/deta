@@ -29,7 +29,7 @@
  (struct-out as)
  (struct-out case-e)
  (struct-out column)
- (struct-out name)
+ (struct-out ident)
  (struct-out placeholder)
  (struct-out qualified)
  (struct-out scalar)
@@ -53,7 +53,7 @@
 (struct column expr (e)
   #:transparent)
 
-(struct name expr (name)
+(struct ident expr (name)
   #:transparent)
 
 (struct placeholder expr (v)

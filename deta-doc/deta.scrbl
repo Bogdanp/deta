@@ -488,29 +488,33 @@ CRUD operations to structs, which is out of scope for
   Returns @racket[#t] when @racket[s] is a schema.
 }
 
-@defform[(define-schema name
-           maybe-table-name
+@defform[(define-schema id
+           maybe-table
            maybe-virtual
            (field-definition ...+))
          #:grammar
-         [(maybe-table-name (code:line)
-                            (code:line #:table string))
+         [(maybe-table (code:line)
+                       (code:line #:table string))
           (maybe-virtual (code:line)
                          (code:line #:virtual))
-          (field-definition (code:line [name type
+          (field-definition (code:line [id type
+                                        maybe-name
                                         maybe-primary-key
                                         maybe-auto-increment
                                         maybe-unique
                                         maybe-nullable
                                         maybe-contract
                                         maybe-wrapper])
-                            (code:line [(name default) type
+                            (code:line [(id default) type
+                                        maybe-name
                                         maybe-primary-key
                                         maybe-auto-increment
                                         maybe-unique
                                         maybe-nullable
                                         maybe-contract
                                         maybe-wrapper]))
+          (maybe-name (code:line)
+                      (code:line #:name string))
           (maybe-primary-key (code:line)
                              (code:line #:primary-key))
           (maybe-auto-increment (code:line)
@@ -524,17 +528,17 @@ CRUD operations to structs, which is out of scope for
           (maybe-wrapper (code:line)
                           (code:line #:wrapper e))]]{
 
-  Defines a schema named @racket[name].  The schema will have an
+  Defines a schema named @racket[id].  The schema will have an
   associated struct with the same name and a smart constructor called
-  @tt{make-@emph{name}}.  The struct's "dumb" constructor is hidden so
+  @tt{make-@emph{id}}.  The struct's "dumb" constructor is hidden so
   that invalid entities cannot be created.
 
   For every defined field there will be an associated functional
-  setter and updater named @tt{set-@emph{name}-@emph{field}} and
-  @tt{update-@emph{name}-@emph{field}}, respectively.
+  setter and updater named @tt{set-@emph{id}-@emph{field}} and
+  @tt{update-@emph{id}-@emph{field}}, respectively.
 
   If @racket[#:table] is provided, then that is used as the name for
-  the table.  Otherwise, an "s" is appended to the schema name to
+  the table.  Otherwise, an "s" is appended to the schema id to
   pluralize it.  Currently, there are no other pluralization rules.
 
   If @racket[#:virtual] is provided, then the resulting schema's
@@ -553,6 +557,11 @@ CRUD operations to structs, which is out of scope for
   underscores and field names that end in question marks drop their
   question mark and are prefixed with "is_".  @racket[admin?] becomes
   @racket[is_admin].
+
+  Custom field names can be specified by providing a @racket[#:name]
+  in the field definition.  Note, however, that the library does not
+  currently translate between field names and custom column names
+  within arbitrary queries.
 
   Example:
 

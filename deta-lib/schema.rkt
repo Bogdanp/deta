@@ -70,11 +70,12 @@
 
   (define-template-metafunction (make-fld-maker stx)
     (syntax-parse stx
-      [(_ struct-id fld-id fld-type fld-pk? fld-ai? fld-nullable? fld-unique?)
+      [(_ struct-id fld-id fld-name fld-type fld-pk? fld-ai? fld-nullable? fld-unique?)
        (with-syntax ([getter-id  (format-id #'struct-id "~a-~a"        #'struct-id #'fld-id)]
                      [setter-id  (format-id #'struct-id "set-~a-~a"    #'struct-id #'fld-id)]
                      [updater-id (format-id #'struct-id "update-~a-~a" #'struct-id #'fld-id)])
          #'(make-field #:id 'fld-id
+                       #:name fld-name
                        #:type fld-type
                        #:getter getter-id
                        #:setter setter-id
@@ -108,11 +109,11 @@
                 struct-pred-id))]))
 
   (define-syntax-class fld
-    (pattern (id:id type:expr (~alt (~optional (~seq #:name name:id))
-                                    (~optional (~and #:primary-key primary-key))
+    (pattern (id:id type:expr (~alt (~optional (~and #:primary-key primary-key))
                                     (~optional (~and #:auto-increment auto-increment))
                                     (~optional (~and #:nullable nullable))
                                     (~optional (~and #:unique unique))
+                                    (~optional (~seq #:name name-e:str))
                                     (~optional (~seq #:contract contract-e:expr) #:defaults ([contract-e #'any/c]))
                                     (~optional (~seq #:wrapper wrapper:expr) #:defaults ([wrapper #'values]))) ...)
              #:fail-when (and (attribute primary-key)
@@ -125,6 +126,9 @@
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
              #:with unique? (if (attribute unique) #'#t #'#f)
+             #:with name (if (attribute name-e)
+                             #'name-e
+                             #'(id->column-name 'id))
              #:with contract (if (attribute nullable)
                                  #'(or/c sql-null? (and/c (type-contract type) contract-e))
                                  #'(and/c (type-contract type) contract-e))
@@ -138,6 +142,7 @@
                                                    (~optional (~and #:auto-increment auto-increment))
                                                    (~optional (~and #:nullable nullable))
                                                    (~optional (~and #:unique unique))
+                                                   (~optional (~seq #:name name-e:str))
                                                    (~optional (~seq #:contract contract-e:expr) #:defaults ([contract-e #'any/c]))
                                                    (~optional (~seq #:wrapper wrapper:expr) #:defaults ([wrapper #'values]))) ...)
              #:fail-when (and (attribute primary-key)
@@ -149,6 +154,9 @@
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
              #:with unique? (if (attribute unique) #'#t #'#f)
+             #:with name (if (attribute name-e)
+                             #'name-e
+                             #'(id->column-name 'id))
              #:with contract (if (attribute nullable)
                                  #'(or/c sql-null? (and/c (type-contract type) contract-e))
                                  #'(and/c (type-contract type) contract-e))
@@ -196,6 +204,7 @@
                           #:meta-updater meta-updater-id
                           #:fields (list (make-fld-maker struct-id
                                                          f.id
+                                                         f.name
                                                          f.type
                                                          f.primary-key?
                                                          f.auto-increment?

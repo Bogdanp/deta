@@ -150,7 +150,7 @@
                                [getter (in-list getters)])
                       (cons (ast:column column)
                             (ast:placeholder (getter entity)))))
-     #:where (ast:where (ast:app (ast:name '=)
+     #:where (ast:where (ast:app (ast:ident '=)
                                  (list (ast:column (field-name pk))
                                        (ast:placeholder ((field-getter pk) entity)))))))
 
@@ -188,7 +188,7 @@
 
   (define stmt
     (ast:delete (ast:from (ast:table (schema-table schema)))
-                (ast:where (ast:app (ast:name '=)
+                (ast:where (ast:app (ast:ident '=)
                                     (list (ast:column (field-name pk))
                                           (ast:placeholder ((field-getter pk) entity)))))))
 
@@ -275,20 +275,16 @@
     (cons (datum->syntax stx a)
           (datum->syntax stx (id->column-name b))))
 
-  (define-syntax-class q-ref
-    (pattern ref:id
-             #:when (column-reference? (syntax->datum this-syntax))
-             #:with e (let ([ref (syntax->column-reference this-syntax)])
-                        #`(ast:qualified #,(car ref) #,(cdr ref)))))
-
   (define-syntax-class q-expr
     #:datum-literals (as list null)
     #:literals (and case else or quote unquote)
-    (pattern ref:q-ref
-             #:with e #'ref.e)
+    (pattern column-reference:id
+             #:when (column-reference? (syntax->datum this-syntax))
+             #:with e (let ([ref (syntax->column-reference this-syntax)])
+                        #`(ast:qualified #,(car ref) #,(cdr ref))))
 
-    (pattern name:id
-             #:with e #'(ast:name 'name))
+    (pattern ident:id
+             #:with e #'(ast:ident 'ident))
 
     (pattern b:boolean
              #:with e #'(ast:scalar b))
@@ -304,7 +300,7 @@
              #:with e #'(ast:as a.e 'b))
 
     (pattern (and a:q-expr b:q-expr)
-             #:with e #'(ast:app (ast:name 'and) (list a.e b.e)))
+             #:with e #'(ast:app (ast:ident 'and) (list a.e b.e)))
 
     (pattern (case [c:q-expr v:q-expr] ...+
                    [else ve:q-expr])
@@ -314,14 +310,14 @@
              #:with e #'(ast:case-e (list (cons c.e v.e) ...) #f))
 
     (pattern (or a:q-expr b:q-expr)
-             #:with e #'(ast:app (ast:name 'or) (list a.e b.e)))
+             #:with e #'(ast:app (ast:ident 'or) (list a.e b.e)))
 
     (pattern (~or (list v:q-expr ...)
                   (quote (v:q-expr ...)))
              #:with e #'(ast:scalar (list v.e ...)))
 
-    (pattern (unquote v)
-             #:with e #'(ast:placeholder v))
+    (pattern (unquote placeholder)
+             #:with e #'(ast:placeholder placeholder))
 
     (pattern (f:q-expr arg:q-expr ...)
              #:with e #'(ast:app f.e (list arg.e ...))))
