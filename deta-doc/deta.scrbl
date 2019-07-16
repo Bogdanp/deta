@@ -48,7 +48,7 @@ Being externally-extensible is also not a goal.  The SQL AST as well
 as all of the dialect code is considered private and any new dialects
 (such as MySQL) will have to be added to the library itself.
 
-If you're down with that, then by all means carry on an read the
+If you're down with that, then, by all means, carry on and read the
 tutorial!
 
 
