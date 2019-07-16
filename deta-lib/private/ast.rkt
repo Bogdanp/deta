@@ -5,17 +5,17 @@
 (provide
  ddl?
 
- (struct-out create-table-ddl)
- (struct-out drop-table-ddl))
+ (struct-out create-table)
+ (struct-out drop-table))
 
 (struct ddl ()
   #:transparent)
 
 ;; TODO: Eventually there should be a ddl-field struct.
-(struct create-table-ddl ddl (table fields)
+(struct create-table ddl (table fields)
   #:transparent)
 
-(struct drop-table-ddl ddl (table)
+(struct drop-table ddl (table)
   #:transparent)
 
 

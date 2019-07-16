@@ -30,14 +30,14 @@
   (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (ast:create-table-ddl (schema-table schema)
-                                                           (schema-fields schema)))))
+                                     (ast:create-table (schema-table schema)
+                                                       (schema-fields schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
   (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (adapter-emit-ddl (connection-adapter conn)
-                                     (ast:drop-table-ddl (schema-table schema)))))
+                                     (ast:drop-table (schema-table schema)))))
 
 
 ;; insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

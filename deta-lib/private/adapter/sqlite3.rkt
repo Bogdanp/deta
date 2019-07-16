@@ -37,14 +37,14 @@
 
 (define (emit-ddl d)
   (match d
-    [(create-table-ddl table fields)
+    [(create-table table fields)
      (with-output-to-string
        (lambda _
          (displayln (~a "CREATE TABLE IF NOT EXISTS " (quote/standard table) "("))
          (displayln (string-join (map emit-field-ddl fields) ",\n"))
          (displayln ")")))]
 
-    [(drop-table-ddl table)
+    [(drop-table table)
      (~a "DROP TABLE IF EXISTS " (quote/standard table))]))
 
 (define (emit-field-ddl f)
