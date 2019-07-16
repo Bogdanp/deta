@@ -3,5 +3,5 @@
 set -euo pipefail
 
 pushd /github/workspace
-raco test -j 4 deta-test/
+raco pkg install --auto --batch deta-lib/ deta-doc/ deta-test/
 popd
