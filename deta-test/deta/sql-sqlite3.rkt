@@ -1,11 +1,10 @@
-#lang at-exp racket/base
+#lang racket/base
 
 (require deta
          deta/private/dialect/dialect
          deta/private/dialect/sqlite3
          (only-in deta/private/query
                   query-stmt)
-         racket/format
          rackunit
          threading)
 
@@ -29,14 +28,14 @@
      (~> (from "books" #:as b)
          (limit 20))
 
-     @~a{SELECT * FROM "books" AS "b" LIMIT 20})
+     "SELECT * FROM books AS b LIMIT 20")
 
     (check-emitted
      (~> (from "books" #:as b)
          (offset 10)
          (limit 20))
 
-     @~a{SELECT * FROM "books" AS "b" LIMIT 20 OFFSET 10}))))
+     "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))))
 
 (module+ test
   (require rackunit/text-ui)

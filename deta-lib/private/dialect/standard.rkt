@@ -16,8 +16,14 @@
  make-expr-emitter
  make-stmt-emitter)
 
+(define lowercase-alphanum-re
+  #rx"[a-z0-9_]+")
+
 (define (quote/standard e)
-  (~a #\" e #\"))
+  (cond
+    [(symbol? e) (symbol->string e)]
+    [(regexp-match-exact? lowercase-alphanum-re e) e]
+    [else (~a #\" e #\")]))
 
 (define ((make-expr-emitter recur) e)
   (define (maybe-parenthize e)

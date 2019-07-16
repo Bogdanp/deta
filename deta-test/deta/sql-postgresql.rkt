@@ -3,8 +3,8 @@
 (require deta
          deta/private/dialect/dialect
          deta/private/dialect/postgresql
-         (only-in deta/private/query query-stmt)
-         (prefix-in ast: deta/private/ast)
+         (only-in deta/private/query
+                  query-stmt)
          racket/format
          rackunit
          threading)
@@ -61,6 +61,12 @@
     (check-emitted (select _ #f)
                    "SELECT FALSE")
 
+    (check-emitted (select _ u.UserName)
+                   @~a{SELECT u."UserName"})
+
+    (check-emitted (select _ u.user_name)
+                   "SELECT u.user_name")
+
     (check-emitted (select _ (and 1 2))
                    "SELECT 1 AND 2")
 
@@ -113,13 +119,13 @@
                    "SELECT NULL IS NULL")
 
     (check-emitted (select _ (like u.a "hello%"))
-                   @~a{SELECT "u"."a" LIKE 'hello%'})
+                   "SELECT u.a LIKE 'hello%'")
 
     (check-emitted (select _ (ilike u.a "hello%"))
-                   @~a{SELECT "u"."a" ILIKE 'hello%'})
+                   "SELECT u.a ILIKE 'hello%'")
 
     (check-emitted (select _ (not-like u.a "hello%"))
-                   @~a{SELECT "u"."a" NOT LIKE 'hello%'})
+                   "SELECT u.a NOT LIKE 'hello%'")
 
     (check-emitted (select _ (in 1 (list 1 2 3)))
                    "SELECT 1 IN (1, 2, 3)")
@@ -171,7 +177,7 @@
                             (+ (now) (interval "7 days")))
                    is_between))
 
-     @~a{SELECT ((NOW()) BETWEEN ((NOW()) - (INTERVAL '7 days')) AND ((NOW()) + (INTERVAL '7 days'))) AS "is_between"})
+     "SELECT ((NOW()) BETWEEN ((NOW()) - (INTERVAL '7 days')) AND ((NOW()) + (INTERVAL '7 days'))) AS is_between")
 
     (check-emitted
      (select
@@ -180,7 +186,7 @@
         [(> (min d.employees) 0)
          (avg (/ d.expenses d.employees))]))
 
-     @~a{SELECT CASE WHEN (MIN("d"."employees")) > 0 THEN AVG("d"."expenses" / "d"."employees") END FROM "departments" AS "d"})
+     "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) END FROM departments AS d")
 
     (check-emitted
      (select
@@ -190,7 +196,7 @@
          (avg (/ d.expenses d.employees))]
         [else 0]))
 
-     @~a{SELECT CASE WHEN (MIN("d"."employees")) > 0 THEN AVG("d"."expenses" / "d"."employees") ELSE 0 END FROM "departments" AS "d"})
+     "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) ELSE 0 END FROM departments AS d")
 
     (test-suite
      "group-by"
@@ -200,7 +206,7 @@
           (select b.year (count b.title))
           (group-by b.year))
 
-      @~a{SELECT "b"."year", COUNT("b"."title") FROM "books" AS "b" GROUP BY "b"."year"}))
+      "SELECT b.year, COUNT(b.title) FROM books AS b GROUP BY b.year"))
 
     (test-suite
      "order-by"
@@ -210,40 +216,50 @@
           (select b.title)
           (order-by ([b.year])))
 
-      @~a{SELECT "b"."title" FROM "books" AS "b" ORDER BY "b"."year"})
+      "SELECT b.title FROM books AS b ORDER BY b.year")
 
-     (check-emitted (~> (from "books" #:as b)
-                        (select b.title)
-                        (order-by ([b.year #:desc]
-                                   [b.title])))
-                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\"")
+     (check-emitted
+      (~> (from "books" #:as b)
+          (select b.title)
+          (order-by ([b.year #:desc]
+                     [b.title])))
 
-     (check-emitted (~> (from "books" #:as b)
-                        (select b.title)
-                        (order-by ([b.year #:desc]
-                                   [b.title #:asc])))
-                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\""))
+      "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title")
+
+     (check-emitted
+      (~> (from "books" #:as b)
+          (select b.title)
+          (order-by ([b.year #:desc]
+                     [b.title #:asc])))
+
+      "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
 
     (test-suite
      "offset"
 
-     (check-emitted (~> (from "books" #:as b)
-                        (select b.title)
-                        (offset 20)
-                        (order-by ([b.title])))
-                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"title\" OFFSET 20"))
+     (check-emitted
+      (~> (from "books" #:as b)
+          (select b.title)
+          (offset 20)
+          (order-by ([b.title])))
+
+      "SELECT b.title FROM books AS b ORDER BY b.title OFFSET 20"))
 
     (test-suite
      "limit"
 
-     (check-emitted (~> (from "books" #:as b)
-                        (limit 20))
-                    "SELECT * FROM \"books\" AS \"b\" LIMIT 20")
+     (check-emitted
+      (~> (from "books" #:as b)
+          (limit 20))
 
-     (check-emitted (~> (from "books" #:as b)
-                        (offset 10)
-                        (limit 20))
-                    "SELECT * FROM \"books\" AS \"b\" LIMIT 20 OFFSET 10"))
+      "SELECT * FROM books AS b LIMIT 20")
+
+     (check-emitted
+      (~> (from "books" #:as b)
+          (offset 10)
+          (limit 20))
+
+      "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))
 
     (test-suite
      "placeholders"
@@ -251,51 +267,66 @@
      (check-emitted/placeholders (select _ ,42) "SELECT $1" '(42))
      (let ([x 1]
            [y "hello"])
-       (check-emitted/placeholders (select _ (<> ,x ,y))
-                                   "SELECT $1 <> $2"
-                                   '(1 "hello")))))
+       (check-emitted/placeholders
+        (select _ (<> ,x ,y))
+        "SELECT $1 <> $2"
+        '(1 "hello")))))
 
    (test-suite
     "update"
 
-    (check-emitted (~> (from "users" #:as u)
-                       (update [username ,1]
-                               [password-hash ,2]))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2")
+    (check-emitted
+     (~> (from "users" #:as u)
+         (update [username ,1]
+                 [password-hash ,2]))
 
-    (check-emitted (~> (from "users" #:as u)
-                       (update [username ,1]
-                               [password-hash ,2])
-                       (where (= u.id ,3)))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE \"u\".\"id\" = $3")
+     "UPDATE users AS u SET username = $1, password_hash = $2")
 
-    (check-emitted (~> (from "users" #:as u)
-                       (update [username ,1]
-                               [password-hash ,2])
-                       (where (= u.id ,3))
-                       (or-where (= u.id ,4)))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = $1, \"password_hash\" = $2 WHERE (\"u\".\"id\" = $3) OR (\"u\".\"id\" = $4)")
+    (check-emitted
+     (~> (from "users" #:as u)
+         (update [username ,1]
+                 [password-hash ,2])
+         (where (= u.id ,3)))
 
-    (check-emitted (~> (from "users" #:as u)
-                       (update [username "bill"])
-                       (where (= u.id 1))
-                       (returning u.username))
-                   "UPDATE \"users\" AS \"u\" SET \"username\" = 'bill' WHERE \"u\".\"id\" = 1 RETURNING \"u\".\"username\""))
+     "UPDATE users AS u SET username = $1, password_hash = $2 WHERE u.id = $3")
+
+    (check-emitted
+     (~> (from "users" #:as u)
+         (update [username ,1]
+                 [password-hash ,2])
+         (where (= u.id ,3))
+         (or-where (= u.id ,4)))
+
+     "UPDATE users AS u SET username = $1, password_hash = $2 WHERE (u.id = $3) OR (u.id = $4)")
+
+    (check-emitted
+     (~> (from "users" #:as u)
+         (update [username "bill"])
+         (where (= u.id 1))
+         (returning u.username))
+
+     "UPDATE users AS u SET username = 'bill' WHERE u.id = 1 RETURNING u.username"))
 
    (test-suite
     "delete"
 
-    (check-emitted (delete (from "users" #:as u))
-                   "DELETE FROM \"users\" AS \"u\"")
+    (check-emitted
+     (delete (from "users" #:as u))
 
-    (check-emitted (~> (delete (from "users" #:as u))
-                       (where (not u.active?)))
-                   "DELETE FROM \"users\" AS \"u\" WHERE NOT \"u\".\"is_active\"")
+     "DELETE FROM users AS u")
 
-    (check-emitted (~> (delete (from "users" #:as u))
-                       (where u.active?)
-                       (returning u.id))
-                   "DELETE FROM \"users\" AS \"u\" WHERE \"u\".\"is_active\" RETURNING \"u\".\"id\""))))
+    (check-emitted
+     (~> (delete (from "users" #:as u))
+         (where (not u.active?)))
+
+     "DELETE FROM users AS u WHERE NOT u.is_active")
+
+    (check-emitted
+     (~> (delete (from "users" #:as u))
+         (where u.active?)
+         (returning u.id))
+
+     "DELETE FROM users AS u WHERE u.is_active RETURNING u.id"))))
 
 (module+ test
   (require rackunit/text-ui)

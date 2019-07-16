@@ -58,7 +58,7 @@ tutorial!
 @(begin
    (define-syntax-rule (interaction e ...) (examples #:label #f e ...))
    (define-runtime-path log-file "tutorial-log.rktd")
-   (define log-mode 'replay)
+   (define log-mode (if (getenv "DETA_RECORD") 'record 'replay))
    (define (make-pg-eval log-file)
      (let ([ev (make-log-based-eval log-file log-mode)])
        (ev '(require db deta racket/contract racket/match racket/string threading))
