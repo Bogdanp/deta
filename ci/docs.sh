@@ -6,7 +6,7 @@ apt-get update
 apt-get install -y --no-install-recommends gettext-base gpg ssh rsync
 
 pushd /github/workspace
-scribble +m --dest doc --redirect-main 'http://docs.racket-lang.org/' deta-doc/deta.scrbl
+scribble +m --dest doc --redirect 'http://docs.racket-lang.org/' deta-doc/deta.scrbl
 mv doc/deta.html doc/index.html
 
 mkdir -p /tmp/secrets
