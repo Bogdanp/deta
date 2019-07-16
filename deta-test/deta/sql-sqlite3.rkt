@@ -1,10 +1,10 @@
-#lang racket/base
+#lang at-exp racket/base
 
 (require deta
-         deta/private/adapter/adapter
-         deta/private/adapter/sqlite3
-         (only-in deta/private/query query-stmt)
-         (prefix-in ast: deta/private/ast)
+         deta/private/dialect/dialect
+         deta/private/dialect/sqlite3
+         (only-in deta/private/query
+                  query-stmt)
          racket/format
          rackunit
          threading)
@@ -14,7 +14,7 @@
 
 (define-check (check-emitted q expected)
   (define-values (query _)
-    (adapter-emit-query sqlite3-adapter (query-stmt q)))
+    (dialect-emit-query sqlite3-dialect (query-stmt q)))
 
   (check-equal? query expected))
 
@@ -25,14 +25,18 @@
    (test-suite
     "limit"
 
-    (check-emitted (~> (from "books" #:as b)
-                       (limit 20))
-                   "SELECT * FROM \"books\" AS \"b\" LIMIT 20")
+    (check-emitted
+     (~> (from "books" #:as b)
+         (limit 20))
 
-    (check-emitted (~> (from "books" #:as b)
-                       (offset 10)
-                       (limit 20))
-                   "SELECT * FROM \"books\" AS \"b\" LIMIT 20 OFFSET 10"))))
+     @~a{SELECT * FROM "books" AS "b" LIMIT 20})
+
+    (check-emitted
+     (~> (from "books" #:as b)
+         (offset 10)
+         (limit 20))
+
+     @~a{SELECT * FROM "books" AS "b" LIMIT 20 OFFSET 10}))))
 
 (module+ test
   (require rackunit/text-ui)

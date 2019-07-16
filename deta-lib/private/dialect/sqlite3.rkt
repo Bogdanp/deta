@@ -8,32 +8,33 @@
          "../ast.rkt"
          "../field.rkt"
          "../type.rkt"
-         "adapter.rkt"
+         "dialect.rkt"
          "standard.rkt")
 
 (provide
- sqlite3-adapter?
- sqlite3-adapter)
+ sqlite3-dialect?
+ sqlite3-dialect)
 
-(define-values (sqlite3-adapter? sqlite3-adapter)
+(define-values (sqlite3-dialect? sqlite3-dialect)
   (let ()
-    (struct sqlite3-adapter ()
-      #:methods gen:adapter
-      [(define (adapter-supports-returning? _) #f)
+    (struct sqlite3-dialect ()
+      #:methods gen:dialect
+      [(define (dialect-name _) 'sqlite3)
+       (define (dialect-supports-returning? _) #f)
 
-       (define/contract (adapter-last-id-query _)
-         (-> adapter? string?)
+       (define/contract (dialect-last-id-query _)
+         (-> dialect? string?)
          "SELECT last_insert_rowid()")
 
-       (define/contract (adapter-emit-ddl _ d)
-         (-> adapter? ddl? string?)
+       (define/contract (dialect-emit-ddl _ d)
+         (-> dialect? ddl? string?)
          (emit-ddl d))
 
-       (define/contract (adapter-emit-query/impl _ s)
-         (-> adapter? stmt? string?)
+       (define/contract (dialect-emit-query/impl _ s)
+         (-> dialect? stmt? string?)
          (emit-stmt s))])
 
-    (values sqlite3-adapter? (sqlite3-adapter))))
+    (values sqlite3-dialect? (sqlite3-dialect))))
 
 (define (emit-ddl d)
   (match d

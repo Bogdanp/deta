@@ -4,9 +4,8 @@
          racket/match
          racket/port
          racket/string
-         racket/vector
          "../ast.rkt"
-         "adapter.rkt")
+         "dialect.rkt")
 
 ;; Implements a "standard" emitter for SQL from our AST.  I say
 ;; "standard", but what I really mean is as close to the standard as

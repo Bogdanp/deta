@@ -3,22 +3,24 @@
 (require racket/generic)
 
 (provide
- gen:adapter
- adapter?
- adapter-supports-returning?
- adapter-last-id-query
- adapter-emit-ddl
- adapter-emit-query)
+ gen:dialect
+ dialect?
+ dialect-name
+ dialect-supports-returning?
+ dialect-last-id-query
+ dialect-emit-ddl
+ dialect-emit-query)
 
-(define-generics adapter
-  (adapter-supports-returning? adapter)
-  (adapter-last-id-query adapter)
-  (adapter-emit-ddl adapter schema)
-  (adapter-emit-query/impl adapter query))
+(define-generics dialect
+  (dialect-name dialect)
+  (dialect-supports-returning? dialect)
+  (dialect-last-id-query dialect)
+  (dialect-emit-ddl dialect schema)
+  (dialect-emit-query/impl dialect query))
 
-(define (adapter-emit-query adapter stmt)
+(define (dialect-emit-query dialect stmt)
   (parameterize ([current-placeholders null])
-    (values (adapter-emit-query/impl adapter stmt)
+    (values (dialect-emit-query/impl dialect stmt)
             (reverse (current-placeholders)))))
 
 

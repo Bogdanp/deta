@@ -10,9 +10,9 @@
          racket/match
          racket/sequence
          racket/set
-         "private/adapter/adapter.rkt"
          (prefix-in ast: "private/ast.rkt")
          "private/connection.rkt"
+         "private/dialect/dialect.rkt"
          "private/entity.rkt"
          "private/field.rkt"
          "private/meta.rkt"
@@ -29,14 +29,14 @@
 (define/contract (create-table! conn schema-or-name)
   (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
-  (query-exec conn (adapter-emit-ddl (connection-adapter conn)
+  (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:create-table (schema-table schema)
                                                        (schema-fields schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
   (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
-  (query-exec conn (adapter-emit-ddl (connection-adapter conn)
+  (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:drop-table (schema-table schema)))))
 
 
@@ -48,10 +48,9 @@
 
 (define/contract (insert! conn . entities)
   (-> connection? entity? ... (listof entity?))
-  (define dialect (dbsystem-name (connection-dbsystem conn)))
-  (define adapter (connection-adapter conn))
+  (define dialect (connection-dialect conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-persist? (entity-meta entity)))
-    (insert-entity! adapter dialect conn entity)))
+    (insert-entity! dialect conn entity)))
 
 (define/contract (insert-one! conn entity)
   (-> connection? entity? (or/c false/c entity?))
@@ -59,7 +58,7 @@
     [(list entity) entity]
     [_ #f]))
 
-(define (insert-entity! adapter dialect conn entity)
+(define (insert-entity! dialect conn entity)
   (define meta (entity-meta entity))
   (define schema (meta-schema meta))
   (when (schema-virtual? schema)
@@ -71,7 +70,9 @@
                ([f (in-list (schema-fields schema))]
                 #:unless (field-auto-increment? f))
       (values (cons (field-name f) columns)
-              (cons (type-dump (field-type f) dialect ((field-getter f) entity))
+              (cons (type-dump (field-type f)
+                               (dialect-name dialect)
+                               ((field-getter f) entity))
                     column-values))))
 
   (define pk (schema-primary-key schema))
@@ -83,16 +84,16 @@
      #:returning (and pk (ast:returning (list (ast:column (field-name pk)))))))
 
   (define-values (query args)
-    (adapter-emit-query adapter stmt))
+    (dialect-emit-query dialect stmt))
 
   (define res
     (cond
-      [(adapter-supports-returning? adapter)
+      [(dialect-supports-returning? dialect)
        (apply query-value conn query args)]
 
       [else
        (apply query-exec conn query args)
-       (query-value conn (adapter-last-id-query adapter))]))
+       (query-value conn (dialect-last-id-query dialect))]))
 
   (let ([e ((schema-meta-updater schema) entity meta-track-persisted)])
     (cond
@@ -108,10 +109,9 @@
 
 (define/contract (update! conn . entities)
   (-> connection? entity? ... (listof entity?))
-  (define dialect (dbsystem-name (connection-dbsystem conn)))
-  (define adapter (connection-adapter conn))
+  (define dialect (connection-dialect conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-update? (entity-meta entity)))
-    (update-entity! adapter dialect conn entity)))
+    (update-entity! dialect conn entity)))
 
 (define/contract (update-one! conn entity)
   (-> connection? entity? (or/c false/c entity?))
@@ -119,7 +119,7 @@
     [(list e) e]
     [_ #f]))
 
-(define (update-entity! adapter dialect conn entity)
+(define (update-entity! dialect conn entity)
   (define meta (entity-meta entity))
   (define schema (meta-schema meta))
   (define pk (schema-primary-key schema))
@@ -134,7 +134,9 @@
                 #:when (set-member? changes (field-id f))
                 #:unless (field-auto-increment? f))
       (values (cons (field-name f) columns)
-              (cons (type-dump (field-type f) dialect ((field-getter f) entity))
+              (cons (type-dump (field-type f)
+                               (dialect-name dialect)
+                               ((field-getter f) entity))
                     column-values))))
 
   (define stmt
@@ -150,7 +152,7 @@
                                        (ast:placeholder ((field-getter pk) entity)))))))
 
   (define-values (query args)
-    (adapter-emit-query adapter stmt))
+    (dialect-emit-query dialect stmt))
 
   (apply query-exec conn query args)
   ((schema-meta-updater schema) entity meta-track-persisted))
@@ -164,9 +166,9 @@
 
 (define/contract (delete! conn . entities)
   (-> connection? entity? ... (listof entity?))
-  (define adapter (connection-adapter conn))
+  (define dialect (connection-dialect conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-delete? (entity-meta entity)))
-    (delete-entity! adapter conn entity)))
+    (delete-entity! dialect conn entity)))
 
 (define/contract (delete-one! conn entity)
   (-> connection? entity? (or/c false/c entity?))
@@ -174,7 +176,7 @@
     [(list e) e]
     [_ #f]))
 
-(define (delete-entity! adapter conn entity)
+(define (delete-entity! dialect conn entity)
   (define meta (entity-meta entity))
   (define schema (meta-schema meta))
   (define pk (schema-primary-key schema))
@@ -189,7 +191,7 @@
                                        (ast:placeholder ((field-getter pk) entity)))))))
 
   (define-values (query args)
-    (adapter-emit-query adapter stmt))
+    (dialect-emit-query dialect stmt))
 
   (apply query-exec conn query args)
   ((schema-meta-updater schema) entity meta-track-deleted))
@@ -274,7 +276,7 @@
 
   (define-syntax-class q-expr
     #:datum-literals (array as list null)
-    #:literals (and case else or unquote)
+    #:literals (and case cond else or unquote)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
@@ -302,11 +304,11 @@
     (pattern (and a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:ident 'and) (list a.e b.e)))
 
-    (pattern (case [c:q-expr v:q-expr] ...+
-                   [else ve:q-expr])
+    (pattern ((~or case cond) [c:q-expr v:q-expr] ...+
+                              [else ve:q-expr])
              #:with e #'(ast:case-e (list (cons c.e v.e) ...) ve.e))
 
-    (pattern (case [c:q-expr v:q-expr] ...+)
+    (pattern ((~or case cond) [c:q-expr v:q-expr] ...+)
              #:with e #'(ast:case-e (list (cons c.e v.e) ...) #f))
 
     (pattern (or a:q-expr b:q-expr)

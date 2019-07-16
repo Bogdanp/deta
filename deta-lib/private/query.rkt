@@ -4,10 +4,10 @@
          racket/contract
          racket/match
          racket/struct
-         "adapter/adapter.rkt"
-         "adapter/postgresql.rkt"
          (prefix-in ast: "ast.rkt")
          "connection.rkt"
+         "dialect/dialect.rkt"
+         "dialect/postgresql.rkt"
          "field.rkt"
          "schema.rkt")
 
@@ -21,9 +21,9 @@
   #:transparent
   #:property prop:statement
   (lambda (self c)
-    (define adapter (connection-adapter c))
+    (define dialect (connection-dialect c))
     (define-values (query args)
-      (adapter-emit-query adapter (query-stmt self)))
+      (dialect-emit-query dialect (query-stmt self)))
 
     (define prepared
       (prepare c query))
@@ -37,7 +37,7 @@
    (lambda (self) 'query)
    (lambda (self)
      (define-values (query args)
-       (adapter-emit-query postgresql-adapter (query-stmt self)))
+       (dialect-emit-query postgresql-dialect (query-stmt self)))
      (cons query args))))
 
 (define (make-empty-query)

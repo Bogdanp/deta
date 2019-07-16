@@ -1,8 +1,8 @@
-#lang racket/base
+#lang at-exp racket/base
 
 (require deta
-         deta/private/adapter/adapter
-         deta/private/adapter/postgresql
+         deta/private/dialect/dialect
+         deta/private/dialect/postgresql
          (only-in deta/private/query query-stmt)
          (prefix-in ast: deta/private/ast)
          racket/format
@@ -19,13 +19,13 @@
 
 (define-check (check-emitted q expected)
   (define-values (query _)
-    (adapter-emit-query postgresql-adapter (query->stmt q)))
+    (dialect-emit-query postgresql-dialect (query->stmt q)))
 
   (check-equal? query expected))
 
 (define-check (check-emitted/placeholders q expected-query expected-placeholders)
   (define-values (query args)
-    (adapter-emit-query postgresql-adapter (query->stmt q)))
+    (dialect-emit-query postgresql-dialect (query->stmt q)))
 
   (check-equal? query expected-query)
   (check-equal? args expected-placeholders))
@@ -113,13 +113,13 @@
                    "SELECT NULL IS NULL")
 
     (check-emitted (select _ (like u.a "hello%"))
-                   "SELECT \"u\".\"a\" LIKE 'hello%'")
+                   @~a{SELECT "u"."a" LIKE 'hello%'})
 
     (check-emitted (select _ (ilike u.a "hello%"))
-                   "SELECT \"u\".\"a\" ILIKE 'hello%'")
+                   @~a{SELECT "u"."a" ILIKE 'hello%'})
 
     (check-emitted (select _ (not-like u.a "hello%"))
-                   "SELECT \"u\".\"a\" NOT LIKE 'hello%'")
+                   @~a{SELECT "u"."a" NOT LIKE 'hello%'})
 
     (check-emitted (select _ (in 1 (list 1 2 3)))
                    "SELECT 1 IN (1, 2, 3)")
@@ -165,50 +165,59 @@
     (check-emitted (select _ (cast "1950-01-01" date))
                    "SELECT CAST('1950-01-01' AS DATE)")
 
-    (check-emitted (select _ (as (between (now)
-                                          (- (now) (interval "7 days"))
-                                          (+ (now) (interval "7 days")))
-                                 is_between))
-                   (~a "SELECT ((NOW()) "
-                       "BETWEEN ((NOW()) - (INTERVAL '7 days')) "
-                       "AND ((NOW()) + (INTERVAL '7 days'))) "
-                       "AS \"is_between\""))
+    (check-emitted
+     (select _ (as (between (now)
+                            (- (now) (interval "7 days"))
+                            (+ (now) (interval "7 days")))
+                   is_between))
 
-    (check-emitted (select
-                    (from "departments" #:as d)
-                    (case
-                      [(> (min d.employees) 0)
-                       (avg (/ d.expenses d.employees))]))
-                   "SELECT CASE WHEN (MIN(\"d\".\"employees\")) > 0 THEN AVG(\"d\".\"expenses\" / \"d\".\"employees\") END FROM \"departments\" AS \"d\"")
+     @~a{SELECT ((NOW()) BETWEEN ((NOW()) - (INTERVAL '7 days')) AND ((NOW()) + (INTERVAL '7 days'))) AS "is_between"})
 
-    (check-emitted (select
-                    (from "departments" #:as d)
-                    (case
-                      [(> (min d.employees) 0)
-                       (avg (/ d.expenses d.employees))]
-                      [else 0]))
-                   "SELECT CASE WHEN (MIN(\"d\".\"employees\")) > 0 THEN AVG(\"d\".\"expenses\" / \"d\".\"employees\") ELSE 0 END FROM \"departments\" AS \"d\"")
+    (check-emitted
+     (select
+      (from "departments" #:as d)
+      (cond
+        [(> (min d.employees) 0)
+         (avg (/ d.expenses d.employees))]))
+
+     @~a{SELECT CASE WHEN (MIN("d"."employees")) > 0 THEN AVG("d"."expenses" / "d"."employees") END FROM "departments" AS "d"})
+
+    (check-emitted
+     (select
+      (from "departments" #:as d)
+      (cond
+        [(> (min d.employees) 0)
+         (avg (/ d.expenses d.employees))]
+        [else 0]))
+
+     @~a{SELECT CASE WHEN (MIN("d"."employees")) > 0 THEN AVG("d"."expenses" / "d"."employees") ELSE 0 END FROM "departments" AS "d"})
 
     (test-suite
      "group-by"
 
-     (check-emitted (~> (from "books" #:as b)
-                        (select b.year (count b.title))
-                        (group-by b.year))
-                    "SELECT \"b\".\"year\", COUNT(\"b\".\"title\") FROM \"books\" AS \"b\" GROUP BY \"b\".\"year\""))
+     (check-emitted
+      (~> (from "books" #:as b)
+          (select b.year (count b.title))
+          (group-by b.year))
+
+      @~a{SELECT "b"."year", COUNT("b"."title") FROM "books" AS "b" GROUP BY "b"."year"}))
 
     (test-suite
      "order-by"
 
-     (check-emitted (~> (from "books" #:as b)
-                        (select b.title)
-                        (order-by ([b.year])))
-                    "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\"")
+     (check-emitted
+      (~> (from "books" #:as b)
+          (select b.title)
+          (order-by ([b.year])))
+
+      @~a{SELECT "b"."title" FROM "books" AS "b" ORDER BY "b"."year"})
+
      (check-emitted (~> (from "books" #:as b)
                         (select b.title)
                         (order-by ([b.year #:desc]
                                    [b.title])))
                     "SELECT \"b\".\"title\" FROM \"books\" AS \"b\" ORDER BY \"b\".\"year\" DESC, \"b\".\"title\"")
+
      (check-emitted (~> (from "books" #:as b)
                         (select b.title)
                         (order-by ([b.year #:desc]

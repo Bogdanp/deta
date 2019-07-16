@@ -3,16 +3,16 @@
 (require db
          racket/contract
          racket/match
-         "adapter/adapter.rkt"
-         "adapter/postgresql.rkt"
-         "adapter/sqlite3.rkt")
+         "dialect/dialect.rkt"
+         "dialect/postgresql.rkt"
+         "dialect/sqlite3.rkt")
 
 (provide
- connection-adapter)
+ connection-dialect)
 
-(define/contract (connection-adapter conn)
-  (-> connection? adapter?)
+(define/contract (connection-dialect conn)
+  (-> connection? dialect?)
   (match (dbsystem-name (connection-dbsystem conn))
-    ['postgresql postgresql-adapter]
-    ['sqlite3    sqlite3-adapter]
-    [_           (error 'connection-adapter "this connection type is not supported")]))
+    ['postgresql postgresql-dialect]
+    ['sqlite3    sqlite3-dialect]
+    [_           (error 'connection-dialect "dialect not supported")]))

@@ -8,32 +8,33 @@
          "../ast.rkt"
          "../field.rkt"
          "../type.rkt"
-         "adapter.rkt"
+         "dialect.rkt"
          "standard.rkt")
 
 (provide
- postgresql-adapter?
- postgresql-adapter)
+ postgresql-dialect?
+ postgresql-dialect)
 
-(define-values (postgresql-adapter? postgresql-adapter)
+(define-values (postgresql-dialect? postgresql-dialect)
   (let ()
-    (struct postgresql-adapter ()
-      #:methods gen:adapter
-      [(define (adapter-supports-returning? _) #t)
+    (struct postgresql-dialect ()
+      #:methods gen:dialect
+      [(define (dialect-name _) 'postgresql)
+       (define (dialect-supports-returning? _) #t)
 
-       (define/contract (adapter-last-id-query _)
-         (-> adapter? string?)
+       (define/contract (dialect-last-id-query _)
+         (-> dialect? string?)
          "SELECT lastval()")
 
-       (define/contract (adapter-emit-ddl _ d)
-         (-> adapter? ddl? string?)
+       (define/contract (dialect-emit-ddl _ d)
+         (-> dialect? ddl? string?)
          (emit-ddl d))
 
-       (define/contract (adapter-emit-query/impl _ s)
-         (-> adapter? stmt? string?)
+       (define/contract (dialect-emit-query/impl _ s)
+         (-> dialect? stmt? string?)
          (emit-stmt s))])
 
-    (values postgresql-adapter? (postgresql-adapter))))
+    (values postgresql-dialect? (postgresql-dialect))))
 
 (define (emit-ddl d)
   (match d

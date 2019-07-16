@@ -45,8 +45,8 @@ for some queries you may have to resort to raw SQL or the
 @racketmodname[sql] library.  It is very much an "80% solution."
 
 Being externally-extensible is also not a goal.  The SQL AST as well
-as all of the adapter code is considered private and any new adapters
-(like MySQL) will have to be added to the library itself.
+as all of the dialect code is considered private and any new dialects
+(such as MySQL) will have to be added to the library itself.
 
 If you're down with that, then by all means carry on an read the
 tutorial!
@@ -465,10 +465,10 @@ hooks will be supported at some point.
   [(q-expr (array q-expr ...)
            (as q-expr id)
            (and q-expr q-expr)
-           (or q-expr q-expr)
            (case [q-expr q-expr] ...+)
            (case [q-expr q-expr] ...+
                  [else q-expr])
+           (or q-expr q-expr)
            (list q-expr ...)
            (unquote expr)
            id
