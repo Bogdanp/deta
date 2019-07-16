@@ -13,6 +13,6 @@ mkdir -p /tmp/secrets
 gpg -q --batch --yes --decrypt --passphrase="$DETA_DOCS_DEPLOY_KEY_PASSPHRASE" -o /tmp/secrets/deploy ci/deploy.gpg
 chmod 0600 /tmp/secrets/deploy
 rsync \
-    -e "ssh -P $DETA_DOCS_SSH_PORT -o StrictHostKeyChecking=no -i /tmp/secrets/deploy" \
+    -e "ssh -p $DETA_DOCS_SSH_PORT -o StrictHostKeyChecking=no -i /tmp/secrets/deploy" \
     -a doc/ deta@"$DETA_DOCS_SSH_HOST":~/www/
 popd
