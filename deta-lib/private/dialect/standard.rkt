@@ -1,8 +1,7 @@
-#lang at-exp racket/base
+#lang racket/base
 
-(require racket/format
-         racket/match
-         racket/port
+(require racket/match
+         racket/sequence
          racket/string
          "../ast.rkt"
          "dialect.rkt")
@@ -23,61 +22,83 @@
   (cond
     [(symbol? e) (symbol->string e)]
     [(regexp-match-exact? lowercase-alphanum-re e) e]
-    [else (~a #\" e #\")]))
+    [else (string-append "\"" e "\"")]))
 
-(define ((make-expr-emitter recur) e)
-  (define (maybe-parenthize e)
-    (if (expr-terminal? e)
-        (recur e)
-        (~a "(" (recur e) ")")))
+(define ((make-expr-emitter display/expr) e)
+  (define (display/maybe-parenthize e)
+    (cond
+      [(expr-terminal? e)
+       (display/expr e)]
+
+      [else
+       (display "(")
+       (display/expr e)
+       (display ")")]))
+
+  (define (display/quoted e)
+    (display (quote/standard e)))
+
+  (define (display/space e)
+    (display " ")
+    (display/expr e))
+
+  (define (display/spaced e)
+    (display " ")
+    (display/expr e)
+    (display " "))
 
   (match e
     [(? string?)
-     (quote/standard e)]
+     (display (quote/standard e))]
 
-    [(table e)  (recur e)]
-    [(column e) (recur e)]
+    [(table e)  (display/expr e)]
+    [(column e) (display/expr e)]
 
     [(placeholder v)
-     (~a "$" (track-placeholder! v))]
+     (display "$")
+     (display (track-placeholder! v))]
 
-    [(ident 'array-concat)    "||"]
-    [(ident 'array-contains?) "@>"]
-    [(ident 'array-overlap?)  "&&"]
-    [(ident 'bitwise-not)     "~"]
-    [(ident 'bitwise-and)     "&"]
-    [(ident 'bitwise-or )     "|"]
-    [(ident 'bitwise-xor)     "#"]
-    [(ident 'is-distinct)     "IS DISTINCT"]
-    [(ident 'similar-to)      "SIMILAR TO"]
+    [(ident 'array-concat)    (display "||")]
+    [(ident 'array-contains?) (display "@>")]
+    [(ident 'array-overlap?)  (display "&&")]
+    [(ident 'bitwise-not)     (display "~")]
+    [(ident 'bitwise-and)     (display "&")]
+    [(ident 'bitwise-or )     (display "|")]
+    [(ident 'bitwise-xor)     (display "#")]
+    [(ident 'is-distinct)     (display "IS DISTINCT")]
+    [(ident 'similar-to)      (display "SIMILAR TO")]
+    [(ident name)             (display (string-upcase (symbol->string name)))]
 
-    [(ident n)
-     (string-upcase (symbol->string n))]
+    [(scalar #t) (display "TRUE")]
+    [(scalar #f) (display "FALSE")]
 
-    [(scalar #t) "TRUE"]
-    [(scalar #f) "FALSE"]
+    [(scalar (and (? list?) items))
+     (display "(")
+     (display/sep items display/expr)
+     (display ")")]
 
-    [(scalar (and (? list?) v))
-     (~a "(" (string-join (map recur v) ", ") ")")]
-
-    [(scalar (and (? string?) v))
-     (~a "'" (string-replace v "'" "''") "'")]
+    [(scalar (and (? string?) str))
+     (display "'")
+     (display (string-replace str "'" "''"))
+     (display "'")]
 
     [(scalar (and (? vector?) v))
-     (define items
-       (for/list ([e (in-vector v)])
-         (recur e)))
-
-     (~a "ARRAY[" (string-join items ", ") "]")]
+     (display "ARRAY[")
+     (display/sep v display/expr)
+     (display "]")]
 
     [(scalar v)
-     (~v v)]
+     (display v)]
 
     [(qualified parent name)
-     (~a (recur parent) "." (quote/standard name))]
+     (display/expr parent)
+     (display ".")
+     (display/quoted name)]
 
     [(as e alias)
-     (~a (maybe-parenthize e) " AS " (quote/standard alias))]
+     (display/maybe-parenthize e)
+     (display " AS ")
+     (display/quoted alias)]
 
     [(app (and (ident (or
                        ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
@@ -91,13 +112,23 @@
                        ))
                op)
           (list a))
-     (~a (recur op) " " (maybe-parenthize a))]
+     (display/expr op)
+     (display " ")
+     (display/maybe-parenthize a)]
 
     [(app (ident 'cast) (list a b))
-     (~a "CAST(" (maybe-parenthize a) " AS " (recur b) ")")]
+     (display "CAST(")
+     (display/maybe-parenthize a)
+     (display " AS ")
+     (display/expr b)
+     (display ")")]
 
     [(app (ident 'extract) (list a b))
-     (~a "EXTRACT(" (recur a) " FROM " (maybe-parenthize b) ")")]
+     (display "EXTRACT(")
+     (display/expr a)
+     (display " FROM ")
+     (display/maybe-parenthize b)
+     (display ")")]
 
     [(app (and (ident (or
                        ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
@@ -120,105 +151,175 @@
                        ))
                op)
           (list a b))
-     (~a (maybe-parenthize a) " " (recur op) " " (maybe-parenthize b))]
+     (display/maybe-parenthize a)
+     (display/spaced op)
+     (display/maybe-parenthize b)]
 
     [(app (ident 'array-ref) (list a b))
-     (~a "(" (recur a) ")[" (maybe-parenthize b) "]")]
+     (display "(")
+     (display/expr a)
+     (display ")[")
+     (display/maybe-parenthize b)
+     (display "]")]
 
     [(app (ident 'array-slice) (list a b c))
-     (~a "(" (recur a) ")[" (maybe-parenthize b) ":" (maybe-parenthize c) "]")]
+     (display "(")
+     (display/expr a)
+     (display ")[")
+     (display/maybe-parenthize b)
+     (display ":")
+     (display/maybe-parenthize c)
+     (display "]")]
 
     [(app (ident 'between) (list a b c))
-     (~a (maybe-parenthize a) " BETWEEN " (maybe-parenthize b) " AND " (maybe-parenthize c))]
+     (display/maybe-parenthize a)
+     (display " BETWEEN ")
+     (display/maybe-parenthize b)
+     (display " AND ")
+     (display/maybe-parenthize c)]
 
     [(app (ident 'position) (list a b))
-     (~a "POSITION(" (maybe-parenthize a) " IN " (maybe-parenthize b) ")")]
+     (display "POSITION(")
+     (display/maybe-parenthize a)
+     (display " IN ")
+     (display/maybe-parenthize b)
+     (display ")")]
 
     [(app (ident 'trim) (list a b c))
-     (~a "TRIM(" (maybe-parenthize a) " " (maybe-parenthize b) " FROM " (maybe-parenthize c) ")")]
+     (display "TRIM(")
+     (display/maybe-parenthize a)
+     (display " ")
+     (display/maybe-parenthize b)
+     (display " FROM ")
+     (display/maybe-parenthize c)
+     (display ")")]
 
     [(app f args)
-     (~a (recur f) "(" (string-join (map recur args) ", ") ")")]
+     (display/expr f)
+     (display "(")
+     (display/sep args display/expr)
+     (display ")")]
 
     [(case-e cases else-case)
-     (with-output-to-string
-       (lambda _
-         (display "CASE")
-         (for ([c (in-list cases)])
-           (display @~a{ WHEN @(recur (car c)) THEN @(recur (cdr c))}))
-         (when else-case
-           (display @~a{ ELSE @(recur else-case)}))
-         (display " END")))]))
+     (display "CASE")
 
-(define ((make-stmt-emitter recur emit-expr
+     (for ([c (in-list cases)])
+       (display " WHEN ")
+       (display/expr (car c))
+       (display " THEN ")
+       (display/expr (cdr c)))
+
+     (when else-case
+       (display " ELSE ")
+       (display/expr else-case))
+
+     (display " END")]))
+
+(define ((make-stmt-emitter display/stmt
+                            display/expr
                             #:supports-returning? [supports-returning? #f]) e)
+
+  (define (display/space e)
+    (display " ")
+    (display/stmt e))
+
+  (define (display/parens e)
+    (display "(")
+    (display/stmt e)
+    (display ")"))
+
   (match e
     [(list exprs ...)
-     (string-join (map emit-expr exprs) ", ")]
+     (display/sep exprs display/expr)]
 
     [(select columns from where group-by order-by offset limit)
-     (with-output-to-string
-       (lambda _
-         (define columns:str
-           (if (null? columns)
-               "*"
-               (recur columns)))
+     (display "SELECT ")
+     (cond
+       [(null? columns) (display "*")]
+       [else            (display/stmt columns)])
 
-         (display (~a "SELECT " columns:str))
-         (when from     (display (~a " " (recur from))))
-         (when where    (display (~a " " (recur where))))
-         (when group-by (display (~a " " (recur group-by))))
-         (when order-by (display (~a " " (recur order-by))))
-         (when limit    (display (~a " " (recur limit))))
-         (when offset   (display (~a " " (recur offset))))))]
+     (when from     (display/space from))
+     (when where    (display/space where))
+     (when group-by (display/space group-by))
+     (when order-by (display/space order-by))
+     (when limit    (display/space limit))
+     (when offset   (display/space offset))]
 
     [(update table assignments where returning)
-     (with-output-to-string
-       (lambda _
-         (display @~a{UPDATE @(emit-expr table)})
-         (when assignments (display (~a " " (recur assignments))))
-         (when where       (display (~a " " (recur where))))
-         (when (and returning supports-returning?)
-           (display (~a " " (recur returning))))))]
+     (display "UPDATE ")
+     (display/expr table)
+
+     (when assignments (display/space assignments))
+     (when where       (display/space where))
+     (when (and returning supports-returning?)
+       (display/space returning))]
 
     [(delete from where returning)
-     (with-output-to-string
-       (lambda _
-         (display @~a{DELETE @(recur from)})
-         (when where
-           (display (~a " " (recur where))))
-         (when (and returning supports-returning?)
-           (display (~a " " (recur returning))))))]
+     (display "DELETE ")
+     (display/stmt from)
+     (when where (display/space where))
+     (when (and returning supports-returning?)
+       (display/space returning))]
 
     [(insert table columns column-values returning)
-     (with-output-to-string
-       (lambda _
-         (display @~a{INSERT INTO @(emit-expr table) (@(recur columns))})
-         (display @~a{ VALUES (@(recur column-values))})
-         (when (and returning supports-returning?)
-           (display (~a " " (recur returning))))))]
+     (display "INSERT INTO ")
+     (display/expr table)
+     (display/parens columns)
+     (display " VALUES ")
+     (display/parens column-values)
+     (when (and returning supports-returning?)
+       (display/space returning))]
 
     [(assignments pairs)
-     (define pair:strs
-       (for/list ([pair (in-list pairs)])
-         @~a{@(emit-expr (car pair)) = @(emit-expr (cdr pair))}))
+     (display "SET ")
+     (display/sep
+      pairs
+      (match-lambda
+        [(cons l r)
+         (display/expr l)
+         (display " = ")
+         (display/expr r)]))]
 
-     @~a{SET @(string-join pair:strs ", ")}]
+    [(limit n)
+     (display "LIMIT ")
+     (display n)]
 
-    [(limit n)        @~a{LIMIT @n}]
-    [(from t)         @~a{FROM @(emit-expr t)}]
-    [(where e)        @~a{WHERE @(emit-expr e)}]
-    [(group-by cols)  @~a{GROUP BY @(recur cols)}]
-    [(offset n)       @~a{OFFSET @n}]
-    [(returning es)   @~a{RETURNING @(recur es)}]
+    [(from t)
+     (display "FROM ")
+     (display/expr t)]
+
+    [(where e)
+     (display "WHERE ")
+     (display/expr e)]
+
+    [(group-by cols)
+     (display "GROUP BY ")
+     (display/stmt cols)]
+
+    [(offset n)
+     (display "OFFSET ")
+     (display n)]
+
+    [(returning es)
+     (display "RETURNING ")
+     (display/stmt es)]
 
     [(order-by pairs)
-     (define pair:strs
-       (for/list ([pair (in-list pairs)])
-         (define col-e (car pair))
-         (define dir-e (cdr pair))
-         (if (eq? dir-e 'desc)
-             (~a (emit-expr col-e) " DESC")
-             (emit-expr col-e))))
+     (display "ORDER BY ")
+     (display/sep pairs
+                  (match-lambda
+                    [(cons e dir)
+                     (display/expr e)
+                     (when (eq? dir 'desc)
+                       (display " DESC"))]))]))
 
-     (~a "ORDER BY " (string-join pair:strs ", "))]))
+(define (display/sep xs display-p
+                     #:sep [sep ", "])
+  (define n-xs
+    (sequence-length xs))
+
+  (for ([i (in-naturals 1)]
+        [x xs])
+    (display-p x)
+    (unless (= i n-xs)
+      (display sep))))

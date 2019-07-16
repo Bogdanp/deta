@@ -1,4 +1,4 @@
-#lang at-exp racket/base
+#lang racket/base
 
 (require racket/contract
          racket/match
@@ -43,9 +43,10 @@
          (display (quote/standard table))
 
          (displayln "(")
-         (for ([i (length fields)]
+         (define n-fields (length fields))
+         (for ([i (in-naturals 1)]
                [f (in-list fields)])
-           (emit-field-ddl f (= i (sub1 (length fields)))))
+           (emit-field-ddl f (= i n-fields)))
          (displayln ")")]
 
         [(drop-table table)
@@ -80,8 +81,12 @@
   (make-expr-emitter emit-expr))
 
 (define (emit-stmt e)
-  (match e
-    [_ (emit-stmt/standard e)]))
+  (with-output-to-string
+    (lambda _
+      (emit-stmt/sqlite3 e))))
+
+(define (emit-stmt/sqlite3 e)
+  (emit-stmt/standard e))
 
 (define emit-stmt/standard
-  (make-stmt-emitter emit-stmt emit-expr))
+  (make-stmt-emitter emit-stmt/sqlite3 emit-expr))
