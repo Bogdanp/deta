@@ -280,57 +280,40 @@ from the tutorial --, deta also automatically maps CRUD operations to
 structs, which is out of scope for @racketmodname[sql].
 
 
-@section[#:tag "todos"]{Notes and TODOs}
+@section[#:tag "todos"]{TODOs}
 
-@(define (insert-link label)
-   (hyperlink "https://www.postgresql.org/docs/11/sql-insert.html" label))
+@(define insert-link
+   (hyperlink "https://www.postgresql.org/docs/11/sql-insert.html" "INSERT"))
 
-@(define (select-link label)
-   (hyperlink "https://www.postgresql.org/docs/11/sql-select.html" label))
+@(define select-link
+   (hyperlink "https://www.postgresql.org/docs/11/sql-select.html" "SELECT"))
 
-@(define (update-link label)
-   (hyperlink "https://www.postgresql.org/docs/11/sql-update.html" label))
+@(define update-link
+   (hyperlink "https://www.postgresql.org/docs/11/sql-update.html" "UPDATE"))
 
-@(define (delete-link label)
-   (hyperlink "https://www.postgresql.org/docs/11/sql-delete.html" label))
+@(define delete-link
+   (hyperlink "https://www.postgresql.org/docs/11/sql-delete.html" "DELETE"))
 
-Subqueries are not currently supported, neither are @tt{VALUES}
-expressions.
-
-The following @select-link{@tt{SELECT}} clauses are not currently
-supported:
+The following features are planned:
 
 @itemlist[
-  @item{@tt{WITH}}
-  @item{@tt{JOIN}}
-  @item{@tt{HAVING}}
-  @item{@tt{WINDOW}}
-  @item{@tt{UNION}}
-  @item{@tt{INTERSECT}}
-  @item{@tt{EXCEPT}}
-  @item{@tt{FOR UPDATE}}
+  @item{Subqueries}
+  @item{@tt{VALUES} expressions}
+  @item{Column constraints for DDL}
+  @item{Entity lifecycle (@tt{before-{delete,persist}}) hooks}
 ]
 
-The following @update-link{@tt{UPDATE}} clauses are not currently
-supported in arbitrary queries:
+The following query forms are not currently supported:
 
 @itemlist[
-  @item{@tt{WITH}}
-  @item{@tt{FROM}}
+  @item{@tt{WITH ... { @select-link | @update-link | @delete-link }  ...}}
+  @item{@tt{@update-link ... FROM ...}}
+  @item{@tt{@select-link ... JOIN ...}}
+  @item{@tt{@select-link ... HAVING ...}}
+  @item{@tt{@select-link ... WINDOW ...}}
+  @item{@tt{@select-link ... {UNION | INTERSECT | EXCEPT} ...}}
+  @item{@tt{@select-link ... FOR UPDATE ...}}
 ]
-
-The following @delete-link{@tt{DELETE}} clauses are not currently
-supported in arbitrary queries:
-
-@itemlist[
-  @item{@tt{WITH}}
-]
-
-Arbitrary @insert-link{@tt{INSERT}} statements are not currently
-supported.
-
-Arbitrary column constraints and @emph{before-{delete,persist}} style
-hooks will be supported at some point.
 
 
 @section[#:tag "reference"]{Reference}
