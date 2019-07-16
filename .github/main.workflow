@@ -4,6 +4,6 @@ workflow "main" {
 }
 
 action "test" {
-  uses = "docker://Bogdanp/racket:7.3"
+  uses = "docker://bogdanp/racket:7.3"
   runs = "/github/workspace/ci/test.sh"
 }
