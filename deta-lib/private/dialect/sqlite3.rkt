@@ -1,10 +1,8 @@
 #lang at-exp racket/base
 
 (require racket/contract
-         racket/format
          racket/match
          racket/port
-         racket/string
          "../ast.rkt"
          "../field.rkt"
          "../type.rkt"
@@ -37,25 +35,42 @@
     (values sqlite3-dialect? (sqlite3-dialect))))
 
 (define (emit-ddl d)
-  (match d
-    [(create-table table fields)
-     (with-output-to-string
-       (lambda _
-         (displayln (~a "CREATE TABLE IF NOT EXISTS " (quote/standard table) "("))
-         (displayln (string-join (map emit-field-ddl fields) ",\n"))
-         (displayln ")")))]
-
-    [(drop-table table)
-     (~a "DROP TABLE IF EXISTS " (quote/standard table))]))
-
-(define (emit-field-ddl f)
   (with-output-to-string
     (lambda _
-      (display (~a (quote/standard (field-name f)) " " (type-declaration (field-type f) 'sqlite3)))
-      (unless (field-nullable? f) (display " NOT NULL"))
-      (when (field-primary-key? f) (display " PRIMARY KEY"))
-      (when (field-auto-increment? f) (display " AUTOINCREMENT"))
-      (when (field-unique? f) (display " UNIQUE")))))
+      (match d
+        [(create-table table fields)
+         (display "CREATE TABLE IF NOT EXISTS ")
+         (display (quote/standard table))
+
+         (displayln "(")
+         (for ([i (length fields)]
+               [f (in-list fields)])
+           (emit-field-ddl f (= i (sub1 (length fields)))))
+         (displayln ")")]
+
+        [(drop-table table)
+         (display "DROP TABLE IF EXISTS ")
+         (displayln (quote/standard table))]))))
+
+(define (emit-field-ddl f last?)
+  (display (quote/standard (field-name f)))
+  (display " ")
+  (display (type-declaration (field-type f) 'sqlite3))
+
+  (unless (field-nullable? f)
+    (display " NOT NULL"))
+
+  (when (field-primary-key? f)
+    (display " PRIMARY KEY"))
+
+  (when (field-auto-increment? f)
+    (display " AUTOINCREMENT"))
+
+  (when (field-unique? f)
+    (display " UNIQUE"))
+
+  (unless last?
+    (displayln ",")))
 
 (define (emit-expr e)
   (match e
