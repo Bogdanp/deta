@@ -41,16 +41,14 @@
     [(placeholder v)
      (~a "$" (track-placeholder! v))]
 
+    [(ident 'array-concat)    "||"]
+    [(ident 'array-contains?) "@>"]
+    [(ident 'array-overlap?)  "&&"]
     [(ident 'bitwise-not)     "~"]
     [(ident 'bitwise-and)     "&"]
     [(ident 'bitwise-or )     "|"]
     [(ident 'bitwise-xor)     "#"]
     [(ident 'is-distinct)     "IS DISTINCT"]
-    [(ident 'is-not-distinct) "IS NOT DISTINCT"]
-    [(ident 'is-not)          "IS NOT"]
-    [(ident 'not-in)          "NOT IN"]
-    [(ident 'not-like)        "NOT LIKE"]
-    [(ident 'not-similar-to)  "NOT SIMILAR TO"]
     [(ident 'similar-to)      "SIMILAR TO"]
 
     [(ident n)
@@ -82,6 +80,9 @@
      (~a (maybe-parenthize e) " AS " (quote/standard alias))]
 
     [(app (and (ident (or
+                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
+                       'bitwise-not
+
                        ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
                        'not
 
@@ -99,20 +100,23 @@
      (~a "EXTRACT(" (recur a) " FROM " (maybe-parenthize b) ")")]
 
     [(app (and (ident (or
+                       ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
+                       'array-concat 'array-contains? 'array-overlap?
+
                        ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
-                       'bitwise-not 'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
+                       'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
 
                        ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
                        'and 'or
 
                        ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
-                       '= '> '< '>= '<= '<> '!= 'ilike 'like 'not-like 'in 'not-in 'is 'is-not 'is-distinct 'is-not-distinct
+                       '= '> '< '>= '<= '<> '!= 'ilike 'like 'in 'is 'is-distinct
 
                        ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
-                       '+ '- '* '/ '% '<< '>> '~ '~* '!~ '!~*
+                       '+ '- '* '/ '%
 
                        ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
-                       'similar-to 'not-similar-to
+                       'similar-to
                        ))
                op)
           (list a b))

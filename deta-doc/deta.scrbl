@@ -462,6 +462,70 @@ The following query forms are not currently supported:
    (app (q-expr q-expr ...))]]{
 
   Constructs an SQL expression.
+
+  Within an SQL expression, the following identifiers are treated
+  specially by the base (i.e. PostgreSQL) dialect:
+
+  @tabular[
+    #:sep @hspace[2]
+    #:style 'boxed
+    #:row-properties '(bottom-border)
+    (list (list @bold{Identifier} "")
+          (list @tt{array-concat}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(array-concat (array 1) (array 2 3))])
+                        (list @bold{output:} @tt{ARRAY[1] || ARRAY[2, 3]}))])
+
+          (list @tt{array-contains?}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(array-contains? (array 1 2) (array 1))])
+                        (list @bold{output:} @tt{ARRAY[1, 2] @"@"> ARRAY[1]}))])
+
+          (list @tt{array-overlap?}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(array-overlap? (array 1 2) (array 1))])
+                        (list @bold{output:} @tt{ARRAY[1, 2] && ARRAY[1]}))])
+
+          (list @tt{array-ref}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(array-ref (array 1 2) 1)])
+                        (list @bold{output:} @tt{ARRAY[1, 2][1]}))])
+
+          (list @tt{array-slice}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(array-slice (array 1 2) 1 3)])
+                        (list @bold{output:} @tt{ARRAY[1, 2][1:3]}))])
+
+          (list @tt{bitwise-not}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(bitwise-not 1)])
+                        (list @bold{output:} @tt{~ 1}))])
+
+          (list @tt{bitwise-and}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(bitwise-and 1 2)])
+                        (list @bold{output:} @tt{1 & 2}))])
+
+          (list @tt{bitwise-or}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(bitwise-or 1 2)])
+                        (list @bold{output:} @tt{1 | 2}))])
+
+          (list @tt{bitwise-xor}
+                @tabular[
+                  #:sep @hspace[2]
+                  (list (list @bold{usage:}  @racket[(bitwise-xor 1 2)])
+                        (list @bold{output:} @tt{1 # 2}))])
+          )
+  ]
 }
 
 @defproc[(delete [q query?]) query?]{

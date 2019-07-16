@@ -85,8 +85,17 @@
     (check-emitted (select _ (sum 1))
                    "SELECT SUM(1)")
 
+    (check-emitted (select _ (bitwise-not 1))
+                   "SELECT ~ 1")
+
+    (check-emitted (select _ (bitwise-and 1 2))
+                   "SELECT 1 & 2")
+
     (check-emitted (select _ (bitwise-or 1 2))
                    "SELECT 1 | 2")
+
+    (check-emitted (select _ (bitwise-xor 1 2))
+                   "SELECT 1 # 2")
 
     (check-emitted (select _ (concat "hello " "world!"))
                    "SELECT CONCAT('hello ', 'world!')")
@@ -103,18 +112,6 @@
     (check-emitted (select _ (similar-to "x" "%x%"))
                    "SELECT 'x' SIMILAR TO '%x%'")
 
-    (check-emitted (select _ (~ "x" "^x$"))
-                   "SELECT 'x' ~ '^x$'")
-
-    (check-emitted (select _ (~* "x" "^x$"))
-                   "SELECT 'x' ~* '^x$'")
-
-    (check-emitted (select _ (!~ "x" "^x$"))
-                   "SELECT 'x' !~ '^x$'")
-
-    (check-emitted (select _ (!~* "x" "^x$"))
-                   "SELECT 'x' !~* '^x$'")
-
     (check-emitted (select _ (is null null))
                    "SELECT NULL IS NULL")
 
@@ -124,17 +121,20 @@
     (check-emitted (select _ (ilike u.a "hello%"))
                    "SELECT u.a ILIKE 'hello%'")
 
-    (check-emitted (select _ (not-like u.a "hello%"))
-                   "SELECT u.a NOT LIKE 'hello%'")
-
     (check-emitted (select _ (in 1 (list 1 2 3)))
                    "SELECT 1 IN (1, 2, 3)")
 
-    (check-emitted (select _ (not-in 1 (list 1 2 3)))
-                   "SELECT 1 NOT IN (1, 2, 3)")
-
     (check-emitted (select _ (array 1 2 3))
                    "SELECT ARRAY[1, 2, 3]")
+
+    (check-emitted (select _ (array-concat (array "a") (array "b" "c")))
+                   "SELECT ARRAY['a'] || ARRAY['b', 'c']")
+
+    (check-emitted (select _ (array-contains? (array 1 2) (array 1)))
+                   "SELECT ARRAY[1, 2] @> ARRAY[1]")
+
+    (check-emitted (select _ (array-overlap? (array "a") (array "b" "c")))
+                   "SELECT ARRAY['a'] && ARRAY['b', 'c']")
 
     (check-emitted (select _ (array-ref (array 1 2 3) 2))
                    "SELECT (ARRAY[1, 2, 3])[2]")
