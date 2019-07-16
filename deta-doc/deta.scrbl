@@ -506,8 +506,8 @@ The following query forms are not currently supported:
 
   @examples[
     (require deta)
-    (displayln (select _ 1 2))
-    (displayln (select (from "users" #:as u) u.username))
+    (select _ 1 2)
+    (select (from "users" #:as u) u.username)
   ]
 }
 
