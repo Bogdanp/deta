@@ -258,7 +258,7 @@
 
 (define/contract (lookup conn q)
   (-> connection? dyn:query? (or/c false/c entity?))
-  (for/first ([e (in-entities conn q #:batch-size 1)]) e))
+  (for/first ([e (in-entities conn q)]) e))
 
 (begin-for-syntax
   (define column-reference-re
