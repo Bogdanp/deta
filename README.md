@@ -12,6 +12,10 @@ absolute most recent docs, then you can visit [deta.defn.io][docs-master].
 
 See the `examples/` folder for some examples.
 
+## License
+
+    deta is licensed under the 3-Clause BSD license.
+
 
 [docs]: https://docs.racket-lang.org/deta/index.html
 [docs-master]: https://deta.defn.io

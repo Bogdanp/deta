@@ -24,7 +24,7 @@
 
 This library automatically maps database tables to Racket structs and
 lets you perform CRUD operations on them as well as arbitrary queries.
-Sort of like an ORM, but without "relationships" and all the bad bits.
+Sort of like an ORM, but without associations and all the bad bits.
 
 The API is currently fairly stable, but it may change before 1.0.
 Watch the @repo-link{GitHub repository} if you want to stay on top of
@@ -33,20 +33,28 @@ potential changes.
 
 @section[#:tag "principles"]{Principles}
 
-Despite the fact that both SQLite and PostgreSQL are currently
-supported by this library, the focus is on PostgreSQL and SQLite just
-serves as a check to ensure that nothing is @emph{too} PostgreSQL
-specific.
+The main principle backing this library is "explicitness without
+tedium."  By that I mean that it should be crystal clear to someone
+who is reading code that uses this library how the code maps to
+database operations, while making the common cases of mapping data
+between database tables and Racket structs straightforward and simple.
 
-Additionally, the purpose of deta is to make certain types of
-normally-tedious queries straightforward and simple.  It's not a goal
-of this library to be a general purpose SQL DSL and that means that
-for some queries you may have to resort to raw SQL or the
-@racketmodname[sql] library.  It is very much an "80% solution."
+@subsection{Non-goals}
 
-Being externally-extensible is also not a goal.  The SQL AST as well
-as all of the dialect code is considered private and any new dialects
-(such as MySQL) will have to be added to the library itself.
+@itemlist[
+  @item{@bold{Support for every SQL dialect.}  Despite the fact that
+        both SQLite and PostgreSQL are currently supported by this
+        library, the focus is on PostgreSQL and SQLite just serves as
+        a check to ensure that nothing is @emph{too} PostgreSQL
+        specific.}
+  @item{@bold{Being a general purpose SQL DSL}.  For some queries you
+        may have to resort to raw SQL or the @racketmodname[sql]
+        library.  deta is very much an "80% solution."}
+  @item{@bold{Being externally-extensible.}  The SQL AST as well as
+        all of the dialect code is considered private and any new
+        dialects (such as MySQL) will have to be added to the library
+        itself.}
+]
 
 If you're down with that, then, by all means, carry on and read the
 tutorial!
@@ -66,11 +74,11 @@ tutorial!
    (define db-eval (make-pg-eval log-file)))
 
 deta builds upon the @racketmodname[db] library.  You will use deta to
-generate your mappings and create queries, but the database library
-will be doing the actual work of talking to the database and handling
+generate your mappings and create queries, but the db library will be
+doing the actual work of talking to the database and handling
 transactions.
 
-Let's start by creating a database connection in the usual way.
+Let's start by creating a database connection in the usual way:
 
 @interaction[
 #:eval db-eval
@@ -97,10 +105,10 @@ Next, let's define a schema for books:
    [published-on date/f]))
 ]
 
-The above will generate a struct named @racket[book] with fields for
-@racket[id], @racket[title], @racket[author] and @racket[published-on],
-an associated "smart constructor" called @racket[make-book] and
-functional setter and updater functions for each field.
+The above generates a struct named @racket[book] with fields for the
+table's @racket[id], @racket[title], @racket[author] and @racket[published-on]
+columns, an associated "smart constructor" called @racket[make-book]
+and functional setter and updater functions for each field.
 
 @interaction[
 #:eval db-eval
@@ -115,8 +123,9 @@ functional setter and updater functions for each field.
 (code:line)
 (book-id a-book)
 (book-title a-book)
-(book-title (update-book-title a-book (lambda (t)
-                                        (string-append t "?"))))
+(book-title
+ (update-book-title a-book (lambda (t)
+                             (string-append t "?"))))
 
 (code:line)
 (code:comment "schema entities are immutable so the above did not change a-book")
@@ -136,8 +145,14 @@ the table:
 (create-table! conn 'book)
 ]
 
-And now that we have a table, we can insert the book that we created
-into the database:
+@(define north-uri "https://docs.racket-lang.org/north/index.html")
+@margin-note{Note that while the DDL functionality is convenient for
+the purposes of this tutorial, in real world projects you should
+probably use sometihng like @hyperlink[north-uri]{north} to manage
+your database table schemas.}
+
+Now that we have a table, we can insert the book that we created into
+the database:
 
 @interaction[
 #:eval db-eval
@@ -187,8 +202,8 @@ Sweet!  Here's the query we just ran:
      (order-by ([b.published-on #:desc]))))
 ]
 
-What about dynamic parameters, you may ask?  Let's turn the above into
-a function:
+What about dynamic parameters, you may ask?  Let's wrap the above
+query in a function:
 
 @interaction[
 #:eval db-eval
@@ -207,17 +222,16 @@ a function:
 ]
 
 Any time the query combinators encounter an @racket[unquote], that
-value gets replaced with a placeholder in the query and, when the
-query is eventually executed, the value is bound to its prepared
-statement.  Don't worry about it if that doesn't make too much sense
-to you right now.  Just know that it's possible to use dynamic
-parameters and that they are passed to the database securely.
+value gets replaced with a placeholder node in the query AST and, when
+the query is eventually executed, the value is bound to its prepared
+statement.  This makes it safe and easy to parameterize your queries
+without having to worry about SQL injection attacks.
 
 Oftentimes, you'll want to query data from the DB that doesn't match
-your schema.  Say we want to grab the number of books published by
-year from our database.  To do that, we can declare a "virtual" schema
-(one whose entities can't be persisted) and project our queries onto
-that schema.
+your schema.  For example, let's say we want to grab the number of
+books published by year from our database.  To do that, we can declare
+a "virtual" schema -- one whose entities can't be persisted -- and
+project our queries onto that schema.
 
 @interaction[
 #:eval db-eval
@@ -244,14 +258,20 @@ that schema.
                      (book-stats-books s))))
 ]
 
-Finally, let's delete all the books published before 1950:
+If we hadn't wrapped our query with @racket[project-onto], then the
+data would've been returned as @racket[values] which we could
+destructure inside the @racket[for] loop, exactly like
+@racket[in-query] from @racketmodname[db].
+
+It's time to wind things down so let's delete all the books published
+before 1950:
 
 @interaction[
 #:eval db-eval
 (query-exec conn (delete (books-before 1950)))
 ]
 
-And re-run the last query:
+Re-run the last query to make sure it worked:
 
 @interaction[
 #:eval db-eval
@@ -261,12 +281,21 @@ And re-run the last query:
                      (book-stats-books s))))
 ]
 
-That's it! You now know the basics of deta.  Thanks for following
-along!  If you want to learn more, check out the reference
-documentation below.
+That's all there is to it.  You now know the basics of deta.  Thanks
+for following along!  If you want to learn more be sure to check out
+the reference documentation below.
 
 
 @section[#:tag "versus"]{Compared to *}
+
+@subsection{Racquel}
+
+Racquel takes a more classic approach to database mapping by being a
+"real" ORM.  It is based on the class system, with entities (data
+objects, as it calls them) being backed by mutable objects and having
+support for associations via lazy loading.  deta's approach is nearly
+the opposite of this by focusing on working with immutable structs,
+avoiding associations altogether and any sort of lazy behaviour.
 
 @subsection{sql}
 
