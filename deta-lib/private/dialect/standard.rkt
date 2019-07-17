@@ -54,20 +54,12 @@
     [(table e)  (display/expr e)]
     [(column e) (display/expr e)]
 
+    [(ident i)
+     (display (refine-ident i))]
+
     [(placeholder v)
      (display "$")
      (display (track-placeholder! v))]
-
-    [(ident 'array-concat)    (display "||")]
-    [(ident 'array-contains?) (display "@>")]
-    [(ident 'array-overlap?)  (display "&&")]
-    [(ident 'bitwise-not)     (display "~")]
-    [(ident 'bitwise-and)     (display "&")]
-    [(ident 'bitwise-or )     (display "|")]
-    [(ident 'bitwise-xor)     (display "#")]
-    [(ident 'is-distinct)     (display "IS DISTINCT")]
-    [(ident 'similar-to)      (display "SIMILAR TO")]
-    [(ident name)             (display (string-upcase (symbol->string name)))]
 
     [(scalar #t) (display "TRUE")]
     [(scalar #f) (display "FALSE")]
@@ -130,9 +122,10 @@
      (display/maybe-parenthize b)
      (display ")")]
 
-    [(app (and (ident (or
+    ;; variadic operators
+    [(app (ident (and (or
                        ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
-                       'array-concat 'array-contains? 'array-overlap?
+                       'array-concat
 
                        ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
                        'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
@@ -140,11 +133,28 @@
                        ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
                        'and 'or
 
-                       ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
-                       '= '> '< '>= '<= '<> '!= 'ilike 'like 'in 'is 'is-distinct
-
                        ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
                        '+ '- '* '/ '%
+                       )
+                      op))
+          es)
+     (define separator
+       (string-append " " (refine-ident op) " "))
+
+     (display/sep
+      #:sep separator
+      es
+      (lambda (e)
+        (display/maybe-parenthize e)))]
+
+
+    ;; strictly binary operators
+    [(app (and (ident (or
+                       ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
+                       'array-contains? 'array-overlap?
+
+                       ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
+                       '= '> '< '>= '<= '<> '!= 'ilike 'like 'in 'is 'is-distinct
 
                        ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
                        'similar-to
@@ -323,3 +333,16 @@
     (display-p x)
     (unless (= i n-xs)
       (display sep))))
+
+(define refine-ident
+  (match-lambda
+    ['array-concat    "||"]
+    ['array-contains? "@>"]
+    ['array-overlap?  "&&"]
+    ['bitwise-not     "~"]
+    ['bitwise-and     "&"]
+    ['bitwise-or      "|"]
+    ['bitwise-xor     "#"]
+    ['is-distinct     "IS DISTINCT"]
+    ['similar-to      "SIMILAR TO"]
+    [name             (string-upcase (symbol->string name))]))

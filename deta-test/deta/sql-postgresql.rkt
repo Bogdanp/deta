@@ -49,6 +49,9 @@
     (check-emitted (select _ (* 3 (+ 1 2)))
                    "SELECT 3 * (1 + 2)")
 
+    (check-emitted (select _ (* 3 (+ 1 2) (* 2 3)))
+                   "SELECT 3 * (1 + 2) * (2 * 3)")
+
     (check-emitted (select _ (abs -1))
                    "SELECT ABS(-1)")
 
@@ -67,11 +70,26 @@
     (check-emitted (select _ u.user_name)
                    "SELECT u.user_name")
 
+    (check-emitted (select _ (and 1))
+                   "SELECT 1")
+
     (check-emitted (select _ (and 1 2))
                    "SELECT 1 AND 2")
 
+    (check-emitted (select _ (and 1 2 3))
+                   "SELECT 1 AND 2 AND 3")
+
+    (check-emitted (select _ (and 1 2 3 4))
+                   "SELECT 1 AND 2 AND 3 AND 4")
+
     (check-emitted (select _ (or #t #f))
                    "SELECT TRUE OR FALSE")
+
+    (check-emitted (select _ (or #t #f #f))
+                   "SELECT TRUE OR FALSE OR FALSE")
+
+    (check-emitted (select _ (or #t (+ 1 2 3) #f))
+                   "SELECT TRUE OR (1 + 2 + 3) OR FALSE")
 
     (check-emitted (select _ (not #t))
                    "SELECT NOT TRUE")
