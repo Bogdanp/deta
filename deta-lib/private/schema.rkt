@@ -18,8 +18,7 @@
    struct-pred
    meta-updater
    fields
-   primary-key)
-  #:transparent)
+   primary-key))
 
 (define (make-schema #:id id
                      #:table table

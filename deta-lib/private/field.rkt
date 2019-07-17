@@ -20,8 +20,7 @@
    primary-key?
    auto-increment?
    nullable?
-   unique?)
-  #:transparent)
+   unique?))
 
 (define (make-field #:id id
                     #:name name

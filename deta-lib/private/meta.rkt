@@ -16,8 +16,7 @@
  meta-track-persisted
  meta-track-deleted)
 
-(struct meta (state schema changes)
-  #:transparent)
+(struct meta (state schema changes))
 
 (define (make-meta schema)
   (meta 'created schema (seteq)))
