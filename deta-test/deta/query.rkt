@@ -23,7 +23,9 @@
    #:before
    (lambda ()
      (drop-table! (current-conn) 'user)
-     (create-table! (current-conn) 'user))
+     (drop-table! (current-conn) 'password-reset)
+     (create-table! (current-conn) 'user)
+     (create-table! (current-conn) 'password-reset))
 
    (test-suite
     "prop:statement"
@@ -73,7 +75,11 @@
       (check-exn
        exn:fail:user?
        (lambda _
-         (insert! (current-conn) (make-v #:x 42))))))
+         (insert! (current-conn) (make-v #:x 42)))))
+
+    (test-case "persists entities w/o a primary key"
+      (check-not-false
+       (insert-one! (current-conn) (make-password-reset #:user-id 1)))))
 
    (test-suite
     "update!"

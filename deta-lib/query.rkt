@@ -86,19 +86,22 @@
   (define-values (query args)
     (dialect-emit-query dialect stmt))
 
-  (define res
-    (cond
-      [(dialect-supports-returning? dialect)
-       (apply query-value conn query args)]
-
-      [else
-       (apply query-exec conn query args)
-       (query-value conn (dialect-last-id-query dialect))]))
-
   (let ([e ((schema-meta-updater schema) entity meta-track-persisted)])
     (cond
-      [(and res pk) ((field-setter pk) e res #f)]
-      [else                            e        ])))
+      [pk
+       (define id
+         (if (dialect-supports-returning? dialect)
+           (apply query-value conn query args)
+           (call-with-transaction conn
+             (lambda _
+               (apply query-exec conn query args)
+               (query-value conn (dialect-last-id-query dialect))))))
+
+       ((field-setter pk) e id #f)]
+
+      [else
+       (begin0 e
+         (apply query-exec conn query args))])))
 
 
 ;; update ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
