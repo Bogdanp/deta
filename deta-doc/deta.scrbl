@@ -14,7 +14,7 @@
                      racket/sequence
                      threading))
 
-@title{deta -- Functional Database Mapping}
+@title{@exec{deta}: Functional Database Mapping}
 @author[(author+email "Bogdan Popa" "bogdan@defn.io")]
 
 @defmodule[deta]
