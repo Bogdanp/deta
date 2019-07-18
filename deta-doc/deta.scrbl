@@ -617,12 +617,24 @@ The following query forms are not currently supported:
   Adds or replaces an @tt{ORDER BY} clause to @racket[query].
 }
 
-@defform[(limit query n)]{
+@defform*[
+  #:literals (unquote)
+  ((limit query n)
+   (limit query (unquote e)))]{
   Adds or replaces a @tt{LIMIT @racket[n]} clause to @racket[query].
+
+  The first form raises a syntax error if @racket[n] is not an exact
+  positive integer or 0.
 }
 
-@defform[(offset query n)]{
+@defform*[
+  #:literals (unquote)
+  ((offset query n)
+   (offset query (unquote e)))]{
   Adds or replaces an @tt{OFFSET @racket[n]} clause to @racket[query].
+
+  The first form raises a syntax error if @racket[n] is not an exact
+  positive integer or 0.
 }
 
 @defform[(where query q-expr)]{
