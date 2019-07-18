@@ -64,44 +64,45 @@
   (when (schema-virtual? schema)
     (raise-user-error 'insert-entity! "cannot insert entity ~v because it has a virtual schema" entity))
 
-  (define-values (columns column-values)
-    (for*/fold ([columns null]
-                [column-values null])
-               ([f (in-list (schema-fields schema))]
-                #:unless (field-auto-increment? f))
-      (values (cons (field-name f) columns)
-              (cons (type-dump (field-type f)
-                               (dialect-name dialect)
-                               ((field-getter f) entity))
-                    column-values))))
+  (let ([entity ((schema-pre-persist-hook schema) entity)])
+    (define-values (columns column-values)
+      (for*/fold ([columns null]
+                  [column-values null])
+                 ([f (in-list (schema-fields schema))]
+                  #:unless (field-auto-increment? f))
+        (values (cons (field-name f) columns)
+                (cons (type-dump (field-type f)
+                                 (dialect-name dialect)
+                                 ((field-getter f) entity))
+                      column-values))))
 
-  (define pk (schema-primary-key schema))
-  (define stmt
-    (ast:make-insert
-     #:into (ast:table (schema-table schema))
-     #:columns (map ast:column columns)
-     #:values (map ast:placeholder column-values)
-     #:returning (and pk (ast:returning (list (ast:column (field-name pk)))))))
+    (define pk (schema-primary-key schema))
+    (define stmt
+      (ast:make-insert
+       #:into (ast:table (schema-table schema))
+       #:columns (map ast:column columns)
+       #:values (map ast:placeholder column-values)
+       #:returning (and pk (ast:returning (list (ast:column (field-name pk)))))))
 
-  (define-values (query args)
-    (dialect-emit-query dialect stmt))
+    (define-values (query args)
+      (dialect-emit-query dialect stmt))
 
-  (let ([e ((schema-meta-updater schema) entity meta-track-persisted)])
-    (cond
-      [pk
-       (define id
-         (if (dialect-supports-returning? dialect)
-           (apply query-value conn query args)
-           (call-with-transaction conn
-             (lambda _
-               (apply query-exec conn query args)
-               (query-value conn (dialect-last-id-query dialect))))))
+    (let ([e ((schema-meta-updater schema) entity meta-track-persisted)])
+      (cond
+        [pk
+         (define id
+           (if (dialect-supports-returning? dialect)
+               (apply query-value conn query args)
+               (call-with-transaction conn
+                 (lambda _
+                   (apply query-exec conn query args)
+                   (query-value conn (dialect-last-id-query dialect))))))
 
-       ((field-setter pk) e id #f)]
+         ((field-setter pk) e id #f)]
 
-      [else
-       (begin0 e
-         (apply query-exec conn query args))])))
+        [else
+         (begin0 e
+           (apply query-exec conn query args))]))))
 
 
 ;; update ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -123,42 +124,46 @@
     [_ #f]))
 
 (define (update-entity! dialect conn entity)
-  (define meta (entity-meta entity))
-  (define schema (meta-schema meta))
+  (define schema (meta-schema (entity-meta entity)))
   (define pk (schema-primary-key schema))
   (unless pk
     (raise-argument-error 'update-entity! "entity with primary key field" entity))
 
-  (define changes (meta-changes meta))
-  (define-values (columns column-values)
-    (for*/fold ([columns null]
-                [column-values null])
-               ([f (in-list (schema-fields schema))]
-                #:when (set-member? changes (field-id f))
-                #:unless (field-auto-increment? f))
-      (values (cons (field-name f) columns)
-              (cons (type-dump (field-type f)
-                               (dialect-name dialect)
-                               ((field-getter f) entity))
-                    column-values))))
+  (cond
+    [(entity-changed? entity)
+     (define entity* ((schema-pre-persist-hook schema) entity))
+     (define changes (meta-changes (entity-meta entity*)))
+     (define-values (columns column-values)
+       (for*/fold ([columns null]
+                   [column-values null])
+                  ([f (in-list (schema-fields schema))]
+                   #:when (set-member? changes (field-id f))
+                   #:unless (field-auto-increment? f))
+         (values (cons (field-name f) columns)
+                 (cons (type-dump (field-type f)
+                                  (dialect-name dialect)
+                                  ((field-getter f) entity*))
+                       column-values))))
 
-  (define stmt
-    (ast:make-update
-     #:table (ast:table (schema-table schema))
-     #:assignments (ast:assignments
-                    (for/list ([column (in-list columns)]
-                               [value (in-list column-values)])
-                      (cons (ast:column column)
-                            (ast:placeholder value))))
-     #:where (ast:where (ast:app (ast:ident '=)
-                                 (list (ast:column (field-name pk))
-                                       (ast:placeholder ((field-getter pk) entity)))))))
+     (define stmt
+       (ast:make-update
+        #:table (ast:table (schema-table schema))
+        #:assignments (ast:assignments
+                       (for/list ([column (in-list columns)]
+                                  [value (in-list column-values)])
+                         (cons (ast:column column)
+                               (ast:placeholder value))))
+        #:where (ast:where (ast:app (ast:ident '=)
+                                    (list (ast:column (field-name pk))
+                                          (ast:placeholder ((field-getter pk) entity*)))))))
 
-  (define-values (query args)
-    (dialect-emit-query dialect stmt))
+     (define-values (query args)
+       (dialect-emit-query dialect stmt))
 
-  (apply query-exec conn query args)
-  ((schema-meta-updater schema) entity meta-track-persisted))
+     (apply query-exec conn query args)
+     ((schema-meta-updater schema) entity* meta-track-persisted)]
+
+    [else #f]))
 
 
 ;; delete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -186,18 +191,19 @@
   (unless pk
     (raise-argument-error 'delete-entity! "entity with primary key field" entity))
 
-  (define stmt
-    (ast:make-delete
-     #:from (ast:from (ast:table (schema-table schema)))
-     #:where (ast:where (ast:app (ast:ident '=)
-                                 (list (ast:column (field-name pk))
-                                       (ast:placeholder ((field-getter pk) entity)))))))
+  (let ([entity ((schema-pre-delete-hook schema) entity)])
+    (define stmt
+      (ast:make-delete
+       #:from (ast:from (ast:table (schema-table schema)))
+       #:where (ast:where (ast:app (ast:ident '=)
+                                   (list (ast:column (field-name pk))
+                                         (ast:placeholder ((field-getter pk) entity)))))))
 
-  (define-values (query args)
-    (dialect-emit-query dialect stmt))
+    (define-values (query args)
+      (dialect-emit-query dialect stmt))
 
-  (apply query-exec conn query args)
-  ((schema-meta-updater schema) entity meta-track-deleted))
+    (apply query-exec conn query args)
+    ((schema-meta-updater schema) entity meta-track-deleted)))
 
 
 ;; select ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

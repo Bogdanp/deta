@@ -17,6 +17,8 @@
    struct-ctor
    struct-pred
    meta-updater
+   pre-persist-hook
+   pre-delete-hook
    fields
    primary-key))
 
@@ -26,6 +28,8 @@
                      #:struct-ctor struct-ctor
                      #:struct-pred struct-pred
                      #:meta-updater meta-updater
+                     #:pre-persist-hook pre-persist-hook
+                     #:pre-delete-hook pre-delete-hook
                      #:fields fields)
 
   (define the-schema
@@ -35,6 +39,8 @@
             struct-ctor
             struct-pred
             meta-updater
+            pre-persist-hook
+            pre-delete-hook
             fields
             (findf field-primary-key? fields)))
 

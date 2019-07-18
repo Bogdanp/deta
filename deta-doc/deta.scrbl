@@ -12,6 +12,7 @@
                      racket/contract
                      racket/match
                      racket/sequence
+                     racket/string
                      threading))
 
 @title{@exec{deta}: Functional Database Mapping}
@@ -329,7 +330,6 @@ The following features are planned:
   @item{Subqueries}
   @item{@tt{VALUES} expressions}
   @item{Column constraints for DDL}
-  @item{Entity lifecycle (@tt{before-{delete,persist}}) hooks}
 ]
 
 The following query forms are not currently supported:
@@ -675,13 +675,19 @@ The following query forms are not currently supported:
 @defform[(define-schema id
            maybe-table
            maybe-virtual
-           (field-definition ...+))
+           (field-definition ...+)
+           maybe-pre-persist-hook
+           maybe-pre-delete-hook)
          #:grammar
          [(maybe-table (code:line)
-                       (code:line #:table string))
+                       (code:line #:table table-name))
           (maybe-virtual (code:line)
                          (code:line #:virtual))
-          (field-definition (code:line [id type
+          (maybe-pre-persist-hook (code:line)
+                                  (code:line #:pre-persist-hook pre-persist-hook))
+          (maybe-pre-delete-hook (code:line)
+                                 (code:line #:pre-delete-hook pre-delete-hook))
+          (field-definition (code:line [id field-type
                                         maybe-name
                                         maybe-primary-key
                                         maybe-auto-increment
@@ -689,7 +695,7 @@ The following query forms are not currently supported:
                                         maybe-nullable
                                         maybe-contract
                                         maybe-wrapper])
-                            (code:line [(id default) type
+                            (code:line [(id default) field-type
                                         maybe-name
                                         maybe-primary-key
                                         maybe-auto-increment
@@ -698,7 +704,7 @@ The following query forms are not currently supported:
                                         maybe-contract
                                         maybe-wrapper]))
           (maybe-name (code:line)
-                      (code:line #:name string))
+                      (code:line #:name field-name))
           (maybe-primary-key (code:line)
                              (code:line #:primary-key))
           (maybe-auto-increment (code:line)
@@ -710,7 +716,13 @@ The following query forms are not currently supported:
           (maybe-contract (code:line)
                           (code:line #:contract e))
           (maybe-wrapper (code:line)
-                          (code:line #:wrapper e))]]{
+                          (code:line #:wrapper e))]
+         #:contracts
+         ([table-name non-empty-string?]
+          [field-name non-empty-string?]
+          [field-type type?]
+          [pre-persist-hook (-> entity? entity?)]
+          [pre-delete-hook (-> entity? entity?)])]{
 
   Defines a schema named @racket[id].  The schema will have an
   associated struct with the same name and a smart constructor called

@@ -168,7 +168,9 @@
     [(_ struct-id:id
         (~alt (~optional (~seq #:table table-name:str))
               (~optional (~and #:virtual virtual))) ...
-        (f:fld ...+))
+        (f:fld ...+)
+        (~alt (~optional (~seq #:pre-persist-hook pre-persist-hook-e:expr) #:defaults ([pre-persist-hook-e #'values]))
+              (~optional (~seq #:pre-delete-hook pre-delete-hook-e:expr)   #:defaults ([pre-delete-hook-e  #'values]))) ...)
      (with-syntax* ([pluralized-name (datum->syntax #'struct-id (pluralize (syntax->datum #'struct-id)))]
                     [table-name #'(~? table-name pluralized-name)]
                     [virtual? (if (attribute virtual) #'#t #'#f)]
@@ -202,6 +204,16 @@
                           #:struct-ctor ctor-id
                           #:struct-pred struct-pred-id
                           #:meta-updater meta-updater-id
+                          #:pre-persist-hook (contract
+                                              (-> struct-pred-id struct-pred-id)
+                                              pre-persist-hook-e
+                                              'struct-id 'struct-id
+                                              'pre-persist-hook #f)
+                          #:pre-delete-hook (contract
+                                             (-> struct-pred-id struct-pred-id)
+                                             pre-delete-hook-e
+                                             'struct-id 'struct-id
+                                             'pre-delete-hook #f)
                           #:fields (list (make-fld-maker struct-id
                                                          f.id
                                                          f.name

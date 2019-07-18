@@ -99,7 +99,20 @@
 
       (match-define (list u**) (update! (current-conn) u*))
       (check-eq? (meta-state (entity-meta u**)) 'persisted)
-      (check-equal? (meta-changes (entity-meta u**)) (seteq))))
+      (check-equal? (meta-changes (entity-meta u**)) (seteq)))
+
+    (test-case "runs pre-persist hooks"
+      (define u
+        (insert-one! (current-conn)
+                     (make-user #:username "bogdan-for-hooks@example.com")))
+
+      (sync (system-idle-evt))
+      (match-define (list u*)
+        (update! (current-conn)
+                 (update-user-username u values)))
+
+      (check-not-equal? (user-updated-at u)
+                        (user-updated-at u*))))
 
    (test-suite
     "delete!"
@@ -112,7 +125,15 @@
       (define u (make-user #:username "will-delete@example.com"))
       (match-define (list u*)  (insert! (current-conn) u))
       (match-define (list u**) (delete! (current-conn) u*))
-      (check-eq? (meta-state (entity-meta u**)) 'deleted)))
+      (check-eq? (meta-state (entity-meta u**)) 'deleted))
+
+    (test-case "runs pre-delete hooks"
+      (define u
+        (insert-one! (current-conn)
+                     (make-user #:username "will-delete-for-hooks@example.com")))
+
+      (delete! (current-conn) u)
+      (check-not-false (member (user-id u) (deleted-users)))))
 
    (test-suite
     "query"
