@@ -733,13 +733,21 @@ The following query forms are not currently supported:
   setter and updater named @tt{set-@emph{id}-@emph{field}} and
   @tt{update-@emph{id}-@emph{field}}, respectively.
 
-  If @racket[#:table] is provided, then that is used as the name for
-  the table.  Otherwise, an "s" is appended to the schema id to
+  If a @racket[table-name] is provided, then that is used as the name
+  for the table.  Otherwise, an "s" is appended to the schema id to
   pluralize it.  Currently, there are no other pluralization rules.
 
   If @racket[#:virtual] is provided, then the resulting schema's
   entities will not be able to be persisted, nor will the schema be
   registered in the global registry.
+
+  The @racket[pre-persist-hook] is run before an entity is either
+  @racket[insert!]ed or @racket[update!]d.
+
+  The @racket[pre-delete-hook] is run before an entity is
+  @racket[delete!]d.
+
+  Hooks @emph{do not} run for arbitrary queries.
 
   A syntax error is raised if you declare a field as both a primary
   key and nullable.  Additionally, a syntax error is raised if a
