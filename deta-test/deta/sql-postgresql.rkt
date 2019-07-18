@@ -277,12 +277,29 @@
           (offset 10)
           (limit 20))
 
-      "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))
+      "SELECT * FROM books AS b LIMIT 20 OFFSET 10")
+
+     (check-emitted/placeholders
+      (~> (from "books" #:as b)
+          (limit ,(add1 10)))
+
+      "SELECT * FROM books AS b LIMIT $1" '(11))
+
+     (check-emitted/placeholders
+      (~> (from "books" #:as b)
+          (offset ,1)
+          (limit ,(add1 10)))
+
+      "SELECT * FROM books AS b LIMIT $1 OFFSET $2" '(11 1)))
 
     (test-suite
      "placeholders"
 
-     (check-emitted/placeholders (select _ ,42) "SELECT $1" '(42))
+     (check-emitted/placeholders
+      (select _ ,42)
+      "SELECT $1"
+      '(42))
+
      (let ([x 1]
            [y "hello"])
        (check-emitted/placeholders

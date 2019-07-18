@@ -292,7 +292,7 @@
 
     [(limit n)
      (display "LIMIT ")
-     (display n)]
+     (display/expr n)]
 
     [(from t)
      (display "FROM ")
@@ -308,7 +308,7 @@
 
     [(offset n)
      (display "OFFSET ")
-     (display n)]
+     (display/expr n)]
 
     [(returning es)
      (display "RETURNING ")

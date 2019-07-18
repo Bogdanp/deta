@@ -277,13 +277,21 @@
     (cons (datum->syntax stx a)
           (datum->syntax stx (id->column-name b))))
 
+  (define-syntax-class p-expr
+    #:literals (unquote)
+    (pattern (unquote placeholder)
+             #:with e #'(ast:placeholder placeholder)))
+
   (define-syntax-class q-expr
     #:datum-literals (array as list null)
-    #:literals (and case cond else or unquote)
+    #:literals (and case cond else or)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
                         #`(ast:qualified #,(car ref) #,(cdr ref))))
+
+    (pattern placeholder:p-expr
+             #:with e #'placeholder.e)
 
     (pattern ident:id
              #:with e #'(ast:ident 'ident))
@@ -319,9 +327,6 @@
 
     (pattern (list item:q-expr ...)
              #:with e #'(ast:scalar (list item.e ...)))
-
-    (pattern (unquote placeholder)
-             #:with e #'(ast:placeholder placeholder))
 
     (pattern (fun:q-expr arg:q-expr ...)
              #:with e #'(ast:app fun.e (list arg.e ...))))
@@ -361,7 +366,10 @@
 (define-syntax (limit stx)
   (syntax-parse stx
     [(_ q:expr n:number)
-     #'(dyn:limit q n)]))
+     #'(dyn:limit q (ast:scalar n))]
+
+    [(_ q:expr p:p-expr)
+     #'(dyn:limit q p.e)]))
 
 (define-syntax (group-by stx)
   (syntax-parse stx
@@ -371,7 +379,10 @@
 (define-syntax (offset stx)
   (syntax-parse stx
     [(_ q:expr n:number)
-     #'(dyn:offset q n)]))
+     #'(dyn:offset q (ast:scalar n))]
+
+    [(_ q:expr p:p-expr)
+     #'(dyn:offset q p.e)]))
 
 (define-syntax (order-by stx)
   (syntax-parse stx

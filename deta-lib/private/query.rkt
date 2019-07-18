@@ -104,7 +104,7 @@
      (query #f (struct-copy ast:select stmt [columns (cons column0 columns)]))]))
 
 (define/contract (limit q n)
-  (-> query? exact-integer? query?)
+  (-> query? (or/c ast:scalar? ast:placeholder?) query?)
   (match q
     [(query schema stmt)
      (query schema (struct-copy ast:select stmt [limit (ast:limit n)]))]))
@@ -116,7 +116,7 @@
      (query schema (struct-copy ast:select stmt [group-by (ast:group-by (cons column0 columns))]))]))
 
 (define/contract (offset q n)
-  (-> query? exact-integer? query?)
+  (-> query? (or/c ast:scalar? ast:placeholder?) query?)
   (match q
     [(query schema stmt)
      (query schema (struct-copy ast:select stmt [offset (ast:offset n)]))]))
