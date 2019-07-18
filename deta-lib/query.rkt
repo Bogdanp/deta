@@ -366,7 +366,7 @@
 (define-syntax (limit stx)
   (syntax-parse stx
     [(_ q:expr n:number)
-     #:fail-when (and (< (syntax->datum #'n) 0) #'n) "n must not be negative"
+     #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n) "n must be a positive integer"
      #'(dyn:limit q (ast:scalar n))]
 
     [(_ q:expr p:p-expr)
@@ -380,7 +380,7 @@
 (define-syntax (offset stx)
   (syntax-parse stx
     [(_ q:expr n:number)
-     #:fail-when (and (< (syntax->datum #'n) 0) #'n) "n must not be negative"
+     #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n) "n must be a positive integer"
      #'(dyn:offset q (ast:scalar n))]
 
     [(_ q:expr p:p-expr)
