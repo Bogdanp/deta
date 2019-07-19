@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require racket/match
+(require (for-syntax racket/base
+                     syntax/parse)
+         racket/match
          racket/sequence
          racket/string
          "../ast.rkt"
@@ -15,8 +17,56 @@
  make-expr-emitter
  make-stmt-emitter)
 
+(define-match-expander unary-operator
+  (lambda (stx)
+    (syntax-parse stx
+      [(_)
+       #'(or
+          ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
+          'bitwise-not
+
+          ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
+          'not
+
+          ;; date ops: https://www.postgresql.org/docs/9.1/functions-datetime.html
+          'date 'interval 'time 'timestamp
+          )])))
+
+(define-match-expander binary-operator
+  (lambda (stx)
+    (syntax-parse stx
+      [(_)
+       #'(or
+          ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
+          'array-contains? 'array-overlap?
+
+          ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
+          '= '> '< '>= '<= '<> '!= 'ilike 'like 'in 'is 'is-distinct
+
+          ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
+          'similar-to
+          )])))
+
+(define-match-expander variadic-operator
+  (lambda (stx)
+    (syntax-parse stx
+      [(_)
+       #'(or
+          ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
+          'array-concat
+
+          ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
+          'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
+
+          ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
+          'and 'or
+
+          ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
+          '+ '- '* '/ '%
+          )])))
+
 (define lowercase-alphanum-re
-  #rx"[a-z0-9_]+")
+  #rx"[a-z_][a-z0-9_]*")
 
 (define (quote/standard e)
   (cond
@@ -92,78 +142,23 @@
      (display " AS ")
      (display/quoted alias)]
 
-    [(app (and (ident (or
-                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
-                       'bitwise-not
-
-                       ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
-                       'not
-
-                       ;; date ops: https://www.postgresql.org/docs/9.1/functions-datetime.html
-                       'date 'time 'timestamp 'interval
-                       ))
-               op)
-          (list a))
+    [(app (and (ident (unary-operator)) op) (list a))
      (display/expr op)
      (display " ")
      (display/maybe-parenthize a)]
 
-    [(app (ident 'cast) (list a b))
-     (display "CAST(")
+    [(app (and (ident (binary-operator)) op) (list a b))
      (display/maybe-parenthize a)
-     (display " AS ")
-     (display/expr b)
-     (display ")")]
+     (display/spaced op)
+     (display/maybe-parenthize b)]
 
-    [(app (ident 'extract) (list a b))
-     (display "EXTRACT(")
-     (display/expr a)
-     (display " FROM ")
-     (display/maybe-parenthize b)
-     (display ")")]
-
-    ;; variadic operators
-    [(app (ident (and (or
-                       ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
-                       'array-concat
-
-                       ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
-                       'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
-
-                       ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
-                       'and 'or
-
-                       ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
-                       '+ '- '* '/ '%
-                       )
-                      op))
-          es)
+    [(app (ident (and (variadic-operator) op)) es)
      (define separator
        (string-append " " (refine-ident op) " "))
 
      (display/sep
       #:sep separator
-      es
-      (lambda (e)
-        (display/maybe-parenthize e)))]
-
-
-    ;; strictly binary operators
-    [(app (and (ident (or
-                       ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
-                       'array-contains? 'array-overlap?
-
-                       ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
-                       '= '> '< '>= '<= '<> '!= 'ilike 'like 'in 'is 'is-distinct
-
-                       ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
-                       'similar-to
-                       ))
-               op)
-          (list a b))
-     (display/maybe-parenthize a)
-     (display/spaced op)
-     (display/maybe-parenthize b)]
+      es display/maybe-parenthize)]
 
     [(app (ident 'array-ref) (list a b))
      (display "(")
@@ -187,6 +182,20 @@
      (display/maybe-parenthize b)
      (display " AND ")
      (display/maybe-parenthize c)]
+
+    [(app (ident 'cast) (list a b))
+     (display "CAST(")
+     (display/maybe-parenthize a)
+     (display " AS ")
+     (display/expr b)
+     (display ")")]
+
+    [(app (ident 'extract) (list a b))
+     (display "EXTRACT(")
+     (display/expr a)
+     (display " FROM ")
+     (display/maybe-parenthize b)
+     (display ")")]
 
     [(app (ident 'position) (list a b))
      (display "POSITION(")
@@ -316,12 +325,13 @@
 
     [(order-by pairs)
      (display "ORDER BY ")
-     (display/sep pairs
-                  (match-lambda
-                    [(cons e dir)
-                     (display/expr e)
-                     (when (eq? dir 'desc)
-                       (display " DESC"))]))]))
+     (display/sep
+      pairs
+      (match-lambda
+        [(cons e dir)
+         (display/expr e)
+         (when (eq? dir 'desc)
+           (display " DESC"))]))]))
 
 (define (display/sep xs display-p
                      #:sep [sep ", "])
