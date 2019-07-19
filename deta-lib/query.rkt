@@ -266,8 +266,11 @@
                 (in-query conn q #:fetch batch-size)))
 
 (define/contract (lookup conn q)
-  (-> connection? dyn:query? (or/c false/c entity?))
-  (for/first ([e (in-entities conn q)]) e))
+  (-> connection? dyn:query? any)
+  (define-values (res _)
+    (sequence-generate* (in-entities conn q)))
+
+  (and res (apply values res)))
 
 (begin-for-syntax
   (define column-reference-re

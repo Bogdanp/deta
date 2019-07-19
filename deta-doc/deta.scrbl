@@ -407,9 +407,11 @@ The following query forms are not currently supported:
 }
 
 @defproc[(lookup [conn connection?]
-                 [q query?]) (or/c false/c entity?)]{
+                 [q query?]) any]{
 
-  Retrieves the first result for @racket[q], if any.
+  Retrieves the first result for @racket[q].
+
+  If there are no results then @racket[#f] is returned.
 }
 
 @defproc[(update! [conn connection?]
@@ -892,4 +894,9 @@ Here are all the types and how they map to the different backends.
 @bold{Changed:}
 @itemlist[
   @item{@racket[and-where] was renamed to @racket[where]}
+]
+
+@bold{Fixed:}
+@itemlist[
+  @item{Loosened the return contract on @racket[lookup] to @racket[any]}
 ]

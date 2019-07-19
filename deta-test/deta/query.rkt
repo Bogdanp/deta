@@ -240,7 +240,36 @@
 
        (query-exec (current-conn) (delete q))
        (check-equal? (query-value (current-conn)
-                                  (select q (count *))) 0))))))
+                                  (select q (count *))) 0)))
+
+    (test-suite
+     "lookup"
+
+     (test-case "can look up individual values"
+       (check-equal? (lookup (current-conn) (select _ 1)) 1))
+
+     (test-case "can look up tuples of values"
+       (define-values (a b)
+         (lookup (current-conn) (select _ 1 2)))
+
+       (check-equal? a 1)
+       (check-equal? b 2))
+
+     (test-case "can look up entities"
+       (define a-user
+         (insert-one! (current-conn)
+                      (make-user #:username "user-for-lookup@example.com")))
+
+       (define user
+         (lookup (current-conn) (~> (from user #:as u)
+                                    (where (= u.id ,(user-id a-user))))))
+
+       (check-true (user? user)))
+
+     (test-case "can fail to look up entities"
+       (check-false (lookup (current-conn)
+                            (~> (from user #:as u)
+                                (where #f)))))))))
 
 (module+ test
   (require rackunit/text-ui)
