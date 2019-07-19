@@ -3,6 +3,7 @@
 (require (for-syntax racket/base
                      syntax/parse)
          racket/match
+         racket/pretty
          racket/sequence
          racket/string
          "../ast.rkt"
@@ -71,6 +72,7 @@
 (define (quote/standard e)
   (cond
     [(symbol? e) (symbol->string e)]
+    [(string=? e "*") "*"]
     [(regexp-match-exact? lowercase-alphanum-re e) e]
     [else (string-append "\"" e "\"")]))
 
@@ -105,7 +107,7 @@
     [(column e) (display/expr e)]
 
     [(ident i)
-     (display (refine-ident i))]
+     (display (ident->string i))]
 
     [(placeholder v)
      (display "$")
@@ -154,7 +156,7 @@
 
     [(app (ident (and (variadic-operator) op)) es)
      (define separator
-       (string-append " " (refine-ident op) " "))
+       (string-append " " (ident->string op) " "))
 
      (display/sep
       #:sep separator
@@ -248,6 +250,9 @@
     (display ")"))
 
   (match e
+    [(? expr?)
+     (display/expr e)]
+
     [(list exprs ...)
      (display/sep exprs display/expr)]
 
@@ -299,13 +304,24 @@
          (display " = ")
          (display/expr r)]))]
 
-    [(limit n)
+    [(limit e)
      (display "LIMIT ")
-     (display/expr n)]
+     (display/expr e)]
 
-    [(from t)
+    [(from tables joins)
      (display "FROM ")
-     (display/expr t)]
+     (display/sep tables display/stmt)
+     (unless (null? joins)
+       (for ([join (in-list joins)])
+         (display/stmt join)))]
+
+    [(join type with constraint)
+     (display " ")
+     (display (join-type->string type))
+     (display " ")
+     (display/expr with)
+     (display " ON ")
+     (display/expr constraint)]
 
     [(where e)
      (display "WHERE ")
@@ -315,9 +331,9 @@
      (display "GROUP BY ")
      (display/stmt cols)]
 
-    [(offset n)
+    [(offset e)
      (display "OFFSET ")
-     (display/expr n)]
+     (display/expr e)]
 
     [(returning es)
      (display "RETURNING ")
@@ -344,7 +360,7 @@
     (unless (= i n-xs)
       (display sep))))
 
-(define refine-ident
+(define ident->string
   (match-lambda
     ['array-concat    "||"]
     ['array-contains? "@>"]
@@ -356,3 +372,11 @@
     ['is-distinct     "IS DISTINCT"]
     ['similar-to      "SIMILAR TO"]
     [name             (string-upcase (symbol->string name))]))
+
+(define join-type->string
+  (match-lambda
+    ['inner       "JOIN"]
+    ['left   "LEFT JOIN"]
+    ['right "RIGHT JOIN"]
+    ['full   "FULL JOIN"]
+    ['cross "CROSS JOIN"]))

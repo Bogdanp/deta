@@ -74,8 +74,12 @@
 (provide
  clause?
  (struct-out assignments)
+
+ make-from
  (struct-out from)
+
  (struct-out group-by)
+ (struct-out join)
  (struct-out limit)
  (struct-out offset)
  (struct-out order-by)
@@ -88,10 +92,17 @@
 (struct assignments clause (pairs)
   #:transparent)
 
-(struct from clause (e)
+(struct from clause (tables joins)
   #:transparent)
 
+(define (make-from #:tables tables
+                   #:joins [joins null])
+  (from tables joins))
+
 (struct group-by clause (columns)
+  #:transparent)
+
+(struct join clause (type with constraint)
   #:transparent)
 
 (struct limit clause (n)

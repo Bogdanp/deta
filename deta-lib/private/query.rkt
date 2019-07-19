@@ -52,6 +52,7 @@
  delete
  from
  group-by
+ join
  limit
  offset
  or-where
@@ -62,6 +63,15 @@
  update
  where)
 
+(define (select-query? q)
+  (and/c query? (ast:select? (query-stmt q))))
+
+(define join-type/c
+  (or/c 'inner 'left 'right 'full 'cross))
+
+(define (add-join f j)
+  (struct-copy ast:from f [joins (append (ast:from-joins f) (list j))]))
+
 (define/contract (as e name)
   (-> ast:expr? (or/c string? symbol?) ast:as?)
   (ast:as e (cond
@@ -69,7 +79,7 @@
               [(symbol? name) (symbol->string name)])))
 
 (define/contract (delete q)
-  (-> query? query?)
+  (-> select-query? query?)
   (match q
     [(query schema (and (struct* ast:select ([from from] [where where])) stmt))
      (query schema (ast:make-delete
@@ -95,7 +105,34 @@
   (query schema
          (ast:make-select
           #:columns columns
-          #:from (ast:from (ast:as (ast:table table-name) alias:str)))))
+          #:from (ast:make-from #:tables (list (ast:as (ast:table table-name) alias:str))))))
+
+(define/contract (join q
+                       #:type type
+                       #:with schema-or-name
+                       #:as alias
+                       #:on constraint)
+  (-> select-query?
+      #:type join-type/c
+      #:with (or/c schema? string? symbol?)
+      #:as symbol?
+      #:on ast:expr?
+      query?)
+
+  (define alias:str (symbol->string alias))
+  (define table-name
+    (cond
+      [(string? schema-or-name) schema-or-name]
+      [else
+       (define schema (schema-registry-lookup schema-or-name))
+       (schema-table schema)]))
+
+  (match q
+    [(query schema stmt)
+     (query schema (struct-copy ast:select stmt
+                                [from (add-join
+                                       (ast:select-from stmt)
+                                       (ast:join type (ast:as (ast:table table-name) alias) constraint))]))]))
 
 (define/contract (select q column0 . columns)
   (-> query? ast:expr? ast:expr? ... query?)
@@ -147,9 +184,9 @@
      (query schema (struct-copy ast:delete stmt [returning (ast:returning (cons e0 es))]))]))
 
 (define/contract (update q . ss)
-  (-> query? (cons/c ast:expr? ast:expr?) ... query?)
+  (-> select-query? (cons/c ast:expr? ast:expr?) ... query?)
   (match q
-    [(query schema (struct* ast:select ([from (ast:from table)]
+    [(query schema (struct* ast:select ([from (struct* ast:from ([tables (cons table _)]))]
                                         [where where])))
      (query schema (ast:make-update
                     #:table table

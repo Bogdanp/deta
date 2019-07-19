@@ -194,7 +194,7 @@
   (let ([entity ((schema-pre-delete-hook schema) entity)])
     (define stmt
       (ast:make-delete
-       #:from (ast:from (ast:table (schema-table schema)))
+       #:from (ast:make-from #:tables (list (ast:table (schema-table schema))))
        #:where (ast:where (ast:app (ast:ident '=)
                                    (list (ast:column (field-name pk))
                                          (ast:placeholder ((field-getter pk) entity)))))))
@@ -215,6 +215,7 @@
  sql
  from
  group-by
+ join
  limit
  offset
  order-by
@@ -359,6 +360,39 @@
 
     [(_ schema:id #:as alias:id)
      #'(dyn:from 'schema #:as 'alias)]))
+
+(define-syntax (join stx)
+  (define-syntax-class join-type
+    (pattern #:inner #:with type #''inner)
+    (pattern #:left  #:with type #''left)
+    (pattern #:right #:with type #''right)
+    (pattern #:full  #:with type #''full)
+    (pattern #:cross #:with type #''cross))
+
+  (syntax-parse stx
+    [(_ q:expr
+        (~optional t:join-type)
+        #:with table:str
+        #:as alias:id
+        #:on constraint:q-expr)
+     (with-syntax ([type #'(~? t.type 'inner)])
+       #'(dyn:join q
+                   #:type type
+                   #:with table
+                   #:as 'alias
+                   #:on constraint.e))]
+
+    [(_ q:expr
+        (~optional t:join-type)
+        #:with schema:id
+        #:as alias:id
+        #:on constraint:q-expr)
+     (with-syntax ([type #'(~? t.type 'inner)])
+       #'(dyn:join q
+                   #:type type
+                   #:with 'schema
+                   #:as 'alias
+                   #:on constraint.e))]))
 
 (define-syntax (select stx)
   (syntax-parse stx

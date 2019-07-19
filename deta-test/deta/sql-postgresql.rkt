@@ -6,6 +6,7 @@
          (only-in deta/private/query
                   query-stmt)
          racket/format
+         racket/pretty
          rackunit
          threading)
 
@@ -215,6 +216,36 @@
         [else 0]))
 
      "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) ELSE 0 END FROM departments AS d")
+
+    (test-suite
+     "join"
+
+     (test-case "emits inner join clauses"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (join #:with "authors" #:as a #:on (= b.author-id a.id))
+            (select a.name (count b.title))
+            (group-by a.id))
+
+        "SELECT a.name, COUNT(b.title) FROM books AS b JOIN authors AS a ON b.author_id = a.id GROUP BY a.id"))
+
+     (test-case "emits multiple join clauses"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (join #:with "authors" #:as a #:on (= b.author-id a.id))
+            (join #:with "author_pics" #:as ap #:on (= a.id ap.author-id))
+            (select a.name ap.picture (count b.title))
+            (group-by a.id ap.picture))
+
+        "SELECT a.name, ap.picture, COUNT(b.title) FROM books AS b JOIN authors AS a ON b.author_id = a.id JOIN author_pics AS ap ON a.id = ap.author_id GROUP BY a.id, ap.picture"))
+
+     (test-case "emits different types of joins"
+       (check-emitted
+        (~> (from "posts" #:as p)
+            (join #:left #:with "comments" #:as c #:on (= p.id c.post-id))
+            (select a.* c.*))
+
+        "SELECT a.*, c.* FROM posts AS p LEFT JOIN comments AS c ON p.id = c.post_id")))
 
     (test-suite
      "group-by"

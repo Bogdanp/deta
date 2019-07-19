@@ -338,7 +338,6 @@ The following query forms are not currently supported:
 @itemlist[
   @item{@tt{WITH ... { @select-link | @update-link | @delete-link }  ...}}
   @item{@tt{@update-link ... FROM ...}}
-  @item{@tt{@select-link ... JOIN ...}}
   @item{@tt{@select-link ... HAVING ...}}
   @item{@tt{@select-link ... WINDOW ...}}
   @item{@tt{@select-link ... {UNION | INTERSECT | EXCEPT} ...}}
@@ -576,46 +575,33 @@ The following query forms are not currently supported:
   Creates a new @tt{SELECT} @racket[query?] from a schema or a table name.
 }
 
-@defform[
-  (update query assignment ...+)
-  #:grammar
-  [(assignment [column q-expr])]]{
-
-  Converts @racket[query] into an @tt{UPDATE} query, preserving its
-  @tt{FROM} clause, making it the target table for the update, and its
-  @tt{WHERE} clause.
-
-  An error is raised if @racket[q] is anything other than a
-  @tt{SELECT} query.
-}
-
-@defform*[
-  #:literals (_)
-  ((select _ q-expr ...+)
-   (select query q-expr ...+))
-]{
-  Refines the set of selected values in @racket[query].
-
-  The first form (with the @racket[_]) generates a fresh query.
-
-  @examples[
-    (require deta)
-    (select _ 1 2)
-    (select (from "users" #:as u) u.username)
-  ]
-}
-
 @defform[(group-by query q-expr ...+)]{
   Adds or replaces a @tt{GROUP BY} clause to @racket[query].
 }
 
-@defform[
-  (order-by query ([column maybe-direction] ...+))
+@defform*[
+  ((join query maybe-type #:with table-name #:as alias #:on q-expr)
+   (join query maybe-type #:with id #:as alias #:on q-expr))
   #:grammar
-  [(maybe-direction (code:line)
-                    (code:line #:asc)
-                    (code:line #:desc))]]{
-  Adds or replaces an @tt{ORDER BY} clause to @racket[query].
+  ([maybe-type (code:line)
+               (code:line #:inner)
+               (code:line #:left)
+               (code:line #:right)
+               (code:line #:full)
+               (code:line #:cross)])
+  #:contracts
+  ([table-name non-empty-string?])]{
+
+  Adds a @tt{JOIN} to @racket[query].  If a join type is not provided,
+  then the join defaults to an @tt{INNER} join.
+
+  @examples[
+    (require deta threading)
+
+    (~> (from "posts" #:as p)
+        (join #:left #:with "comments" #:as c #:on (= p.id c.post_id))
+        (select p.* c.*))
+  ]
 }
 
 @defform*[
@@ -638,6 +624,53 @@ The following query forms are not currently supported:
   positive integer or 0.
 }
 
+@defform[
+  (order-by query ([column maybe-direction] ...+))
+  #:grammar
+  [(maybe-direction (code:line)
+                    (code:line #:asc)
+                    (code:line #:desc))]]{
+  Adds or replaces an @tt{ORDER BY} clause to @racket[query].
+}
+
+@defproc[(project-onto [q query?]
+                       [s schema?]) query?]{
+  Changes the target schema for @racket[q] to @racket[s].
+}
+
+@defform[(returning query q-expr ...+)]{
+  Adds or replaces a @tt{RETURNING} clause to @racket[query].
+}
+
+@defform*[
+  #:literals (_)
+  ((select _ q-expr ...+)
+   (select query q-expr ...+))
+]{
+  Refines the set of selected values in @racket[query].
+
+  The first form (with the @racket[_]) generates a fresh query.
+
+  @examples[
+    (require deta)
+    (select _ 1 2)
+    (select (from "users" #:as u) u.username)
+  ]
+}
+
+@defform[
+  (update query assignment ...+)
+  #:grammar
+  [(assignment [column q-expr])]]{
+
+  Converts @racket[query] into an @tt{UPDATE} query, preserving its
+  @tt{FROM} clause, making it the target table for the update, and its
+  @tt{WHERE} clause.
+
+  An error is raised if @racket[q] is anything other than a
+  @tt{SELECT} query.
+}
+
 @defform[(where query q-expr)]{
   Adds or replaces a @tt{WHERE} clause to @racket[query].
 }
@@ -650,15 +683,6 @@ The following query forms are not currently supported:
 @defform[(or-where query q-expr)]{
   Wraps the @tt{WHERE} clause in @racket[query] to the result of
   @tt{OR}-ing it with @racket[q-expr].
-}
-
-@defproc[(project-onto [q query?]
-                       [s schema?]) query?]{
-  Changes the target schema for @racket[q] to @racket[s].
-}
-
-@defform[(returning query q-expr ...+)]{
-  Adds or replaces a @tt{RETURNING} clause to @racket[query].
 }
 
 @subsection{Schema}
@@ -858,3 +882,13 @@ Here are all the types and how they map to the different backends.
 
   The various types that deta supports.
 }
+
+
+@subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.1.0} -- 2019-07-19}
+
+@bold{Added:}
+@itemlist[
+  @item{Support for @racket[join]s}
+]
