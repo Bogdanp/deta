@@ -672,10 +672,6 @@ The following query forms are not currently supported:
 }
 
 @defform[(where query q-expr)]{
-  Adds or replaces a @tt{WHERE} clause to @racket[query].
-}
-
-@defform[(and-where query q-expr)]{
   Wraps the @tt{WHERE} clause in @racket[query] to the result of
   @tt{AND}-ing it with @racket[q-expr].
 }
@@ -891,4 +887,9 @@ Here are all the types and how they map to the different backends.
 @bold{Added:}
 @itemlist[
   @item{Support for @racket[join]s}
+]
+
+@bold{Changed:}
+@itemlist[
+  @item{@racket[and-where] was renamed to @racket[where]}
 ]

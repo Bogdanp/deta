@@ -47,7 +47,6 @@
 ;; dynamic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- and-where
  as
  delete
  from
@@ -196,26 +195,14 @@
 (define/contract (where q e)
   (-> query? ast:expr? query?)
   (match q
-    [(query schema (and (? ast:select?) stmt))
+    [(query schema (and (struct* ast:select ([where #f])) stmt))
      (query schema (struct-copy ast:select stmt [where (ast:where e)]))]
 
-    [(query schema (and (? ast:update?) stmt))
+    [(query schema (and (struct* ast:update ([where #f])) stmt))
      (query schema (struct-copy ast:update stmt [where (ast:where e)]))]
 
-    [(query schema (and (? ast:delete?) stmt))
-     (query schema (struct-copy ast:delete stmt [where (ast:where e)]))]))
-
-(define/contract (and-where q e)
-  (-> query? ast:expr? query?)
-  (match q
-    [(query schema (and (struct* ast:select ([where #f])) stmt))
-     (query schema (struct-copy ast:select stmt [where e]))]
-
-    [(query schema (and (struct* ast:update ([where #f])) stmt))
-     (query schema (struct-copy ast:update stmt [where e]))]
-
     [(query schema (and (struct* ast:delete ([where #f])) stmt))
-     (query schema (struct-copy ast:delete stmt [where e]))]
+     (query schema (struct-copy ast:delete stmt [where (ast:where e)]))]
 
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
      (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]
@@ -230,13 +217,13 @@
   (-> query? ast:expr? query?)
   (match q
     [(query schema (and (struct* ast:select ([where #f])) stmt))
-     (query schema (struct-copy ast:select stmt [where e]))]
+     (query schema (struct-copy ast:select stmt [where (ast:where e)]))]
 
     [(query schema (and (struct* ast:update ([where #f])) stmt))
-     (query schema (struct-copy ast:update stmt [where e]))]
+     (query schema (struct-copy ast:update stmt [where (ast:where e)]))]
 
     [(query schema (and (struct* ast:delete ([where #f])) stmt))
-     (query schema (struct-copy ast:delete stmt [where e]))]
+     (query schema (struct-copy ast:delete stmt [where (ast:where e)]))]
 
     [(query schema (and (struct* ast:select ([where (ast:where e0)])) stmt))
      (query schema (struct-copy ast:select stmt [where (ast:where (ast:app (ast:ident 'or) (list e0 e)))]))]

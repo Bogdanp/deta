@@ -212,7 +212,7 @@
         (define all-active-users-named-bob
           (for/list ([u (in-entities (current-conn)
                                      (~> query
-                                         (and-where (like u.username "%bob%"))))])
+                                         (where (like u.username "%bob%"))))])
             u))
 
         (check-equal? (length all-active-users-named-bob) 1)

@@ -212,19 +212,18 @@
  in-entities
  lookup
 
- sql
  from
  group-by
  join
  limit
  offset
+ or-where
  order-by
  returning
  select
+ sql
  update
  where
- and-where
- or-where
 
  (rename-out [dyn:query? query?])
  (rename-out [dyn:delete delete])
@@ -349,10 +348,6 @@
              #:with dir (if (attribute dir-desc) #''desc #''asc)
              #:with e #'(cons column.e dir))))
 
-(define-syntax (sql stx)
-  (syntax-parse stx
-    [(_ e:q-expr) #'e.e]))
-
 (define-syntax (from stx)
   (syntax-parse stx
     [(_ table:str #:as alias:id)
@@ -360,6 +355,11 @@
 
     [(_ schema:id #:as alias:id)
      #'(dyn:from 'schema #:as 'alias)]))
+
+(define-syntax (group-by stx)
+  (syntax-parse stx
+    [(_ q:expr e:q-expr ...+)
+     #'(dyn:group-by q e.e ...)]))
 
 (define-syntax (join stx)
   (define-syntax-class join-type
@@ -394,15 +394,6 @@
                    #:as 'alias
                    #:on constraint.e))]))
 
-(define-syntax (select stx)
-  (syntax-parse stx
-    #:datum-literals (_)
-    [(select _ e:q-expr ...+)
-     #'(dyn:select (dyn:make-empty-query) e.e ...)]
-
-    [(select q:expr e:q-expr ...+)
-     #'(dyn:select q e.e ...)]))
-
 (define-syntax (limit stx)
   (syntax-parse stx
     [(_ q:expr n:number)
@@ -412,11 +403,6 @@
     [(_ q:expr p:p-expr)
      #'(dyn:limit q p.e)]))
 
-(define-syntax (group-by stx)
-  (syntax-parse stx
-    [(_ q:expr e:q-expr ...+)
-     #'(dyn:group-by q e.e ...)]))
-
 (define-syntax (offset stx)
   (syntax-parse stx
     [(_ q:expr n:number)
@@ -425,6 +411,11 @@
 
     [(_ q:expr p:p-expr)
      #'(dyn:offset q p.e)]))
+
+(define-syntax (or-where stx)
+  (syntax-parse stx
+    [(_ q:expr e:q-expr)
+     #'(dyn:or-where q e.e)]))
 
 (define-syntax (order-by stx)
   (syntax-parse stx
@@ -436,6 +427,19 @@
     [(_ q:expr e:q-expr ...+)
      #'(dyn:returning q e.e ...)]))
 
+(define-syntax (select stx)
+  (syntax-parse stx
+    #:datum-literals (_)
+    [(select _ e:q-expr ...+)
+     #'(dyn:select (dyn:make-empty-query) e.e ...)]
+
+    [(select q:expr e:q-expr ...+)
+     #'(dyn:select q e.e ...)]))
+
+(define-syntax (sql stx)
+  (syntax-parse stx
+    [(_ e:q-expr) #'e.e]))
+
 (define-syntax (update stx)
   (syntax-parse stx
     [(_ q:expr ass:q-assignment ...+)
@@ -445,13 +449,3 @@
   (syntax-parse stx
     [(_ q:expr e:q-expr)
      #'(dyn:where q e.e)]))
-
-(define-syntax (and-where stx)
-  (syntax-parse stx
-    [(_ q:expr e:q-expr)
-     #'(dyn:and-where q e.e)]))
-
-(define-syntax (or-where stx)
-  (syntax-parse stx
-    [(_ q:expr e:q-expr)
-     #'(dyn:or-where q e.e)]))
