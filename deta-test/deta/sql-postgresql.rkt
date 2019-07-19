@@ -250,38 +250,60 @@
     (test-suite
      "group-by"
 
-     (check-emitted
-      (~> (from "books" #:as b)
-          (select b.year (count b.title))
-          (group-by b.year))
+     (test-case "adds a group-by clause to the given query"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (select b.year (count b.title))
+            (group-by b.year))
 
-      "SELECT b.year, COUNT(b.title) FROM books AS b GROUP BY b.year"))
+        "SELECT b.year, COUNT(b.title) FROM books AS b GROUP BY b.year"))
+
+     (test-case "augments existing group-by clauses"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (select b.year b.month (count *))
+            (group-by b.year)
+            (group-by b.month))
+
+        "SELECT b.year, b.month, COUNT(*) FROM books AS b GROUP BY b.year, b.month")))
 
     (test-suite
      "order-by"
 
-     (check-emitted
-      (~> (from "books" #:as b)
-          (select b.title)
-          (order-by ([b.year])))
+     (test-case "adds an order-by clause to the given query"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (select b.title)
+            (order-by ([b.year])))
 
-      "SELECT b.title FROM books AS b ORDER BY b.year")
+        "SELECT b.title FROM books AS b ORDER BY b.year"))
 
-     (check-emitted
-      (~> (from "books" #:as b)
-          (select b.title)
-          (order-by ([b.year #:desc]
-                     [b.title])))
+     (test-case "augments existing order-by clauses"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (select b.title)
+            (order-by ([b.year #:desc]))
+            (order-by ([b.title])))
 
-      "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title")
+        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
 
-     (check-emitted
-      (~> (from "books" #:as b)
-          (select b.title)
-          (order-by ([b.year #:desc]
-                     [b.title #:asc])))
+     (test-case "supports descending directions"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (select b.title)
+            (order-by ([b.year #:desc]
+                       [b.title])))
 
-      "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
+        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
+
+     (test-case "supports explicit #:asc directions"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (select b.title)
+            (order-by ([b.year #:desc]
+                       [b.title #:asc])))
+
+        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title")))
 
     (test-suite
      "offset"
@@ -376,23 +398,35 @@
    (test-suite
     "delete"
 
-    (check-emitted
-     (delete (from "users" #:as u))
+    (test-case "generates DELETE queries"
+      (check-emitted
+       (delete (from "users" #:as u))
 
-     "DELETE FROM users AS u")
+       "DELETE FROM users AS u"))
 
-    (check-emitted
-     (~> (delete (from "users" #:as u))
-         (where (not u.active?)))
+    (test-case "supports WHERE clauses"
+      (check-emitted
+       (~> (delete (from "users" #:as u))
+           (where (not u.active?)))
 
-     "DELETE FROM users AS u WHERE NOT u.is_active")
+       "DELETE FROM users AS u WHERE NOT u.is_active"))
 
-    (check-emitted
-     (~> (delete (from "users" #:as u))
-         (where u.active?)
-         (returning u.id))
+    (test-case "supports RETURNING clauses"
+      (check-emitted
+       (~> (delete (from "users" #:as u))
+           (where u.active?)
+           (returning u.id))
 
-     "DELETE FROM users AS u WHERE u.is_active RETURNING u.id"))))
+       "DELETE FROM users AS u WHERE u.is_active RETURNING u.id"))
+
+    (test-case "supports the augmentation of RETURNING clauses"
+      (check-emitted
+       (~> (delete (from "users" #:as u))
+           (where u.active?)
+           (returning u.id)
+           (returning u.username u.last-logged-in))
+
+       "DELETE FROM users AS u WHERE u.is_active RETURNING u.id, u.username, u.last_logged_in")))))
 
 (module+ test
   (require rackunit/text-ui)

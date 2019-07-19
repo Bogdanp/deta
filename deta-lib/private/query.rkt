@@ -65,9 +65,6 @@
 (define (select-query? q)
   (and/c query? (ast:select? (query-stmt q))))
 
-(define join-type/c
-  (or/c 'inner 'left 'right 'full 'cross))
-
 (define (add-join f j)
   (struct-copy ast:from f [joins (append (ast:from-joins f) (list j))]))
 
@@ -112,7 +109,7 @@
                        #:as alias
                        #:on constraint)
   (-> select-query?
-      #:type join-type/c
+      #:type (or/c 'inner 'left 'right 'full 'cross)
       #:with (or/c schema? string? symbol?)
       #:as symbol?
       #:on ast:expr?
@@ -146,10 +143,17 @@
      (query schema (struct-copy ast:select stmt [limit (ast:limit n)]))]))
 
 (define/contract (group-by q column0 . columns)
-  (-> query? ast:expr? ast:expr? ... query?)
+  (-> select-query? ast:expr? ast:expr? ... query?)
+
+  (define all-columns
+    (cons column0 columns))
+
   (match q
-    [(query schema stmt)
-     (query schema (struct-copy ast:select stmt [group-by (ast:group-by (cons column0 columns))]))]))
+    [(query schema (and (struct* ast:select ([group-by #f])) stmt))
+     (query schema (struct-copy ast:select stmt [group-by (ast:group-by all-columns)]))]
+
+    [(query schema (and (struct* ast:select ([group-by (ast:group-by existing-columns)])) stmt))
+     (query schema (struct-copy ast:select stmt [group-by (ast:group-by (append existing-columns all-columns))]))]))
 
 (define/contract (offset q n)
   (-> query? (or/c ast:scalar? ast:placeholder?) query?)
@@ -161,10 +165,17 @@
   (cons/c ast:expr? (or/c 'asc 'desc)))
 
 (define/contract (order-by q pair0 . pairs)
-  (-> query? order-by-pair/c order-by-pair/c ... query?)
+  (-> select-query? order-by-pair/c order-by-pair/c ... query?)
+
+  (define all-pairs
+    (cons pair0 pairs))
+
   (match q
-    [(query schema stmt)
-     (query schema (struct-copy ast:select stmt [order-by (ast:order-by (cons pair0 pairs))]))]))
+    [(query schema (and (struct* ast:select ([order-by #f])) stmt))
+     (query schema (struct-copy ast:select stmt [order-by (ast:order-by all-pairs)]))]
+
+    [(query schema (and (struct* ast:select ([order-by (ast:order-by existing-pairs)])) stmt))
+     (query schema (struct-copy ast:select stmt [order-by (ast:order-by (append existing-pairs all-pairs))]))]))
 
 (define/contract (project-onto q s)
   (-> query? schema? query?)
@@ -172,25 +183,38 @@
 
 (define/contract (returning q e0 . es)
   (-> query? ast:expr? ast:expr? ... query?)
+
+  (define all-exprs
+    (cons e0 es))
+
+  (define (append-exprs e)
+    (match e
+      [#f
+       (ast:returning all-exprs)]
+
+      [(ast:returning existing-exprs)
+       (ast:returning (append existing-exprs all-exprs))]))
+
   (match q
     [(query schema (and (? ast:insert?) stmt))
-     (query schema (struct-copy ast:insert stmt [returning (ast:returning (cons e0 es))]))]
+     (query schema (struct-copy ast:insert stmt [returning (append-exprs (ast:insert-returning stmt))]))]
 
     [(query schema (and (? ast:update?) stmt))
-     (query schema (struct-copy ast:update stmt [returning (ast:returning (cons e0 es))]))]
+     (query schema (struct-copy ast:update stmt [returning (append-exprs (ast:update-returning stmt))]))]
 
     [(query schema (and (? ast:delete?) stmt))
-     (query schema (struct-copy ast:delete stmt [returning (ast:returning (cons e0 es))]))]))
+     (query schema (struct-copy ast:delete stmt [returning (append-exprs (ast:delete-returning stmt))]))]))
 
 (define/contract (update q . ss)
   (-> select-query? (cons/c ast:expr? ast:expr?) ... query?)
   (match q
     [(query schema (struct* ast:select ([from (struct* ast:from ([tables (cons table _)]))]
                                         [where where])))
-     (query schema (ast:make-update
-                    #:table table
-                    #:assignments (ast:assignments ss)
-                    #:where where))]))
+     (query schema
+            (ast:make-update
+             #:table table
+             #:assignments (ast:assignments ss)
+             #:where where))]))
 
 (define/contract (where q e)
   (-> query? ast:expr? query?)

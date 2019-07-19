@@ -468,95 +468,99 @@ The following query forms are not currently supported:
 
 @subsubsection{Query Combinators}
 
-@defproc[(query? [q any/c]) boolean?]{
-  Returns @racket[#t] when @racket[q] is a query.
+@centered{
+  @racketgrammar*[
+    #:literals (array as and case else list or unquote)
+
+    [q-expr (array q-expr ...)
+            (as q-expr id)
+            (and q-expr ...+)
+            (case [q-expr q-expr] ...+)
+            (case [q-expr q-expr] ...+
+                  [else q-expr])
+            (or q-expr ...+)
+            (list q-expr ...)
+            (unquote expr)
+            ident
+            boolean
+            string
+            number
+            app]
+
+    [app (q-expr q-expr ...)]
+
+    [ident symbol]]
 }
 
-@defform[
-  #:literals (array as and case else list or unquote)
-  (sql q-expr)
-  #:grammar
-  [(q-expr (array q-expr ...)
-           (as q-expr id)
-           (and q-expr q-expr)
-           (case [q-expr q-expr] ...+)
-           (case [q-expr q-expr] ...+
-                 [else q-expr])
-           (or q-expr q-expr)
-           (list q-expr ...)
-           (unquote expr)
-           id
-           boolean
-           string
-           number
-           app)
-   (app (q-expr q-expr ...))]]{
+The grammar for SQL expressions.
 
-  Constructs an SQL expression.
+Within an SQL expression, the following identifiers are treated
+specially by the base (i.e. PostgreSQL) dialect.  These are inherited
+by other dialects, but using them may result in invalid queries.
 
-  Within an SQL expression, the following identifiers are treated
-  specially by the base (i.e. PostgreSQL) dialect:
+@tabular[
+  #:sep @hspace[2]
+  #:style 'boxed
+  #:row-properties '(bottom-border)
+  (list (list @bold{Identifier} "")
+        (list @tt{array-concat}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(array-concat (array 1) (array 2 3))])
+                      (list @bold{output:} @tt{ARRAY[1] || ARRAY[2, 3]}))])
 
-  @tabular[
-    #:sep @hspace[2]
-    #:style 'boxed
-    #:row-properties '(bottom-border)
-    (list (list @bold{Identifier} "")
-          (list @tt{array-concat}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(array-concat (array 1) (array 2 3))])
-                        (list @bold{output:} @tt{ARRAY[1] || ARRAY[2, 3]}))])
+        (list @tt{array-contains?}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(array-contains? (array 1 2) (array 1))])
+                      (list @bold{output:} @tt{ARRAY[1, 2] @"@"> ARRAY[1]}))])
 
-          (list @tt{array-contains?}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(array-contains? (array 1 2) (array 1))])
-                        (list @bold{output:} @tt{ARRAY[1, 2] @"@"> ARRAY[1]}))])
+        (list @tt{array-overlap?}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(array-overlap? (array 1 2) (array 1))])
+                      (list @bold{output:} @tt{ARRAY[1, 2] && ARRAY[1]}))])
 
-          (list @tt{array-overlap?}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(array-overlap? (array 1 2) (array 1))])
-                        (list @bold{output:} @tt{ARRAY[1, 2] && ARRAY[1]}))])
+        (list @tt{array-ref}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(array-ref (array 1 2) 1)])
+                      (list @bold{output:} @tt{ARRAY[1, 2][1]}))])
 
-          (list @tt{array-ref}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(array-ref (array 1 2) 1)])
-                        (list @bold{output:} @tt{ARRAY[1, 2][1]}))])
+        (list @tt{array-slice}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(array-slice (array 1 2) 1 3)])
+                      (list @bold{output:} @tt{ARRAY[1, 2][1:3]}))])
 
-          (list @tt{array-slice}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(array-slice (array 1 2) 1 3)])
-                        (list @bold{output:} @tt{ARRAY[1, 2][1:3]}))])
+        (list @tt{bitwise-not}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(bitwise-not 1)])
+                      (list @bold{output:} @tt{~ 1}))])
 
-          (list @tt{bitwise-not}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(bitwise-not 1)])
-                        (list @bold{output:} @tt{~ 1}))])
+        (list @tt{bitwise-and}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(bitwise-and 1 2)])
+                      (list @bold{output:} @tt{1 & 2}))])
 
-          (list @tt{bitwise-and}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(bitwise-and 1 2)])
-                        (list @bold{output:} @tt{1 & 2}))])
+        (list @tt{bitwise-or}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(bitwise-or 1 2)])
+                      (list @bold{output:} @tt{1 | 2}))])
 
-          (list @tt{bitwise-or}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(bitwise-or 1 2)])
-                        (list @bold{output:} @tt{1 | 2}))])
+        (list @tt{bitwise-xor}
+              @tabular[
+                #:sep @hspace[2]
+                (list (list @bold{usage:}  @racket[(bitwise-xor 1 2)])
+                      (list @bold{output:} @tt{1 # 2}))])
+        )
+]
 
-          (list @tt{bitwise-xor}
-                @tabular[
-                  #:sep @hspace[2]
-                  (list (list @bold{usage:}  @racket[(bitwise-xor 1 2)])
-                        (list @bold{output:} @tt{1 # 2}))])
-          )
-  ]
+@defproc[(query? [q any/c]) boolean?]{
+  Returns @racket[#t] when @racket[q] is a query.
 }
 
 @defproc[(delete [q query?]) query?]{
@@ -578,7 +582,9 @@ The following query forms are not currently supported:
 }
 
 @defform[(group-by query q-expr ...+)]{
-  Adds or replaces a @tt{GROUP BY} clause to @racket[query].
+  Adds a @tt{ORDER BY} clause to @racket[query].  If @racket[query]
+  already has one, then the new columns are appended to the existing
+  clause.
 }
 
 @defform*[
@@ -632,7 +638,10 @@ The following query forms are not currently supported:
   [(maybe-direction (code:line)
                     (code:line #:asc)
                     (code:line #:desc))]]{
-  Adds or replaces an @tt{ORDER BY} clause to @racket[query].
+
+  Adds an @tt{ORDER BY} clause to @racket[query].  If @racket[query]
+  already has one, then the new columns are appended to the existing
+  clause.
 }
 
 @defproc[(project-onto [q query?]
@@ -641,7 +650,9 @@ The following query forms are not currently supported:
 }
 
 @defform[(returning query q-expr ...+)]{
-  Adds or replaces a @tt{RETURNING} clause to @racket[query].
+  Adds a @tt{RETURNING} clause to @racket[query].  If @racket[query]
+  already has one, then the new columns are appended to the existing
+  clause.
 }
 
 @defform*[
@@ -893,6 +904,10 @@ Here are all the types and how they map to the different backends.
 
 @bold{Changed:}
 @itemlist[
+  @item{
+    @racket[order-by], @racket[group-by] and @racket[returning] were
+    changed to always append themselves to existing clauses, if any
+  }
   @item{@racket[and-where] was renamed to @racket[where]}
 ]
 
