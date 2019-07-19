@@ -138,11 +138,12 @@ the table:
 
 @interaction[
 #:eval db-eval
-(code:comment "drop it in case it already exists")
+#:hidden
 (drop-table! conn 'book)
+]
 
-(code:line)
-(code:comment "create the table")
+@interaction[
+#:eval db-eval
 (create-table! conn 'book)
 ]
 
@@ -157,8 +158,8 @@ the database:
 
 @interaction[
 #:eval db-eval
-(match-define (list saved-book)
-  (insert! conn a-book))
+(define saved-book
+  (insert-one! conn a-book))
 
 (code:line)
 (book-id saved-book)

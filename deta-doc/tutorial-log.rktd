@@ -55,7 +55,7 @@
  #"")
 ((drop-table! conn 'book) ((3) 0 () 0 () () (c values c (void))) #"" #"")
 ((create-table! conn 'book) ((3) 0 () 0 () () (c values c (void))) #"" #"")
-((match-define (list saved-book) (insert! conn a-book))
+((define saved-book (insert-one! conn a-book))
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
