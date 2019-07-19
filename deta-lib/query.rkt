@@ -266,7 +266,7 @@
                 (in-query conn q #:fetch batch-size)))
 
 (define/contract (lookup conn q)
-  (-> connection? dyn:query? (or/c false/c entity?))
+  (-> connection? dyn:query? (or/c false/c entity? number?))
   (for/first ([e (in-entities conn q)]) e))
 
 (begin-for-syntax
