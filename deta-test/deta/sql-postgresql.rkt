@@ -198,24 +198,48 @@
 
      "SELECT ((NOW()) BETWEEN ((NOW()) - (INTERVAL '7 days')) AND ((NOW()) + (INTERVAL '7 days'))) AS is_between")
 
-    (check-emitted
-     (select
-      (from "departments" #:as d)
-      (cond
-        [(> (min d.employees) 0)
-         (avg (/ d.expenses d.employees))]))
+    (test-case "supports COND as an alias for CASE"
+      (check-emitted
+       (select
+        (from "departments" #:as d)
+        (cond
+          [(> (min d.employees) 0)
+           (avg (/ d.expenses d.employees))]))
 
-     "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) END FROM departments AS d")
+       "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) END FROM departments AS d"))
 
-    (check-emitted
-     (select
-      (from "departments" #:as d)
-      (cond
-        [(> (min d.employees) 0)
-         (avg (/ d.expenses d.employees))]
-        [else 0]))
+    (test-case "COND expressions support ELSE clauses"
+      (check-emitted
+       (select
+        (from "departments" #:as d)
+        (cond
+          [(> (min d.employees) 0)
+           (avg (/ d.expenses d.employees))]
+          [else 0]))
 
-     "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) ELSE 0 END FROM departments AS d")
+       "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) ELSE 0 END FROM departments AS d"))
+
+    (test-suite
+     "subquery"
+
+     (test-case "emits subqueries in from clauses"
+       (check-emitted
+        (~> (from (subquery (select _ (as 1 x))) #:as a)
+            (select a.x))
+
+        "SELECT a.x FROM (SELECT 1 AS x) AS a"))
+
+     (test-case "allows queries to be composed"
+       (define active-usernames
+         (~> (from "users" #:as u)
+             (select u.username)
+             (group-by u.username)))
+
+       (check-emitted
+        (~> (from (subquery active-usernames) #:as a)
+            (select (count a.*)))
+
+        "SELECT COUNT(a.*) FROM (SELECT u.username FROM users AS u GROUP BY u.username) AS a")))
 
     (test-suite
      "join"

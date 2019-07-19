@@ -33,6 +33,7 @@
  (struct-out placeholder)
  (struct-out qualified)
  (struct-out scalar)
+ (struct-out subquery)
  (struct-out table))
 
 (struct expr ()
@@ -63,6 +64,9 @@
   #:transparent)
 
 (struct scalar expr (v)
+  #:transparent)
+
+(struct subquery expr (stmt)
   #:transparent)
 
 (struct table expr (e)

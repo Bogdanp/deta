@@ -43,11 +43,13 @@
 (define (make-empty-query)
   (query #f (ast:make-select)))
 
+(define (make-query stmt #:schema [schema #f])
+  (query schema stmt))
+
 
 ;; dynamic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- as
  delete
  from
  group-by
@@ -59,6 +61,7 @@
  project-onto
  returning
  select
+ subquery
  update
  where)
 
@@ -68,12 +71,6 @@
 (define (add-join f j)
   (struct-copy ast:from f [joins (append (ast:from-joins f) (list j))]))
 
-(define/contract (as e name)
-  (-> ast:expr? (or/c string? symbol?) ast:as?)
-  (ast:as e (cond
-              [(string? name) name]
-              [(symbol? name) (symbol->string name)])))
-
 (define/contract (delete q)
   (-> select-query? query?)
   (match q
@@ -82,26 +79,34 @@
                     #:from from
                     #:where where))]))
 
-(define/contract (from schema-or-name #:as alias)
-  (-> (or/c schema? string? symbol?) #:as symbol? query?)
+(define/contract (from source #:as alias)
+  (-> any/c #:as symbol? query?)
 
   (define alias:str (symbol->string alias))
-  (define-values (schema table-name columns)
-    (cond
-      [(string? schema-or-name)
-       (values #f schema-or-name null)]
+  (cond
+    [(string? source)
+     (make-query
+      (ast:make-select
+       #:from (ast:make-from
+               #:tables (list (ast:as (ast:table source) alias:str)))))]
 
-      [else
-       (define schema (schema-registry-lookup schema-or-name))
-       (values schema
-               (schema-table schema)
-               (for/list ([f (in-list (schema-fields schema))])
-                 (ast:column (ast:qualified alias:str (field-name f)))))]))
+    [(symbol? source)
+     (define schema (schema-registry-lookup source))
+     (make-query
+      #:schema schema
+      (ast:make-select
+       #:from (ast:make-from
+               #:tables (list (ast:as (ast:table (schema-table schema)) alias:str)))
+       #:columns (for/list ([f (in-list (schema-fields schema))])
+                   (ast:column (ast:qualified alias:str (field-name f))))))]
 
-  (query schema
-         (ast:make-select
-          #:columns columns
-          #:from (ast:make-from #:tables (list (ast:as (ast:table table-name) alias:str))))))
+    [(ast:subquery? source)
+     (make-query
+      (ast:make-select
+       #:from (ast:make-from #:tables (list (ast:as source alias:str)))))]
+
+    [else
+     (raise-argument-error 'form "a table name, a schema name or a subquery")]))
 
 (define/contract (join q
                        #:type type
@@ -204,6 +209,10 @@
 
     [(query schema (and (? ast:delete?) stmt))
      (query schema (struct-copy ast:delete stmt [returning (append-exprs (ast:delete-returning stmt))]))]))
+
+(define/contract (subquery q)
+  (-> select-query? ast:subquery?)
+  (ast:subquery (query-stmt q)))
 
 (define/contract (update q . ss)
   (-> select-query? (cons/c ast:expr? ast:expr?) ... query?)

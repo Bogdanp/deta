@@ -80,7 +80,9 @@
     [_ (emit-expr/standard e)]))
 
 (define emit-expr/standard
-  (make-expr-emitter emit-expr))
+  (make-expr-emitter emit-expr
+                     (lambda args
+                       (apply emit-stmt/postgresql args))))
 
 (define (emit-stmt e)
   (with-output-to-string

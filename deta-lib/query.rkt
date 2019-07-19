@@ -221,7 +221,6 @@
  order-by
  returning
  select
- sql
  update
  where
 
@@ -286,10 +285,20 @@
     (cons (datum->syntax stx a)
           (datum->syntax stx (id->column-name b))))
 
-  (define-syntax-class p-expr
+  (define-syntax-class placeholder-expr
     #:literals (unquote)
     (pattern (unquote placeholder)
              #:with e #'(ast:placeholder placeholder)))
+
+  (define-syntax-class subquery-expr
+    #:datum-literals (subquery)
+    (pattern (subquery q:expr)
+             #:with e #'(dyn:subquery q)))
+
+  (define-syntax-class q-source
+    (pattern schema:id #:with e #''schema)
+    (pattern table:str #:with e #'table)
+    (pattern sub:subquery-expr #:with e #'sub.e))
 
   (define-syntax-class q-expr
     #:datum-literals (array as list null)
@@ -299,7 +308,7 @@
              #:with e (let ([ref (syntax->column-reference this-syntax)])
                         #`(ast:qualified #,(car ref) #,(cdr ref))))
 
-    (pattern placeholder:p-expr
+    (pattern placeholder:placeholder-expr
              #:with e #'placeholder.e)
 
     (pattern ident:id
@@ -331,11 +340,11 @@
     (pattern ((~or case cond) [c:q-expr v:q-expr] ...+)
              #:with e #'(ast:case-e (list (cons c.e v.e) ...) #f))
 
-    (pattern (or a:q-expr b:q-expr)
-             #:with e #'(ast:app (ast:ident 'or) (list a.e b.e)))
-
     (pattern (list item:q-expr ...)
              #:with e #'(ast:scalar (list item.e ...)))
+
+    (pattern (or a:q-expr b:q-expr)
+             #:with e #'(ast:app (ast:ident 'or) (list a.e b.e)))
 
     (pattern (fun:q-expr arg:q-expr ...)
              #:with e #'(ast:app fun.e (list arg.e ...))))
@@ -353,11 +362,8 @@
 
 (define-syntax (from stx)
   (syntax-parse stx
-    [(_ table:str #:as alias:id)
-     #'(dyn:from table #:as 'alias)]
-
-    [(_ schema:id #:as alias:id)
-     #'(dyn:from 'schema #:as 'alias)]))
+    [(_ source:q-source #:as alias:id)
+     #'(dyn:from source.e #:as 'alias)]))
 
 (define-syntax (group-by stx)
   (syntax-parse stx
@@ -375,25 +381,13 @@
   (syntax-parse stx
     [(_ q:expr
         (~optional t:join-type)
-        #:with table:str
+        #:with source:q-source
         #:as alias:id
         #:on constraint:q-expr)
      (with-syntax ([type #'(~? t.type 'inner)])
        #'(dyn:join q
                    #:type type
-                   #:with table
-                   #:as 'alias
-                   #:on constraint.e))]
-
-    [(_ q:expr
-        (~optional t:join-type)
-        #:with schema:id
-        #:as alias:id
-        #:on constraint:q-expr)
-     (with-syntax ([type #'(~? t.type 'inner)])
-       #'(dyn:join q
-                   #:type type
-                   #:with 'schema
+                   #:with source.e
                    #:as 'alias
                    #:on constraint.e))]))
 
@@ -403,7 +397,7 @@
      #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n) "n must be a positive integer"
      #'(dyn:limit q (ast:scalar n))]
 
-    [(_ q:expr p:p-expr)
+    [(_ q:expr p:placeholder-expr)
      #'(dyn:limit q p.e)]))
 
 (define-syntax (offset stx)
@@ -412,7 +406,7 @@
      #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n) "n must be a positive integer"
      #'(dyn:offset q (ast:scalar n))]
 
-    [(_ q:expr p:p-expr)
+    [(_ q:expr p:placeholder-expr)
      #'(dyn:offset q p.e)]))
 
 (define-syntax (or-where stx)
@@ -438,10 +432,6 @@
 
     [(select q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))
-
-(define-syntax (sql stx)
-  (syntax-parse stx
-    [(_ e:q-expr) #'e.e]))
 
 (define-syntax (update stx)
   (syntax-parse stx

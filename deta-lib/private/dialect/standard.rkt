@@ -76,7 +76,7 @@
     [(regexp-match-exact? lowercase-alphanum-re e) e]
     [else (string-append "\"" e "\"")]))
 
-(define ((make-expr-emitter display/expr) e)
+(define ((make-expr-emitter display/expr display/stmt) e)
   (define (display/maybe-parenthize e)
     (cond
       [(expr-terminal? e)
@@ -89,10 +89,6 @@
 
   (define (display/quoted e)
     (display (quote/standard e)))
-
-  (define (display/space e)
-    (display " ")
-    (display/expr e))
 
   (define (display/spaced e)
     (display " ")
@@ -234,7 +230,12 @@
        (display " ELSE ")
        (display/expr else-case))
 
-     (display " END")]))
+     (display " END")]
+
+    [(subquery stmt)
+     (display "(")
+     (display/stmt stmt)
+     (display ")")]))
 
 (define ((make-stmt-emitter display/stmt
                             display/expr
