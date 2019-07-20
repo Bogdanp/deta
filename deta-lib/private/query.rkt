@@ -47,7 +47,25 @@
   (query schema stmt))
 
 
-;; dynamic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; helpers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (select-query? q)
+  (and/c query? (ast:select? (query-stmt q))))
+
+(define (contains-subquery? f)
+  (match f
+    [(ast:subquery _)             #t]
+    [(ast:as (? ast:subquery?) _) #t]
+    [_                            #f]))
+
+(define (add-join f j)
+  (struct-copy ast:from f [joins (append (ast:from-joins f) (list j))]))
+
+(define assignment/c
+  (cons/c ast:column? ast:expr?))
+
+
+;; combinators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
  delete
@@ -65,18 +83,17 @@
  update
  where)
 
-(define (select-query? q)
-  (and/c query? (ast:select? (query-stmt q))))
-
-(define (add-join f j)
-  (struct-copy ast:from f [joins (append (ast:from-joins f) (list j))]))
-
 (define/contract (delete q)
   (-> select-query? query?)
   (match q
-    [(query schema (and (struct* ast:select ([from from] [where where])) stmt))
+    [(query schema (and (struct* ast:select ([from (ast:from (list table) _)]
+                                             [where where]))
+                        stmt))
+     (when (contains-subquery? table)
+       (raise-argument-error 'delete "a real table to delete from" table))
+
      (query schema (ast:make-delete
-                    #:from from
+                    #:from (ast:make-from #:tables (list table))
                     #:where where))]))
 
 (define/contract (from source #:as alias)
@@ -214,15 +231,23 @@
   (-> select-query? ast:subquery?)
   (ast:subquery (query-stmt q)))
 
-(define/contract (update q . ss)
-  (-> select-query? (cons/c ast:expr? ast:expr?) ... query?)
+(define/contract (update q assignment0 . assignments)
+  (-> select-query? assignment/c assignment/c ... query?)
+
+  (define all-assignments
+    (cons assignment0 assignments))
+
   (match q
-    [(query schema (struct* ast:select ([from (struct* ast:from ([tables (cons table _)]))]
-                                        [where where])))
+    [(query schema (struct* ast:select
+                            ([from (ast:from (list table) _)]
+                             [where where])))
+     (when (contains-subquery? table)
+       (raise-argument-error 'update "a table to update" table))
+
      (query schema
             (ast:make-update
              #:table table
-             #:assignments (ast:assignments ss)
+             #:assignments (ast:assignments all-assignments)
              #:where where))]))
 
 (define/contract (where q e)

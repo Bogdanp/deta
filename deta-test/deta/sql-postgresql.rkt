@@ -417,7 +417,14 @@
          (where (= u.id 1))
          (returning u.username))
 
-     "UPDATE users AS u SET username = 'bill' WHERE u.id = 1 RETURNING u.username"))
+     "UPDATE users AS u SET username = 'bill' WHERE u.id = 1 RETURNING u.username")
+
+    (test-case "raises an error if trying to update a subquery"
+      (check-exn
+       exn:fail:contract?
+       (lambda _
+         (~> (from (subquery (select _ 1)) #:as t)
+             (update [x 2]))))))
 
    (test-suite
     "delete"
@@ -450,7 +457,13 @@
            (returning u.id)
            (returning u.username u.last-logged-in))
 
-       "DELETE FROM users AS u WHERE u.is_active RETURNING u.id, u.username, u.last_logged_in")))))
+       "DELETE FROM users AS u WHERE u.is_active RETURNING u.id, u.username, u.last_logged_in"))
+
+    (test-case "raises an error if trying to delete a subquery"
+      (check-exn
+       exn:fail:contract?
+       (lambda _
+         (delete (from (subquery (select _ 1)) #:as t))))))))
 
 (module+ test
   (require rackunit/text-ui)
