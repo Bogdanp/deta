@@ -777,6 +777,13 @@ by other dialects, but using them may result in invalid queries.
 @defform[(or-where query q-expr)]{
   Wraps the @tt{WHERE} clause in @racket[query] to the result of
   @tt{OR}-ing it with @racket[q-expr].
+
+  @interaction[
+    #:eval reference-eval
+    (~> (delete (from "users" #:as u))
+        (where (not u.active?))
+        (or-where (< u.last-login (- (now) (interval "1 year")))))
+  ]
 }
 
 @subsection{Schema}
