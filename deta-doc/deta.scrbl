@@ -596,7 +596,19 @@ by other dialects, but using them may result in invalid queries.
 
   @interaction[
     #:eval reference-eval
+    (define-schema user
+      ([id id/f #:primary-key #:auto-increment]
+       [username string/f]))
+
+    (code:line)
     (from "users" #:as u)
+
+    (code:line)
+    (from user #:as u)
+
+    (code:line)
+    (~> (from (subquery (from user #:as u)) #:as out)
+        (select (count out.*)))
   ]
 }
 
@@ -604,6 +616,13 @@ by other dialects, but using them may result in invalid queries.
   Adds a @tt{ORDER BY} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
   clause.
+
+  @interaction[
+    #:eval reference-eval
+    (~> (from "books" #:as b)
+        (select b.year-published (count *))
+        (group-by b.year-published))
+  ]
 }
 
 @defform*[
