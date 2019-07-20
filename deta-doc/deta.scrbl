@@ -328,7 +328,6 @@ structs, which is out of scope for @racketmodname[sql].
 The following features are planned:
 
 @itemlist[
-  @item{Subqueries}
   @item{@tt{VALUES} expressions}
   @item{Column constraints for DDL}
 ]
@@ -338,6 +337,7 @@ The following query forms are not currently supported:
 @itemlist[
   @item{@tt{WITH ... { @select-link | @update-link | @delete-link }  ...}}
   @item{@tt{@update-link ... FROM ...}}
+  @item{@tt{@select-link DISTINCT ...}}
   @item{@tt{@select-link ... HAVING ...}}
   @item{@tt{@select-link ... WINDOW ...}}
   @item{@tt{@select-link ... {UNION | INTERSECT | EXCEPT} ...}}
@@ -346,6 +346,12 @@ The following query forms are not currently supported:
 
 
 @section[#:tag "reference"]{Reference}
+
+@(begin
+   (define reference-eval
+     (let ([ev (make-base-eval)])
+       (ev '(require db deta racket/string threading))
+       ev)))
 
 @subsection{Query}
 @defmodule[deta/query]
@@ -570,15 +576,28 @@ by other dialects, but using them may result in invalid queries.
 
   An error is raised if @racket[q] is anything other than a
   @tt{SELECT} query.
+
+  @interaction[
+    #:eval reference-eval
+    (delete (from "users" #:as u))
+  ]
 }
 
-@defform[
-  (from schema #:as alias)
-  #:grammar
-  [(schema (code:line string)
-           (code:line id))]]{
+@defform*[
+  #:literals (subquery)
+  ((from table-name #:as alias)
+   (from schema-id #:as alias)
+   (from (subquery query) #:as alias))
+  #:contracts
+  ([table-name non-empty-string?]
+   [query query?])]{
 
   Creates a new @tt{SELECT} @racket[query?] from a schema or a table name.
+
+  @interaction[
+    #:eval reference-eval
+    (from "users" #:as u)
+  ]
 }
 
 @defform[(group-by query q-expr ...+)]{
@@ -588,8 +607,10 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform*[
-  ((join query maybe-type #:with table-name #:as alias #:on q-expr)
-   (join query maybe-type #:with id #:as alias #:on q-expr))
+  #:literals (subquery)
+  ((join query maybe-type table-name #:as alias #:on q-expr)
+   (join query maybe-type schema-id #:as alias #:on q-expr)
+   (join query maybe-type (subquery query) #:as alias #:on q-expr))
   #:grammar
   ([maybe-type (code:line)
                (code:line #:inner)
@@ -598,16 +619,18 @@ by other dialects, but using them may result in invalid queries.
                (code:line #:full)
                (code:line #:cross)])
   #:contracts
-  ([table-name non-empty-string?])]{
+  ([table-name non-empty-string?]
+   [query query?])]{
 
   Adds a @tt{JOIN} to @racket[query].  If a join type is not provided,
   then the join defaults to an @tt{INNER} join.
 
-  @examples[
-    (require deta threading)
+  @interaction[
+    #:eval reference-eval
 
     (~> (from "posts" #:as p)
-        (join #:left #:with "comments" #:as c #:on (= p.id c.post_id))
+        (join "post_images" #:as pi #:on (= p.id pi.post-id))
+        (join #:left "comments" #:as c #:on (= p.id c.post-id))
         (select p.* c.*))
   ]
 }
@@ -620,6 +643,13 @@ by other dialects, but using them may result in invalid queries.
 
   The first form raises a syntax error if @racket[n] is not an exact
   positive integer or 0.
+
+  @interaction[
+    #:eval reference-eval
+    (~> (from "users" #:as u)
+        (offset 20)
+        (limit 10))
+  ]
 }
 
 @defform*[
@@ -630,6 +660,12 @@ by other dialects, but using them may result in invalid queries.
 
   The first form raises a syntax error if @racket[n] is not an exact
   positive integer or 0.
+
+  @interaction[
+    #:eval reference-eval
+    (~> (from "users" #:as u)
+        (offset 10))
+  ]
 }
 
 @defform[
@@ -642,30 +678,66 @@ by other dialects, but using them may result in invalid queries.
   Adds an @tt{ORDER BY} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
   clause.
+
+  @interaction[
+    #:eval reference-eval
+    (~> (from "users" #:as u)
+        (order-by ([u.last-login #:desc]
+                   [u.username])))
+  ]
 }
 
 @defproc[(project-onto [q query?]
                        [s schema?]) query?]{
   Changes the target schema for @racket[q] to @racket[s].
+
+  @interaction[
+    #:eval reference-eval
+    (define-schema book-stats
+      #:virtual
+      ([year-published integer/f]
+       [books integer/f]))
+
+    (code:line)
+    (~> (from "books" #:as b)
+        (select b.year-published (count *))
+        (group-by b.year-published)
+        (order-by ([b.year-published #:desc]))
+        (project-onto book-stats-schema))
+  ]
 }
 
 @defform[(returning query q-expr ...+)]{
   Adds a @tt{RETURNING} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
   clause.
+
+  @interaction[
+    #:eval reference-eval
+    (~> (delete (from "users" #:as u))
+        (where (not u.active?))
+        (returning u.id))
+  ]
 }
 
 @defform*[
   #:literals (_)
   ((select _ q-expr ...+)
    (select query q-expr ...+))
-]{
-  Refines the set of selected values in @racket[query].
+  #:contracts
+  ([query query?])]{
+
+  Refines the set of selected values in @racket[query].  This operation
+  removes the schema, if any, from the input query so you'll have to
+  use @racket[project-onto] to project the results onto an entity,
+  otherwise the resulting query will return a sequence of
+  @racket[values].
 
   The first form (with the @racket[_]) generates a fresh query.
 
-  @examples[
-    (require deta)
+  @interaction[
+    #:eval reference-eval
+
     (select _ 1 2)
     (select (from "users" #:as u) u.username)
   ]
@@ -682,11 +754,24 @@ by other dialects, but using them may result in invalid queries.
 
   An error is raised if @racket[q] is anything other than a
   @tt{SELECT} query.
+
+  @interaction[
+    #:eval reference-eval
+    (~> (from "users" #:as u)
+        (update [active? #t]))
+  ]
 }
 
 @defform[(where query q-expr)]{
   Wraps the @tt{WHERE} clause in @racket[query] to the result of
   @tt{AND}-ing it with @racket[q-expr].
+
+  @interaction[
+    #:eval reference-eval
+    (~> (from "users" #:as u)
+        (where u.active?)
+        (where (> u.last-login (- (now) (interval "2 weeks")))))
+  ]
 }
 
 @defform[(or-where query q-expr)]{
@@ -803,7 +888,9 @@ by other dialects, but using them may result in invalid queries.
 
   Example:
 
-  @racketblock[
+  @interaction[
+    #:eval reference-eval
+
     (define-schema book
       ([id id/f #:primary-key #:auto-increment]
        [title string/f #:unique #:contract non-empty-string? #:wrapper string-titlecase]
@@ -815,26 +902,28 @@ by other dialects, but using them may result in invalid queries.
   Exports all bindings related to @racket[schema].
 
   @interaction[
-  (module sub racket/base
-    (require deta)
-    (provide (schema-out album))
+    #:eval reference-eval
+    (module sub racket/base
+      (require deta)
+      (provide (schema-out album))
 
-    (define-schema album
-      #:virtual
-      ([id id/f #:primary-key #:auto-increment]
-       [title string/f]
-       [band string/f])))
+      (define-schema album
+        #:virtual
+        ([id id/f #:primary-key #:auto-increment]
+         [title string/f]
+         [band string/f])))
 
-  (code:line)
-  (require 'sub)
-  (define an-album
-    (make-album #:title "Led Zeppelin"
-                #:band "Led Zeppelin"))
+    (code:line)
+    (require 'sub)
+    (define an-album
+      (make-album #:title "Led Zeppelin"
+                  #:band "Led Zeppelin"))
 
-  (code:line)
-  (album? an-album)
-  (album-title an-album)
-  (album-title (update-album-title an-album string-upcase))]
+    (code:line)
+    (album? an-album)
+    (album-title an-album)
+    (album-title (update-album-title an-album string-upcase))
+  ]
 }
 
 
@@ -894,6 +983,18 @@ Here are all the types and how they map to the different backends.
 
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.2.0} -- 2019-07-18}
+
+@bold{Added:}
+@itemlist[
+  @item{Support for @racket[subquery]}
+]
+
+@bold{Changed:}
+@itemlist[
+  @item{Dropped @racket[#:with] keyword from @racket[join]}
+]
 
 @subsubsection{@exec{v0.1.0} -- 2019-07-19}
 
