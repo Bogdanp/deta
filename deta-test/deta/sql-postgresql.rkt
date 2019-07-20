@@ -247,7 +247,7 @@
      (test-case "emits inner join clauses"
        (check-emitted
         (~> (from "books" #:as b)
-            (join #:with "authors" #:as a #:on (= b.author-id a.id))
+            (join "authors" #:as a #:on (= b.author-id a.id))
             (select a.name (count b.title))
             (group-by a.id))
 
@@ -256,8 +256,8 @@
      (test-case "emits multiple join clauses"
        (check-emitted
         (~> (from "books" #:as b)
-            (join #:with "authors" #:as a #:on (= b.author-id a.id))
-            (join #:with "author_pics" #:as ap #:on (= a.id ap.author-id))
+            (join "authors" #:as a #:on (= b.author-id a.id))
+            (join "author_pics" #:as ap #:on (= a.id ap.author-id))
             (select a.name ap.picture (count b.title))
             (group-by a.id ap.picture))
 
@@ -266,7 +266,7 @@
      (test-case "emits different types of joins"
        (check-emitted
         (~> (from "posts" #:as p)
-            (join #:left #:with "comments" #:as c #:on (= p.id c.post-id))
+            (join #:left "comments" #:as c #:on (= p.id c.post-id))
             (select a.* c.*))
 
         "SELECT a.*, c.* FROM posts AS p LEFT JOIN comments AS c ON p.id = c.post_id")))

@@ -381,7 +381,7 @@
   (syntax-parse stx
     [(_ q:expr
         (~optional t:join-type)
-        #:with source:q-source
+        source:q-source
         #:as alias:id
         #:on constraint:q-expr)
      (with-syntax ([type #'(~? t.type 'inner)])
