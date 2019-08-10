@@ -5,15 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: build
+    - name: Build
       uses: docker://bogdanp/racket:7.3
       with:
         entrypoint: /github/workspace/ci/build.sh
-    - name: test
+    - name: Test
       uses: docker://bogdanp/racket:7.3
       with:
         entrypoint: /github/workspace/ci/test.sh
-    - name: docs
+    - name: Deploy Docs
       uses: docker://bogdanp/racket:7.3
       env:
         DETA_DOCS_DEPLOY_KEY_PASSPHRASE: ${{ secrets.DETA_DOCS_DEPLOY_KEY_PASSPHRASE }}
