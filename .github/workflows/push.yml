@@ -1,0 +1,23 @@
+on: push
+name: main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: build
+      uses: docker://bogdanp/racket:7.3
+      with:
+        entrypoint: /github/workspace/ci/build.sh
+    - name: test
+      uses: docker://bogdanp/racket:7.3
+      with:
+        entrypoint: /github/workspace/ci/test.sh
+    - name: docs
+      uses: docker://bogdanp/racket:7.3
+      env:
+        DETA_DOCS_DEPLOY_KEY_PASSPHRASE: ${{ secrets.DETA_DOCS_DEPLOY_KEY_PASSPHRASE }}
+        DETA_DOCS_SSH_HOST: ${{ secrets.DETA_DOCS_SSH_HOST }}
+        DETA_DOCS_SSH_PORT: ${{ secrets.DETA_DOCS_SSH_PORT }}
+      with:
+        entrypoint: /github/workspace/ci/docs.sh
