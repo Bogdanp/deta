@@ -70,8 +70,8 @@
   (-> (or/c schema? symbol?) schema?)
   (define schema
     (match schema-or-id
-      [(? schema?)                             schema-or-id ]
-      [(? symbol?) (hash-ref (schema-registry) schema-or-id)]))
+      [(? schema?)                             schema-or-id    ]
+      [(? symbol?) (hash-ref (schema-registry) schema-or-id #f)]))
 
   (unless schema
     (raise-argument-error 'lookup-schema "unregistered schema" schema-or-id))
