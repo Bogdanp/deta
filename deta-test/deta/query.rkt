@@ -22,8 +22,10 @@
 
    #:before
    (lambda ()
+     (drop-table! (current-conn) 'book-with-nulls)
      (drop-table! (current-conn) 'user)
      (drop-table! (current-conn) 'password-reset)
+     (create-table! (current-conn) 'book-with-nulls)
      (create-table! (current-conn) 'user)
      (create-table! (current-conn) 'password-reset))
 
@@ -90,7 +92,11 @@
 
     (test-case "persists entities w/o a primary key"
       (check-not-false
-       (insert-one! (current-conn) (make-password-reset #:user-id 1)))))
+       (insert-one! (current-conn) (make-password-reset #:user-id 1))))
+
+    (test-case "persists entities containing nulls"
+      (check-not-false
+       (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid")))))
 
    (test-suite
     "update!"
@@ -111,6 +117,13 @@
       (match-define (list u**) (update! (current-conn) u*))
       (check-eq? (meta-state (entity-meta u**)) 'persisted)
       (check-equal? (meta-changes (entity-meta u**)) (seteq)))
+
+    (test-case "updates entities containing null values"
+      (define book
+        (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid")))
+
+      (check-not-false
+       (update-one! (current-conn) (set-book-with-nulls-title book "Euclid's Excellent Adventure"))))
 
     (test-case "runs pre-persist hooks"
       (define u
@@ -158,6 +171,15 @@
            x))
 
        (check-equal? x 1))
+
+     (test-case "can retrieve data containing nulls"
+       (define book
+         (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid")))
+
+       (check-equal? (book-with-nulls-published-on book)
+                     (book-with-nulls-published-on
+                      (lookup (current-conn) (~> (from book-with-nulls #:as b)
+                                                 (where (= b.id ,(book-with-nulls-id book))))))))
 
      (test-case "can retrieve subsets of data from schemas"
        (define usernames

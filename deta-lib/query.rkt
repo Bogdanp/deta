@@ -71,9 +71,9 @@
                  ([f (in-list (schema-fields schema))]
                   #:unless (field-auto-increment? f))
         (values (cons (field-name f) columns)
-                (cons (type-dump (field-type f)
-                                 (dialect-name dialect)
-                                 ((field-getter f) entity))
+                (cons (type-dump/null (field-type f)
+                                      (dialect-name dialect)
+                                      ((field-getter f) entity))
                       column-values))))
 
     (define pk (schema-primary-key schema))
@@ -140,9 +140,9 @@
                    #:when (set-member? changes (field-id f))
                    #:unless (field-auto-increment? f))
          (values (cons (field-name f) columns)
-                 (cons (type-dump (field-type f)
-                                  (dialect-name dialect)
-                                  ((field-getter f) entity*))
+                 (cons (type-dump/null (field-type f)
+                                       (dialect-name dialect)
+                                       ((field-getter f) entity*))
                        column-values))))
 
      (define stmt
@@ -234,7 +234,7 @@
               ([f (in-list (schema-fields schema))]
                [v (in-list cols)])
       (cons (cons (field-kwd f)
-                  (type-load (field-type f) dialect v))
+                  (type-load/null (field-type f) dialect v))
             pairs)))
 
   (define pairs/sorted

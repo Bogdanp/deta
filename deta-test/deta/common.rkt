@@ -1,15 +1,23 @@
 #lang racket/base
 
 (require deta
-         gregor)
+         gregor
+         racket/string)
 
 (provide
  deleted-users
+ (schema-out book-with-nulls)
  (schema-out user)
  (schema-out password-reset))
 
 (define (generate-random-string)
   "a random string -- I promise")
+
+(define-schema book-with-nulls
+  #:table "book_with_nulls"
+  ([id id/f #:primary-key #:auto-increment]
+   [title string/f #:contract non-empty-string? #:wrapper string-titlecase]
+   [published-on datetime/f #:nullable]))
 
 (define deleted-users
   (make-parameter null))
