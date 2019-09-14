@@ -1,9 +1,9 @@
 #lang scribble/manual
 
-@(require scribble/example
-          racket/format
+@(require racket/format
           racket/runtime-path
           racket/sandbox
+          scribble/example
           (for-label db
                      deta
                      gregor
