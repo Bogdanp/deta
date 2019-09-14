@@ -1010,6 +1010,20 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.2.2} -- 2019-09-14}
+
+@bold{Fixed:}
+@itemlist[
+  @item{@racket[sql-null] values are now handled correrctly}
+]
+
+@subsubsection{@exec{v0.2.1} -- 2019-09-13}
+
+@bold{Fixed:}
+@itemlist[
+  @item{@racket[create-table!] now raises an appropriate exception when its id argument is invalid}
+]
+
 @subsubsection{@exec{v0.2.0} -- 2019-07-20}
 
 @bold{Added:}
