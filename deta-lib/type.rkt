@@ -275,7 +275,8 @@
                            (->hours       v)
                            (->minutes     v)
                            (->seconds     v)
-                           (->nanoseconds v))]))])
+                           (->nanoseconds v)
+                           #f)]))])
 
     (values datetime-field? (datetime-field))))
 

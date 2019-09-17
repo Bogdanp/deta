@@ -3,6 +3,7 @@
 (require db
          deta
          deta/private/meta
+         gregor
          racket/match
          racket/port
          racket/set
@@ -96,7 +97,12 @@
 
     (test-case "persists entities containing nulls"
       (check-not-false
-       (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid")))))
+       (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid"))))
+
+    (test-case "persists entities containing datetime fields"
+      (check-not-false
+       (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid"
+                                                         #:published-on (now))))))
 
    (test-suite
     "update!"
@@ -180,6 +186,18 @@
                      (book-with-nulls-published-on
                       (lookup (current-conn) (~> (from book-with-nulls #:as b)
                                                  (where (= b.id ,(book-with-nulls-id book))))))))
+
+     (test-case "can retrieve data containin datetime fields without tz"
+       (define book
+         (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid"
+                                                           #:published-on (now))))
+
+       (check-true (= (seconds-between
+                       (book-with-nulls-published-on book)
+                       (book-with-nulls-published-on
+                        (lookup (current-conn) (~> (from book-with-nulls #:as b)
+                                                   (where (= b.id ,(book-with-nulls-id book)))))))
+                      0)))
 
      (test-case "can retrieve subsets of data from schemas"
        (define usernames

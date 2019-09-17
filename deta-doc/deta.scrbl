@@ -1010,6 +1010,13 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.2.3} -- 2019-09-17}
+
+@bold{Fixed:}
+@itemlist[
+  @item{@racket[datetime/f] values now serialize correctly}
+]
+
 @subsubsection{@exec{v0.2.2} -- 2019-09-14}
 
 @bold{Fixed:}
