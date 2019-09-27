@@ -86,6 +86,7 @@
  (struct-out join)
  (struct-out limit)
  (struct-out offset)
+ (struct-out union)
  (struct-out order-by)
  (struct-out returning)
  (struct-out where))
@@ -113,6 +114,9 @@
   #:transparent)
 
 (struct offset clause (n)
+  #:transparent)
+
+(struct union clause (stmt)
   #:transparent)
 
 (struct order-by clause (pairs)
@@ -171,14 +175,15 @@
                      #:returning [returning #f])
   (update table assignments where returning))
 
-(struct select stmt (columns from where group-by order-by offset limit)
+(struct select stmt (columns from where group-by union order-by offset limit)
   #:transparent)
 
 (define (make-select #:columns [columns null]
                      #:from [from #f]
                      #:where [where #f]
                      #:group-by [group-by #f]
+                     #:union [union #f]
                      #:order-by [order-by #f]
                      #:offset [offset #f]
                      #:limit [limit #f])
-  (select columns from where group-by order-by offset limit))
+  (select columns from where group-by union order-by offset limit))

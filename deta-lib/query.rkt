@@ -226,6 +226,7 @@
 
  (rename-out [dyn:query? query?])
  (rename-out [dyn:delete delete])
+ (rename-out [dyn:union union])
  (rename-out [dyn:project-onto project-onto]))
 
 (define (make-entity-instance dialect schema cols)

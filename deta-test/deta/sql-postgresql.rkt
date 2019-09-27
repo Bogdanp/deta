@@ -382,7 +382,38 @@
        (check-emitted/placeholders
         (select _ (<> ,x ,y))
         "SELECT $1 <> $2"
-        '(1 "hello")))))
+        '(1 "hello"))))
+
+    (test-suite
+     "union"
+
+     (check-emitted
+      (union (select _ 1)
+             (select _ 2))
+      "SELECT 1 UNION (SELECT 2)")
+
+     (check-emitted
+      (union
+       (union (select _ 1)
+              (select _ 2))
+       (select _ 3))
+      "SELECT 1 UNION (SELECT 2 UNION (SELECT 3))")
+
+     (check-emitted
+      (union
+       (union
+        (union (select _ 1)
+               (select _ 2))
+        (select _ 3))
+       (select _ 4))
+      "SELECT 1 UNION (SELECT 2 UNION (SELECT 3 UNION (SELECT 4)))")
+
+     (check-emitted
+      (~> (select _ 1)
+          (union (select _ 2))
+          (union (select _ 3))
+          (union (select _ 4)))
+      "SELECT 1 UNION (SELECT 2 UNION (SELECT 3 UNION (SELECT 4)))")))
 
    (test-suite
     "update"

@@ -340,7 +340,7 @@ The following query forms are not currently supported:
   @item{@tt{@select-link DISTINCT ...}}
   @item{@tt{@select-link ... HAVING ...}}
   @item{@tt{@select-link ... WINDOW ...}}
-  @item{@tt{@select-link ... {UNION | INTERSECT | EXCEPT} ...}}
+  @item{@tt{@select-link ... {INTERSECT | EXCEPT} ...}}
   @item{@tt{@select-link ... FOR UPDATE ...}}
 ]
 
@@ -763,6 +763,21 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform[
+  (union query-1 query-2)
+]{
+
+  Produces a query that is the union of @racket[query-1] and
+  @racket[query-2].
+
+  @interaction[
+    #:eval reference-eval
+    (~> (select _ 1)
+        (union (select _ 2))
+        (union (select _ 3)))
+  ]
+}
+
+@defform[
   (update query assignment ...+)
   #:grammar
   [(assignment [column q-expr])]]{
@@ -1009,6 +1024,13 @@ Here are all the types and how they map to the different backends.
 
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.2.4} -- 2019-09-27}
+
+@bold{Added:}
+@itemlist[
+  @item{@racket[union]}
+]
 
 @subsubsection{@exec{v0.2.3} -- 2019-09-17}
 

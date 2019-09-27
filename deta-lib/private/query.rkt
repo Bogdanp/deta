@@ -75,6 +75,7 @@
  limit
  offset
  or-where
+ union
  order-by
  project-onto
  returning
@@ -185,6 +186,24 @@
 
 (define order-by-pair/c
   (cons/c ast:expr? (or/c 'asc 'desc)))
+
+(define/contract (union q1 q2)
+  (-> select-query? select-query? query?)
+
+  (define (union* s1 s2)
+    (match s1
+      [(struct* ast:select ([union #f]))
+       (struct-copy ast:select s1 [union (ast:union s2)])]
+
+      [(struct* ast:select ([union u]))
+       (struct-copy ast:select s1 [union (ast:union (union* (ast:union-stmt u) s2))])]))
+
+  (match q1
+    [(query schema (and (struct* ast:select ([union #f])) stmt))
+     (query schema (struct-copy ast:select stmt [union (ast:union (query-stmt q2))]))]
+
+    [(query schema (and (struct* ast:select ([union u])) stmt))
+     (query schema (struct-copy ast:select stmt [union (ast:union (union* (ast:union-stmt u) (query-stmt q2)))]))]))
 
 (define/contract (order-by q pair0 . pairs)
   (-> select-query? order-by-pair/c order-by-pair/c ... query?)

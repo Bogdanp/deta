@@ -257,7 +257,7 @@
     [(list exprs ...)
      (display/sep exprs display/expr)]
 
-    [(select columns from where group-by order-by offset limit)
+    [(select columns from where group-by union order-by offset limit)
      (display "SELECT ")
      (cond
        [(null? columns) (display "*")]
@@ -266,6 +266,7 @@
      (when from     (display/space from))
      (when where    (display/space where))
      (when group-by (display/space group-by))
+     (when union    (display/space union))
      (when order-by (display/space order-by))
      (when limit    (display/space limit))
      (when offset   (display/space offset))]
@@ -348,7 +349,12 @@
         [(cons e dir)
          (display/expr e)
          (when (eq? dir 'desc)
-           (display " DESC"))]))]))
+           (display " DESC"))]))]
+
+    [(union stmt)
+     (display "UNION (")
+     (display/stmt stmt)
+     (display ")")]))
 
 (define (display/sep xs display-p
                      #:sep [sep ", "])
