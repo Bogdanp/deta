@@ -1,6 +1,7 @@
 #lang at-exp racket/base
 
 (require deta
+         (prefix-in ast: deta/private/ast)
          deta/private/dialect/dialect
          deta/private/dialect/postgresql
          (only-in deta/private/query
@@ -339,10 +340,25 @@
 
      (test-case "errors out when given an invalid dynamic direction"
        (check-exn
-        exn:fail?
+        exn:fail:contract?
         (lambda _
           (~> (from "books" #:as b)
-              (order-by ([b.year ,1])))))))
+              (order-by ([b.year ,1]))))))
+
+     (test-case "supports dynamic columns"
+       (define column (ast:qualified "b" "title"))
+
+       (check-emitted
+        (~> (from "books" #:as b)
+            (order-by ([(fragment column) #:desc])))
+        "SELECT * FROM books AS b ORDER BY b.title DESC"))
+
+     (test-case "errors out when given an invalid dynamic column"
+       (check-exn
+        exn:fail:contract?
+        (lambda _
+          (~> (from "books" #:as b)
+              (order-by ([(fragment 1)])))))))
 
     (test-suite
      "offset"

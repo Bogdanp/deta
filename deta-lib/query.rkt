@@ -288,13 +288,15 @@
 
   (define-syntax-class placeholder-expr
     #:literals (unquote)
-    (pattern (unquote placeholder)
-             #:with e #'(ast:placeholder placeholder)))
+    (pattern (unquote placeholder) #:with e #'(ast:placeholder placeholder)))
+
+  (define-syntax-class fragment-expr
+    #:datum-literals (fragment)
+    (pattern (fragment node:expr) #:with e #'node))
 
   (define-syntax-class subquery-expr
     #:datum-literals (subquery)
-    (pattern (subquery q:expr)
-             #:with e #'(dyn:subquery q)))
+    (pattern (subquery q:expr) #:with e #'(dyn:subquery q)))
 
   (define-syntax-class q-source
     (pattern schema:id #:with e #''schema)
@@ -311,6 +313,9 @@
 
     (pattern placeholder:placeholder-expr
              #:with e #'placeholder.e)
+
+    (pattern fragment:fragment-expr
+             #:with e #'fragment.e)
 
     (pattern ident:id
              #:with e #'(ast:ident 'ident))

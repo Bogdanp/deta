@@ -476,7 +476,7 @@ The following query forms are not currently supported:
 
 @centered{
   @racketgrammar*[
-    #:literals (array as and case else list or unquote)
+    #:literals (array as and case else fragment list or unquote)
 
     [q-expr (array q-expr ...)
             (as q-expr id)
@@ -484,6 +484,7 @@ The following query forms are not currently supported:
             (case [q-expr q-expr] ...+)
             (case [q-expr q-expr] ...+
                   [else q-expr])
+            (fragment expr)
             (or q-expr ...+)
             (list q-expr ...)
             (unquote expr)
@@ -1039,6 +1040,7 @@ Here are all the types and how they map to the different backends.
 @bold{Added:}
 @itemlist[
   @item{@racket[order-by] now supports dynamic directions}
+  @item{@racket[(fragment e)] syntax to @racket[q-expr]}
 ]
 
 @subsubsection{@exec{v0.2.4} -- 2019-09-27}
