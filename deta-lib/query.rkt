@@ -356,9 +356,14 @@
                         #'(cons (ast:column name) value.e))))
 
   (define-syntax-class q-order-pair
+    #:literals (unquote)
     (pattern [column:q-expr (~or (~optional (~and #:asc  dir-asc ))
-                                 (~optional (~and #:desc dir-desc)))]
-             #:with dir (if (attribute dir-desc) #''desc #''asc)
+                                 (~optional (~and #:desc dir-desc))
+                                 (~optional (unquote dir-expr:expr)))]
+             #:with dir (cond
+                          [(attribute dir-expr) #'dir-expr]
+                          [(attribute dir-desc) #''desc]
+                          [else #''asc])
              #:with e #'(cons column.e dir))))
 
 (define-syntax (from stx)

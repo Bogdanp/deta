@@ -327,7 +327,22 @@
             (order-by ([b.year #:desc]
                        [b.title #:asc])))
 
-        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title")))
+        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
+
+     (test-case "supports dynamic directions"
+       (define order 'desc)
+
+       (check-emitted
+        (~> (from "books" #:as b)
+            (order-by ([b.year ,order])))
+        "SELECT * FROM books AS b ORDER BY b.year DESC"))
+
+     (test-case "errors out when given an invalid dynamic direction"
+       (check-exn
+        exn:fail?
+        (lambda _
+          (~> (from "books" #:as b)
+              (order-by ([b.year ,1])))))))
 
     (test-suite
      "offset"

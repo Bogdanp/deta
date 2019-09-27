@@ -688,11 +688,13 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform[
+  #:literals (unquote)
   (order-by query ([column maybe-direction] ...+))
   #:grammar
   [(maybe-direction (code:line)
                     (code:line #:asc)
-                    (code:line #:desc))]]{
+                    (code:line #:desc)
+                    (code:line (unquote e)))]]{
 
   Adds an @tt{ORDER BY} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
@@ -703,6 +705,13 @@ by other dialects, but using them may result in invalid queries.
     (~> (from "users" #:as u)
         (order-by ([u.last-login #:desc]
                    [u.username])))
+  ]
+
+  @interaction[
+    #:eval reference-eval
+    (define direction 'desc)
+    (~> (from "users" #:as u)
+        (order-by ([u.last-login ,direction])))
   ]
 }
 
@@ -1024,6 +1033,13 @@ Here are all the types and how they map to the different backends.
 
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.2.5} -- Unreleased}
+
+@bold{Added:}
+@itemlist[
+  @item{@racket[order-by] now supports dynamic directions}
+]
 
 @subsubsection{@exec{v0.2.4} -- 2019-09-27}
 
