@@ -5,14 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Build
+    - name: Build and Test
       uses: docker://bogdanp/racket:7.3
       with:
         entrypoint: /github/workspace/ci/build.sh
-    - name: Test
-      uses: docker://bogdanp/racket:7.3
-      with:
-        entrypoint: /github/workspace/ci/test.sh
     - name: Deploy Docs
       uses: docker://bogdanp/racket:7.3
       env:
