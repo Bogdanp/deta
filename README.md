@@ -1,5 +1,7 @@
 # deta
 
+[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fbogdanp%2Fdeta&style=flat)](https://actions-badge.atrox.dev/bogdanp/deta/goto)
+
 A functional database mapper for Racket.
 
 ## Documentation
