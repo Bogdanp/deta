@@ -1035,7 +1035,7 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
-@subsubsection{@exec{v0.2.5} -- Unreleased}
+@subsubsection{@exec{v0.2.5} -- 2019-10-06}
 
 @bold{Added:}
 @itemlist[
