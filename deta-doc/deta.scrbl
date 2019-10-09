@@ -148,10 +148,10 @@ the table:
 ]
 
 @(define north-uri "https://docs.racket-lang.org/north/index.html")
-@margin-note{Note that while the DDL functionality is convenient for
-the purposes of this tutorial, in real world projects you should
-probably use something like @hyperlink[north-uri]{north} to manage
-your database table schemas.}
+@margin-note{While the DDL functionality is convenient for the
+purposes of this tutorial, in real world projects you should probably
+use something like @hyperlink[north-uri]{north} to manage your
+database table schemas.}
 
 Now that we have a table, we can insert the book that we created into
 the database:
