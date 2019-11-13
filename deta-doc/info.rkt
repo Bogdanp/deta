@@ -12,7 +12,6 @@
                      "racket-doc"
                      "sandbox-lib"
                      "scribble-lib"
-                     "sql"
                      "threading-doc"
                      "threading-lib"))
 

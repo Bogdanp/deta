@@ -144,6 +144,9 @@
     (check-emitted (select _ (in 1 (list 1 2 3)))
                    "SELECT 1 IN (1, 2, 3)")
 
+    (check-emitted (select _ (in 1 '(1 2 3)))
+                   "SELECT 1 IN (1, 2, 3)")
+
     (check-emitted (select _ (array 1 2 3))
                    "SELECT ARRAY[1, 2, 3]")
 

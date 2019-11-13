@@ -301,14 +301,14 @@ avoiding associations altogether and any sort of lazy behaviour.
 
 @subsection{sql}
 
-@racketmodname[sql] is great at statically generating SQL queries.
+The @tt{sql} library is great at statically generating SQL queries.
 The problem is that the generated queries are not composable at
 runtime.  You have to write macros upon macros to handle composition
 and I've found that that gets tedious quickly.
 
 On top of giving you composable queries -- as you can hopefully see
 from the tutorial --, deta also automatically maps CRUD operations to
-structs, which is out of scope for @racketmodname[sql].
+structs, which is out of scope for @tt{sql}.
 
 
 @section[#:tag "todos"]{TODOs}
@@ -476,7 +476,7 @@ The following query forms are not currently supported:
 
 @centered{
   @racketgrammar*[
-    #:literals (array as and case else fragment list or unquote)
+    #:literals (array as and case else fragment list or quote unquote)
 
     [q-expr (array q-expr ...)
             (as q-expr id)
@@ -487,6 +487,7 @@ The following query forms are not currently supported:
             (fragment expr)
             (or q-expr ...+)
             (list q-expr ...)
+            (quote (q-expr ...))
             (unquote expr)
             ident
             boolean
@@ -500,6 +501,27 @@ The following query forms are not currently supported:
 }
 
 The grammar for SQL expressions.
+
+Tuples are created using the @racket[(list 1 2 3)] or @racket['(1 2 3)] syntax:
+
+@interaction[
+  #:eval reference-eval
+  (select _ (in 1 '(1 2 3 4)))
+  (select _ (in 1 (list 1 2 3 4)))
+]
+
+Arrays are created using the @racket[(array 1 2 3)] syntax:
+
+@interaction[
+  #:eval reference-eval
+  (select _ (array-concat (array 1 2) (array 3 4)))
+]
+
+Various operators (like @tt{in}) have built-in support and generate
+queries predictably.  Operator names are always lower-case so
+@racket[(in a b)] is valid, while @racket[(IN a b)] is not.  If you
+find an operator that you need doesn't produce the query you expect,
+then open an issue on GitHub and I'll fix it as soon as I can.
 
 Within an SQL expression, the following identifiers are treated
 specially by the base (i.e. PostgreSQL) dialect.  These are inherited
@@ -1034,6 +1056,13 @@ Here are all the types and how they map to the different backends.
 
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.2.6} -- 2019-11-13}
+
+@bold{Added:}
+@itemlist[
+  @item{Support for quoted tuples in @racket[q-expr]s.}
+]
 
 @subsubsection{@exec{v0.2.5} -- 2019-10-06}
 
