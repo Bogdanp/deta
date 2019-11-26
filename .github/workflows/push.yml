@@ -5,15 +5,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - name: Build and Test
-      uses: docker://bogdanp/racket:7.3
+    - uses: Bogdanp/setup-racket@v0.3
       with:
-        entrypoint: /github/workspace/ci/build.sh
-    - name: Deploy Docs
-      uses: docker://bogdanp/racket:7.3
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'regular'
+        version: '7.5'
+    - run: raco pkg install --auto --batch deta-lib/ deta-doc/ deta-test/
+    - run: raco test -j 4 deta-lib/ deta-test/
+    - run: bash ci/docs.sh
       env:
         DETA_DOCS_DEPLOY_KEY_PASSPHRASE: ${{ secrets.DETA_DOCS_DEPLOY_KEY_PASSPHRASE }}
         DETA_DOCS_SSH_HOST: ${{ secrets.DETA_DOCS_SSH_HOST }}
         DETA_DOCS_SSH_PORT: ${{ secrets.DETA_DOCS_SSH_PORT }}
-      with:
-        entrypoint: /github/workspace/ci/docs.sh

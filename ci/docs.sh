@@ -2,10 +2,9 @@
 
 set -euo pipefail
 
-apt-get update
-apt-get install -y --no-install-recommends gettext-base gpg ssh rsync
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends gettext-base gpg ssh rsync
 
-pushd /github/workspace
 scribble +m --dest doc --redirect 'http://docs.racket-lang.org/' deta-doc/deta.scrbl
 mv doc/deta.html doc/index.html
 
@@ -15,4 +14,3 @@ chmod 0600 /tmp/secrets/deploy
 rsync \
     -e "ssh -p $DETA_DOCS_SSH_PORT -o StrictHostKeyChecking=no -i /tmp/secrets/deploy" \
     -a doc/ deta@"$DETA_DOCS_SSH_HOST":~/www/
-popd
