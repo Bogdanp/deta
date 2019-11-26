@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require racket/match
-         racket/set)
+(require racket/set)
 
 (provide
  make-meta
@@ -23,29 +22,28 @@
 
 (define (meta-track-change m f)
   (struct-copy meta m
-               [state (match (meta-state m)
-                        ['created   'created]
-                        ['persisted 'changed]
-                        ['changed   'changed]
-                        ['deleted   'deleted])]
+               [state (case (meta-state m)
+                        [(created)           'created]
+                        [(persisted changed) 'changed]
+                        [(deleted)           'deleted])]
                [changes (set-add (meta-changes m) f)]))
 
-(define (meta-can-persist? meta)
-  (match (meta-state meta)
-    ['created #t]
-    ['changed #t]
-    [_        #f]))
+(define (meta-can-persist? m)
+  (case (meta-state m)
+    [(created) #t]
+    [(changed) #t]
+    [else      #f]))
 
-(define (meta-can-update? meta)
-  (match (meta-state meta)
-    ['changed #t]
-    [_        #f]))
+(define (meta-can-update? m)
+  (case (meta-state m)
+    [(changed) #t]
+    [else      #f]))
 
-(define (meta-can-delete? meta)
-  (match (meta-state meta)
-    ['persisted #t]
-    ['changed   #t]
-    [_          #f]))
+(define (meta-can-delete? m)
+  (case (meta-state m)
+    [(persisted) #t]
+    [(changed)   #t]
+    [else        #f]))
 
 (define (meta-track-persisted m)
   (struct-copy meta m
