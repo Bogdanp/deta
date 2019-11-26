@@ -17,6 +17,9 @@
 (define current-conn
   (make-parameter #f))
 
+(define (current-conn-postgres?)
+  (eq? (dbsystem-name (connection-dbsystem (current-conn))) 'postgresql))
+
 (define query-tests
   (test-suite
    "query"
@@ -187,7 +190,7 @@
                       (lookup (current-conn) (~> (from book-with-nulls #:as b)
                                                  (where (= b.id ,(book-with-nulls-id book))))))))
 
-     (test-case "can retrieve data containin datetime fields without tz"
+     (test-case "can retrieve data containing datetime fields without tz"
        (define book
          (insert-one! (current-conn) (make-book-with-nulls #:title "Euclid"
                                                            #:published-on (now))))
@@ -223,6 +226,21 @@
        (check-true (res? r))
        (check-equal? (res-x r) 1)
        (check-equal? (res-y r) "hello"))
+
+     (test-case "can retrieve array data"
+       (when (current-conn-postgres?)
+         (define-schema res
+           #:virtual
+           ([roles (array/f string/f)]))
+
+         (define r
+           (for/first ([r (in-entities (current-conn)
+                                       (~> (select _ (as (array "a" "b" "c") roles))
+                                           (project-onto res-schema)))])
+             r))
+
+         (check-true (res? r))
+         (check-equal? (res-roles r) #("a" "b" "c"))))
 
      (test-suite
       "from"

@@ -1,6 +1,7 @@
 #lang at-exp racket/base
 
 (require db
+         db/util/postgresql
          gregor
          gregor/time
          json
@@ -347,12 +348,12 @@
 
        (define (type-load t dialect v)
          (define subtype (array-field-subtype t))
-         (for/vector ([x (in-vector v)])
+         (for/vector ([x (in-vector (pg-array-contents v))])
            (gen:type-load subtype dialect x)))
 
        (define (type-dump t dialect v)
          (define subtype (array-field-subtype t))
-         (for/vector ([x (in-vector v)])
+         (for/list ([x (in-vector v)])
            (gen:type-dump subtype dialect x)))])
 
     (values array-field?

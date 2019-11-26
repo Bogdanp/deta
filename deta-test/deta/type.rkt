@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require db
+         db/util/postgresql
          deta
          deta/private/field
          deta/private/schema
@@ -16,10 +17,10 @@
     "array/f"
 
     (for ([dialect '(postgresql sqlite3)]
-          [expected (list (vector (sql-date 1996 5 29)
-                                  (sql-date 2019 5 29))
-                          (vector "1996-05-29"
-                                  "2019-05-29"))])
+          [expected (list (list (sql-date 1996 5 29)
+                                (sql-date 2019 5 29))
+                          (list "1996-05-29"
+                                "2019-05-29"))])
       (test-case (format "can dump and load dumped values for ~a" dialect)
         (define initial
           (vector (date 1996 5 29)
@@ -32,7 +33,7 @@
         (check-equal? dumped expected)
 
         (define loaded
-          (type-load type dialect dumped))
+          (type-load type dialect (list->pg-array dumped)))
 
         (check-equal? loaded initial))))))
 

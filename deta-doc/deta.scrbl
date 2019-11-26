@@ -1057,6 +1057,13 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.2.7} -- 2019-11-26}
+
+@bold{Fixed:}
+@itemlist[
+  @item{Array value retrieval and insertion.}
+]
+
 @subsubsection{@exec{v0.2.6} -- 2019-11-13}
 
 @bold{Added:}
