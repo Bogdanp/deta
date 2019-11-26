@@ -1,6 +1,11 @@
 # deta
 
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2FBogdanp%2Fdeta%2Fbadge&style=flat)](https://actions-badge.atrox.dev/Bogdanp/deta/goto)
+<p align="left">
+  <a href="https://github.com/Bogdanp/deta/actions?query=workflow%3A%22CI%22">
+    <img alt="GitHub Actions status" src="https://github.com/Bogdanp/deta/workflows/CI/badge.svg">
+  </a>
+</p>
+
 
 A functional database mapper for Racket.
 
