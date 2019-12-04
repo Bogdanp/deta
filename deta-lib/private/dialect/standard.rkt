@@ -78,11 +78,14 @@
 
 (define ((make-expr-emitter display/expr display/stmt) e)
   (define (display/maybe-parenthize e)
-    (cond
-      [(expr-terminal? e)
+    (match e
+      [(app (ident 'any) _)
        (display/expr e)]
 
-      [else
+      [(? expr-terminal?)
+       (display/expr e)]
+
+      [_
        (display "(")
        (display/expr e)
        (display ")")]))

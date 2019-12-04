@@ -170,6 +170,12 @@
                                     (array "c")))
                    "SELECT ARRAY[ARRAY['a'], ARRAY['b'], ARRAY['c']]")
 
+    (check-emitted (select _ (= u.username (any (array "a" "b" "c"))))
+                   "SELECT u.username = ANY(ARRAY['a', 'b', 'c'])")
+
+    (check-emitted (select _ (= u.username (any ,(list "a" "b" "c"))))
+                   "SELECT u.username = ANY($1)")
+
     (check-emitted (select _ (date "1950-01-01"))
                    "SELECT DATE '1950-01-01'")
 
