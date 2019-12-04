@@ -1057,6 +1057,13 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.2.8} -- 2019-12-04}
+
+@bold{Fixed:}
+@itemlist[
+  @item{An issue where @tt{ANY} expressions were wrapped in excessive parens.}
+]
+
 @subsubsection{@exec{v0.2.7} -- 2019-11-26}
 
 @bold{Fixed:}
