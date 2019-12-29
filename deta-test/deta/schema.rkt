@@ -15,16 +15,16 @@
 (provide
  schema-tests)
 
-(define-generics to-xexpr
-  (->xexpr to-xexpr))
+(define-generics to-jsexpr
+  (->jsexpr to-jsexpr))
 
 (define-schema entry
   #:virtual
   ([id id/f #:primary-key #:auto-increment]
    [title string/f])
 
-  #:methods gen:to-xexpr
-  [(define (->xexpr e)
+  #:methods gen:to-jsexpr
+  [(define (->jsexpr e)
      (hasheq 'title (entry-title e)))])
 
 (module schema-out-test-sub racket/base
@@ -96,7 +96,7 @@
 
     (test-case "struct-options are passed to the struct definition"
       (define e (make-entry #:title "hello"))
-      (check-equal? (->xexpr e) (hasheq 'title "hello"))))
+      (check-equal? (->jsexpr e) (hasheq 'title "hello"))))
 
    (test-suite
     "schema-registry-lookup"
