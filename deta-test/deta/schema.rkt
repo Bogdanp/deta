@@ -4,6 +4,7 @@
          deta/private/meta
          deta/private/schema
          gregor
+         racket/generic
          racket/match
          racket/port
          racket/set
@@ -13,6 +14,18 @@
 
 (provide
  schema-tests)
+
+(define-generics to-xexpr
+  (->xexpr to-xexpr))
+
+(define-schema entry
+  #:virtual
+  ([id id/f #:primary-key #:auto-increment]
+   [title string/f])
+
+  #:methods gen:to-xexpr
+  [(define (->xexpr e)
+     (hasheq 'title (entry-title e)))])
 
 (module schema-out-test-sub racket/base
   (require deta)
@@ -79,7 +92,11 @@
           (lambda _
             (display (select (from user #:as u) u.valid?)))))
 
-      (check-equal? q "#<query: SELECT \"u\".\"valid\" FROM \"users\" AS \"u\">")))
+      (check-equal? q "#<query: SELECT \"u\".\"valid\" FROM \"users\" AS \"u\">"))
+
+    (test-case "struct-options are passed to the struct definition"
+      (define e (make-entry #:title "hello"))
+      (check-equal? (->xexpr e) (hasheq 'title "hello"))))
 
    (test-suite
     "schema-registry-lookup"

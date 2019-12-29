@@ -170,7 +170,8 @@
               (~optional (~and #:virtual virtual))) ...
         (f:fld ...+)
         (~alt (~optional (~seq #:pre-persist-hook pre-persist-hook-e:expr) #:defaults ([pre-persist-hook-e #'values]))
-              (~optional (~seq #:pre-delete-hook pre-delete-hook-e:expr)   #:defaults ([pre-delete-hook-e  #'values]))) ...)
+              (~optional (~seq #:pre-delete-hook pre-delete-hook-e:expr)   #:defaults ([pre-delete-hook-e  #'values]))) ...
+        struct-option ...)
      (with-syntax* ([pluralized-name (datum->syntax #'struct-id (pluralize (syntax->datum #'struct-id)))]
                     [table-name #'(~? table-name pluralized-name)]
                     [virtual? (if (attribute virtual) #'#t #'#f)]
@@ -183,7 +184,8 @@
        #'(begin
            (struct struct-id entity (f.id ...)
              #:constructor-name struct-ctor-id
-             #:transparent)
+             #:transparent
+             struct-option ...)
 
            (define/contract (ctor-id ctor-arg ... ...)
              (make-ctor-contract [(f.ctor-kwd f.contract f.required?) ...] struct-pred-id)

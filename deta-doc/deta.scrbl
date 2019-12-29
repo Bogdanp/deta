@@ -869,7 +869,8 @@ by other dialects, but using them may result in invalid queries.
            maybe-virtual
            (field-definition ...+)
            maybe-pre-persist-hook
-           maybe-pre-delete-hook)
+           maybe-pre-delete-hook
+           maybe-struct-option ...)
          #:grammar
          [(maybe-table (code:line)
                        (code:line #:table table-name))
@@ -879,6 +880,8 @@ by other dialects, but using them may result in invalid queries.
                                   (code:line #:pre-persist-hook pre-persist-hook))
           (maybe-pre-delete-hook (code:line)
                                  (code:line #:pre-delete-hook pre-delete-hook))
+          (maybe-struct-option (code:line)
+                               (code:line struct-option))
           (field-definition (code:line [id field-type
                                         maybe-name
                                         maybe-primary-key
@@ -940,6 +943,9 @@ by other dialects, but using them may result in invalid queries.
   @racket[delete!]d.
 
   Hooks @emph{do not} run for arbitrary queries.
+
+  All provided @racket[struct-option]s are passed directly to the
+  underlying @racket[struct] definition.
 
   A syntax error is raised if you declare a field as both a primary
   key and nullable.  Additionally, a syntax error is raised if a
@@ -1056,6 +1062,13 @@ Here are all the types and how they map to the different backends.
 
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.3.0} -- 2019-12-29}
+
+@bold{Added:}
+@itemlist[
+  @item{@racket[define-schema] now supports arbitrary @racket[struct] options.}
+]
 
 @subsubsection{@exec{v0.2.8} -- 2019-12-04}
 
