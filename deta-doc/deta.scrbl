@@ -955,10 +955,18 @@ by other dialects, but using them may result in invalid queries.
   option for fields is only necessary if you want to further restrict
   the values that a field can contain.
 
+  The @racket[#:wrapper] option allows you to supply a function for
+  use in normalizing values. The function will be automatically called
+  when using a schema’s @tt{make-} or setter functions, and its return
+  value is the value that will be stored in the database. A wrapper
+  function @emph{cannot} be used to coerce values to the field’s type;
+  both the value passed to it and the value it returns must satisfy the
+  field’s contract.
+
   When converting field names to SQL, dashes are replaced with
   underscores and field names that end in question marks drop their
-  question mark and are prefixed with "is_".  @racket[admin?] becomes
-  @racket[is_admin].
+  question mark and are prefixed with @tt{is_}, so that, for example,
+  @racket[admin?] becomes @racket[is_admin].
 
   Custom field names can be specified by providing a @racket[#:name]
   in the field definition.  Note, however, that the library does not
