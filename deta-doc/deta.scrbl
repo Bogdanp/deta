@@ -1071,6 +1071,13 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.3.1} -- 2020-01-12}
+
+@bold{Fixed:}
+@itemlist[
+  @item{@racket[union] now produces correct syntax for SQLite.}
+]
+
 @subsubsection{@exec{v0.3.0} -- 2019-12-29}
 
 @bold{Added:}

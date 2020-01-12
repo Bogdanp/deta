@@ -88,7 +88,12 @@
       (emit-stmt/sqlite3 e))))
 
 (define (emit-stmt/sqlite3 e)
-  (emit-stmt/standard e))
+  (match e
+    [(union stmt)
+     (display "UNION ")
+     (emit-stmt/sqlite3 stmt)]
+
+    [_ (emit-stmt/standard e)]))
 
 (define emit-stmt/standard
   (make-stmt-emitter emit-stmt/sqlite3 emit-expr))

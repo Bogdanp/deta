@@ -35,7 +35,16 @@
          (offset 10)
          (limit 20))
 
-     "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))))
+     "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))
+
+   (test-suite
+    "union"
+
+    (check-emitted
+     (~> (select _ 1)
+         (union (select _ 2))
+         (union (select _ 3)))
+     "SELECT 1 UNION SELECT 2 UNION SELECT 3"))))
 
 (module+ test
   (require rackunit/text-ui)
