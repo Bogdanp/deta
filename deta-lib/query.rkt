@@ -305,7 +305,7 @@
 
   (define-syntax-class q-expr
     #:datum-literals (array as list null)
-    #:literals (and case cond else or quote)
+    #:literals (and case cond else or quote unquote-splicing)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
@@ -351,6 +351,9 @@
 
     (pattern (quote (item:q-expr ...))
              #:with e #'(ast:scalar (list item.e ...)))
+
+    (pattern (unquote-splicing items:expr)
+             #:with e #'(ast:scalar (map ast:scalar items)))
 
     (pattern (or a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:ident 'or) (list a.e b.e)))

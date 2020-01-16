@@ -476,7 +476,7 @@ The following query forms are not currently supported:
 
 @centered{
   @racketgrammar*[
-    #:literals (array as and case else fragment list or quote unquote)
+    #:literals (array as and case else fragment list or quote unquote unquote-splicing)
 
     [q-expr (array q-expr ...)
             (as q-expr id)
@@ -489,6 +489,7 @@ The following query forms are not currently supported:
             (list q-expr ...)
             (quote (q-expr ...))
             (unquote expr)
+            (unquote-splicing expr)
             ident
             boolean
             string
@@ -509,6 +510,18 @@ Tuples are created using the @racket[(list 1 2 3)] or @racket['(1 2 3)] syntax:
   (select _ (in 1 '(1 2 3 4)))
   (select _ (in 1 (list 1 2 3 4)))
 ]
+
+Dynamic lists can be turned into tuples using the @racket[,@(list 1 2 3)] syntax:
+
+@interaction[
+  #:eval reference-eval
+  (let ([xs (list 1 2 3)])
+    (select _ (in 1 ,@(map add1 xs))))
+]
+
+Note that the splicing syntax splices scalar lists directly into the
+query so you @emph{must be careful} when using it in conjunction with
+untrusted user input.
 
 Arrays are created using the @racket[(array 1 2 3)] syntax:
 
@@ -1070,6 +1083,13 @@ Here are all the types and how they map to the different backends.
 
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.3.2} -- 2020-01-16}
+
+@bold{Added:}
+@itemlist[
+  @item{@racket[unquote-splicing] to @racket[q-expr]s}
+]
 
 @subsubsection{@exec{v0.3.1} -- 2020-01-12}
 

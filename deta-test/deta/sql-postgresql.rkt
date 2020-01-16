@@ -367,7 +367,18 @@
         exn:fail:contract?
         (lambda _
           (~> (from "books" #:as b)
-              (order-by ([(fragment 1)])))))))
+              (order-by ([(fragment 1)]))))))
+
+     (test-case "supports dynamic lists"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (where (in b.id ,@(list 1 2 3))))
+        "SELECT * FROM books AS b WHERE b.id IN (1, 2, 3)")
+
+       (check-emitted
+        (~> (from "books" #:as b)
+            (where (in b.title ,@(list "a" "b" "c"))))
+        "SELECT * FROM books AS b WHERE b.title IN ('a', 'b', 'c')")))
 
     (test-suite
      "offset"
