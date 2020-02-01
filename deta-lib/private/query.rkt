@@ -30,8 +30,7 @@
 
     (cond
       [(null? args) prepared]
-      [else
-       (bind-prepared-statement prepared (dialect-prepare-parameters dialect prepared args))]))
+      [else (bind-prepared-statement prepared (dialect-prepare-parameters dialect prepared args))]))
 
   #:property prop:custom-write
   (make-constructor-style-printer

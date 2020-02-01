@@ -36,9 +36,10 @@
        (define/contract (dialect-prepare-parameters _ p args)
          (-> dialect? prepared-statement? (listof any/c) (listof any/c))
          (for/list ([arg (in-list args)])
-           (cond
-             [(boolean? arg) (if arg 1 0)]
-             [else arg])))])
+           (match arg
+             [#f 0]
+             [#t 1]
+             [_ arg])))])
 
     (values sqlite3-dialect? (sqlite3-dialect))))
 

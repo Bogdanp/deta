@@ -33,7 +33,7 @@
          (-> dialect? stmt? string?)
          (emit-stmt s))
 
-       (define/contract (dialect-prepare-parameters _ __ args)
+       (define/contract (dialect-prepare-parameters _ p args)
          (-> dialect? prepared-statement? (listof any/c) (listof any/c))
          args)])
 
