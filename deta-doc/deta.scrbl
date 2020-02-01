@@ -1084,6 +1084,15 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.3.3} -- 2020-02-01}
+
+@bold{Fixed:}
+@itemlist[
+  @item{@racket[#t] and @racket[#f] are now translated to @racket[1]
+  and @racket[0], respectively, when provided as query parameters
+  under SQLite.}
+]
+
 @subsubsection{@exec{v0.3.2} -- 2020-01-16}
 
 @bold{Added:}

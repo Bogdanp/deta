@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/contract
+(require db
+         racket/contract
          racket/match
          racket/port
          "../ast.rkt"
@@ -30,7 +31,11 @@
 
        (define/contract (dialect-emit-query/impl _ s)
          (-> dialect? stmt? string?)
-         (emit-stmt s))])
+         (emit-stmt s))
+
+       (define/contract (dialect-prepare-parameters _ __ args)
+         (-> dialect? prepared-statement? (listof any/c) (listof any/c))
+         args)])
 
     (values postgresql-dialect? (postgresql-dialect))))
 

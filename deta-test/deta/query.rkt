@@ -286,7 +286,16 @@
 
         (check-equal? (length all-active-users-named-bob) 1)
         (check-equal? (user-id active-user-bob)
-                      (user-id (car all-active-users-named-bob))))))
+                      (user-id (car all-active-users-named-bob))))
+
+      (test-case "can handle boolean values within arbitrary queries"
+        (check-not-exn
+         (lambda ()
+           (for ([v '(#t #f)])
+             (query-exec (current-conn)
+                         (~> (from user #:as u)
+                             (select u.id)
+                             (where (= u.active? ,v))))))))))
 
     (test-suite
      "update"

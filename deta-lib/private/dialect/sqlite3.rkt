@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require racket/contract
+(require db
+         racket/contract
          racket/match
          racket/port
          "../ast.rkt"
@@ -30,7 +31,14 @@
 
        (define/contract (dialect-emit-query/impl _ s)
          (-> dialect? stmt? string?)
-         (emit-stmt s))])
+         (emit-stmt s))
+
+       (define/contract (dialect-prepare-parameters _ p args)
+         (-> dialect? prepared-statement? (listof any/c) (listof any/c))
+         (for/list ([arg (in-list args)])
+           (cond
+             [(boolean? arg) (if arg 1 0)]
+             [else arg])))])
 
     (values sqlite3-dialect? (sqlite3-dialect))))
 
