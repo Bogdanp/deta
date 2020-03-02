@@ -8,7 +8,7 @@
                      deta
                      gregor
                      json
-                     (except-in racket/base date date?)
+                     (except-in racket/base date date? time)
                      racket/contract
                      racket/match
                      racket/sequence
@@ -49,8 +49,8 @@ between database tables and Racket structs straightforward and simple.
         a check to ensure that nothing is @emph{too} PostgreSQL
         specific.}
   @item{@bold{Being a general purpose SQL DSL}.  For some queries you
-        may have to resort to raw SQL or the @racketmodname[sql]
-        library.  deta is very much an "80% solution."}
+        may have to resort to raw SQL or the @tt{sql} library.  deta
+        is very much an "80% solution."}
   @item{@bold{Being externally-extensible.}  The SQL AST as well as
         all of the dialect code is considered private and any new
         dialects (such as MySQL) will have to be added to the library
@@ -69,9 +69,10 @@ tutorial!
    (define-runtime-path log-file "tutorial-log.rktd")
    (define log-mode (if (getenv "DETA_RECORD") 'record 'replay))
    (define (make-pg-eval log-file)
-     (let ([ev (make-log-based-eval log-file log-mode)])
-       (ev '(require db deta racket/contract racket/match racket/string threading))
-       ev))
+     (define ev (make-log-based-eval log-file log-mode))
+     (begin0 ev
+       (ev '(require racket/contract racket/match racket/string threading
+                     (for-label db gregor)))))
    (define db-eval (make-pg-eval log-file)))
 
 deta builds upon the @racketmodname[db] library.  You will use deta to
@@ -347,11 +348,10 @@ The following query forms are not currently supported:
 
 @section[#:tag "reference"]{Reference}
 
-@(begin
-   (define reference-eval
-     (let ([ev (make-base-eval)])
-       (ev '(require db deta racket/string threading))
-       ev)))
+@(define reference-eval
+   (let ([ev (make-base-eval)])
+     (begin0 ev
+       (ev '(require db deta racket/string threading)))))
 
 @subsection{Query}
 @defmodule[deta/query]
@@ -753,7 +753,10 @@ by other dialects, but using them may result in invalid queries.
 
 @defproc[(project-onto [q query?]
                        [s schema?]) query?]{
-  Changes the target schema for @racket[q] to @racket[s].
+  Changes the target schema for @racket[q] to @racket[s].  Projecting
+  a query does not change the fields that that query selects so, most
+  of the time, you will have to explicitly select the fields you want
+  when using @racket[project-onto].
 
   @interaction[
     #:eval reference-eval
@@ -761,10 +764,25 @@ by other dialects, but using them may result in invalid queries.
       #:virtual
       ([year-published integer/f]
        [books integer/f]))
+  ]
 
-    (code:line)
+  @interaction[
+    #:eval reference-eval
     (~> (from "books" #:as b)
         (select b.year-published (count *))
+        (group-by b.year-published)
+        (order-by ([b.year-published #:desc]))
+        (project-onto book-stats-schema))
+  ]
+
+  Omitting the @racket[select] @emph{does not} produce the expected
+  query in this case since the books table has different fields from
+  a @racket[book-stats] value:
+
+  @interaction[
+    #:eval reference-eval
+    (code:line)
+    (~> (from "books" #:as b)
         (group-by b.year-published)
         (order-by ([b.year-published #:desc]))
         (project-onto book-stats-schema))

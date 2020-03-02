@@ -11,7 +11,6 @@
                      "racket-doc"
                      "sandbox-lib"
                      "scribble-lib"
-                     "threading-doc"
                      "threading-lib"))
 
 (define update-implies '("deta-lib"))

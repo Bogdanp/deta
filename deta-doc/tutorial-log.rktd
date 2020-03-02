@@ -1,5 +1,9 @@
 ;; This file was created by make-log-based-eval
-((require db deta racket/contract racket/match racket/string threading)
+((require racket/contract
+          racket/match
+          racket/string
+          threading
+          (for-label db gregor))
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
