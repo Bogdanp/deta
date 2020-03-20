@@ -3,7 +3,6 @@
 (require (for-syntax racket/base
                      syntax/parse)
          racket/match
-         racket/pretty
          racket/sequence
          racket/string
          "../ast.rkt"

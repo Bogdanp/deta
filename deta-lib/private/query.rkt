@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require db
+         (only-in racket/class send)
          racket/contract
          racket/match
          racket/struct
@@ -25,8 +26,12 @@
     (define-values (query args)
       (dialect-emit-query dialect (query-stmt self)))
 
+    ;; We grab the base connection s.t. querying `virtual-connection's
+    ;; works. `virtual-statement' does the same thing so we should be
+    ;; fine, compatibility-wise, but this behavior isn't specified
+    ;; anywhere so it may break on us w/o notice.
     (define prepared
-      (prepare c query))
+      (prepare (or (send c get-base) c) query))
 
     (cond
       [(null? args) prepared]

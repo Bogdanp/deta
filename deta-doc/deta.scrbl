@@ -1102,6 +1102,13 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.3.4} -- 2020-03-20}
+
+@bold{Fixed:}
+@itemlist[
+  @item{@racket[virtual-connection]s can now be used with deta.}
+]
+
 @subsubsection{@exec{v0.3.3} -- 2020-02-01}
 
 @bold{Fixed:}

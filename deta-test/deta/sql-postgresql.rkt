@@ -7,7 +7,6 @@
          (only-in deta/private/query
                   query-stmt)
          racket/format
-         racket/pretty
          rackunit
          threading)
 

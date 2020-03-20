@@ -352,24 +352,62 @@
 (module+ test
   (require rackunit/text-ui)
 
-  (parameterize ([current-conn (sqlite3-connect #:database 'memory)])
-    (run-tests
-     (test-suite
-      "sqlite"
+  (let ()
+    (define (connect)
+      (sqlite3-connect #:database 'memory))
 
-      query-tests)))
-
-  (define pg-database (getenv "DETA_POSTGRES_DB"))
-  (define pg-username (getenv "DETA_POSTGRES_USER"))
-  (define pg-password (getenv "DETA_POSTGRES_PASS"))
-  (when pg-database
-    (parameterize ([current-conn (postgresql-connect #:server   "127.0.0.1"
-                                                     #:port     5432
-                                                     #:database pg-database
-                                                     #:user     pg-username
-                                                     #:password pg-password)])
+    (parameterize ([current-conn (connect)])
       (run-tests
        (test-suite
-        "postgresql"
+        "sqlite (simple conn)"
 
-        query-tests)))))
+        query-tests)))
+
+    (parameterize ([current-conn (virtual-connection connect)])
+      (run-tests
+       (test-suite
+        "sqlite (virtual conn)"
+
+        query-tests)))
+
+    (let ([pool (connection-pool connect)])
+      (parameterize ([current-conn (connection-pool-lease pool)])
+        (run-tests
+         (test-suite
+          "sqlite (connection pool)"
+
+          query-tests)))))
+
+  (let ()
+    (define pg-database (getenv "DETA_POSTGRES_DB"))
+    (define pg-username (getenv "DETA_POSTGRES_USER"))
+    (define pg-password (getenv "DETA_POSTGRES_PASS"))
+    (when pg-database
+      (define (connect)
+        (postgresql-connect #:server   "127.0.0.1"
+                            #:port     5432
+                            #:database pg-database
+                            #:user     pg-username
+                            #:password pg-password))
+
+      (parameterize ([current-conn (connect)])
+        (run-tests
+         (test-suite
+          "postgresql (simple conn)"
+
+          query-tests)))
+
+      (parameterize ([current-conn (virtual-connection connect)])
+        (run-tests
+         (test-suite
+          "postgresql (virtual conn)"
+
+          query-tests)))
+
+      (let ([pool (connection-pool connect)])
+        (parameterize ([current-conn (connection-pool-lease pool)])
+          (run-tests
+           (test-suite
+            "postgresql (connection pool)"
+
+            query-tests)))))))
