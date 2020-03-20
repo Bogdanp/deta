@@ -15,7 +15,8 @@
 (provide
  quote/standard
  make-expr-emitter
- make-stmt-emitter)
+ make-stmt-emitter
+ display/sep)
 
 (define-match-expander unary-operator
   (lambda (stx)

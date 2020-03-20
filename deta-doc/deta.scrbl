@@ -1107,6 +1107,7 @@ Here are all the types and how they map to the different backends.
 @bold{Fixed:}
 @itemlist[
   @item{@racket[virtual-connection]s can now be used with deta.}
+  @item{The SQLite3 dialect now correctly emits date-time related function calls.}
 ]
 
 @subsubsection{@exec{v0.3.3} -- 2020-02-01}

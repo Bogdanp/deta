@@ -84,6 +84,12 @@
 
 (define (emit-expr e)
   (match e
+    [(app (and (ident (or 'date 'time 'datetime)) op) args)
+     (emit-expr op)
+     (display "(")
+     (display/sep args emit-expr)
+     (display ")")]
+
     [_ (emit-expr/standard e)]))
 
 (define emit-expr/standard

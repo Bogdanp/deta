@@ -22,6 +22,29 @@
    "sqlite3-sql"
 
    (test-suite
+    "functions"
+
+    (check-emitted
+     (~> (from "books" #:as b)
+         (where (< b.published-at (date "now"))))
+     "SELECT * FROM books AS b WHERE b.published_at < (DATE('now'))")
+
+    (check-emitted
+     (~> (from "books" #:as b)
+         (where (< b.published-at (date "now" "start of month" "+1 month" "-1 day"))))
+     "SELECT * FROM books AS b WHERE b.published_at < (DATE('now', 'start of month', '+1 month', '-1 day'))")
+
+    (check-emitted
+     (~> (from "books" #:as b)
+         (where (< b.published-at (time "now"))))
+     "SELECT * FROM books AS b WHERE b.published_at < (TIME('now'))")
+
+    (check-emitted
+     (~> (from "books" #:as b)
+         (where (< b.published-at (datetime "now"))))
+     "SELECT * FROM books AS b WHERE b.published_at < (DATETIME('now'))"))
+
+   (test-suite
     "limit"
 
     (check-emitted
