@@ -1,11 +1,4 @@
-# deta
-
-<p align="left">
-  <a href="https://github.com/Bogdanp/deta/actions?query=workflow%3A%22CI%22">
-    <img alt="GitHub Actions status" src="https://github.com/Bogdanp/deta/workflows/CI/badge.svg">
-  </a>
-</p>
-
+# deta ![CI](https://github.com/bogdanp/deta/workflows/CI/badge.svg)
 
 A functional database mapper for Racket.
 
