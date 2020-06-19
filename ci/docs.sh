@@ -5,7 +5,7 @@ set -euo pipefail
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends gettext-base gpg ssh rsync
 
-scribble +m --dest doc --redirect 'http://docs.racket-lang.org/' deta-doc/deta.scrbl
+raco scribble +m --dest doc --redirect 'https://docs.racket-lang.org/local-redirect/index.html' deta-doc/deta.scrbl
 mv doc/deta.html doc/index.html
 
 mkdir -p /tmp/secrets
