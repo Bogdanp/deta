@@ -130,7 +130,10 @@
     (struct binary-field ()
       #:methods gen:type
       [(define (type-contract _) bytes?)
-       (define (type-declaration _ dialect) "BLOB")
+       (define (type-declaration _ dialect)
+         (match dialect
+           ['sqlite3    "BLOB"]
+           ['postgresql "BYTEA"]))
        (define (type-load _ dialect v) v)
        (define (type-dump _ dialect v) v)])
 
