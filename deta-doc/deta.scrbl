@@ -1063,7 +1063,7 @@ Here are all the types and how they map to the different backends.
         (list @racket[real/f]         @racket[real?]                       @tt{REAL}               @tt{REAL}         )
         (list @racket[numeric/f]      @racket[(or/c rational? +nan.0)]     @tt{NUMERIC}            @tt{UNSUPPORTED}  )
         (list @racket[string/f]       @racket[string?]                     @tt{TEXT}               @tt{TEXT}         )
-        (list @racket[binary/f]       @racket[bytes?]                      @tt{BLOB}               @tt{BLOB}         )
+        (list @racket[binary/f]       @racket[bytes?]                      @tt{BYTEA}              @tt{BLOB}         )
         (list @racket[symbol/f]       @racket[symbol?]                     @tt{TEXT}               @tt{TEXT}         )
         (list @racket[boolean/f]      @racket[boolean?]                    @tt{BOOLEAN}            @tt{INTEGER}      )
         (list @racket[date/f]         @racket[date-provider?]              @tt{DATE}               @tt{TEXT}         )
