@@ -143,7 +143,6 @@
       #:on ast:expr?
       query?)
 
-  (define alias:str (symbol->string alias))
   (define table-name
     (cond
       [(string? schema-or-name) schema-or-name]
