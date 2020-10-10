@@ -620,10 +620,11 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform*[
-  #:literals (subquery)
+  #:literals (subquery unquote)
   ((from table-name #:as alias)
    (from schema-id #:as alias)
-   (from (subquery query) #:as alias))
+   (from (subquery query) #:as alias)
+   (from (unquote table-name-expr) #:as alias))
   #:contracts
   ([table-name non-empty-string?]
    [query query?])]{
@@ -641,6 +642,10 @@ by other dialects, but using them may result in invalid queries.
 
     (code:line)
     (from user #:as u)
+
+    (code:line)
+    (let ([tbl "users"])
+      (from ,tbl #:as u))
 
     (code:line)
     (~> (from (subquery (from user #:as u)) #:as out)
@@ -662,10 +667,11 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform*[
-  #:literals (subquery)
+  #:literals (subquery unquote)
   ((join query maybe-type table-name #:as alias #:on q-expr)
    (join query maybe-type schema-id #:as alias #:on q-expr)
-   (join query maybe-type (subquery query) #:as alias #:on q-expr))
+   (join query maybe-type (subquery query) #:as alias #:on q-expr)
+   (join query maybe-type (unquote table-name-expr) #:as alias #:on q-expr))
   #:grammar
   ([maybe-type (code:line)
                (code:line #:inner)
@@ -1101,6 +1107,13 @@ Here are all the types and how they map to the different backends.
 
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{v0.4.0} -- 2020-10-10}
+
+@bold{Added:}
+@itemlist[
+  @item{@racket[from] and @racket[join] now support runtime table names.}
+]
 
 @subsubsection{@exec{v0.3.4} -- 2020-03-20}
 

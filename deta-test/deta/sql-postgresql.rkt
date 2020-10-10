@@ -229,26 +229,37 @@
        "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) ELSE 0 END FROM departments AS d"))
 
     (test-suite
-     "subquery"
+     "from"
 
-     (test-case "emits subqueries in from clauses"
-       (check-emitted
-        (~> (from (subquery (select _ (as 1 x))) #:as a)
-            (select a.x))
+     (test-case "supports runtime table names"
+       (let ([tbl "example"])
+         (check-emitted
+          (~> (from ,tbl #:as t)
+              (select t.x))
 
-        "SELECT a.x FROM (SELECT 1 AS x) AS a"))
+          "SELECT t.x FROM example AS t")))
 
-     (test-case "allows queries to be composed"
-       (define active-usernames
-         (~> (from "users" #:as u)
-             (select u.username)
-             (group-by u.username)))
+     (test-suite
+      "subquery"
 
-       (check-emitted
-        (~> (from (subquery active-usernames) #:as a)
-            (select (count a.*)))
+      (test-case "emits subqueries in from clauses"
+        (check-emitted
+         (~> (from (subquery (select _ (as 1 x))) #:as a)
+             (select a.x))
 
-        "SELECT COUNT(a.*) FROM (SELECT u.username FROM users AS u GROUP BY u.username) AS a")))
+         "SELECT a.x FROM (SELECT 1 AS x) AS a"))
+
+      (test-case "allows queries to be composed"
+        (define active-usernames
+          (~> (from "users" #:as u)
+              (select u.username)
+              (group-by u.username)))
+
+        (check-emitted
+         (~> (from (subquery active-usernames) #:as a)
+             (select (count a.*)))
+
+         "SELECT COUNT(a.*) FROM (SELECT u.username FROM users AS u GROUP BY u.username) AS a"))))
 
     (test-suite
      "join"

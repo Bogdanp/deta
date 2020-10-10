@@ -129,7 +129,7 @@
        #:from (ast:make-from #:tables (list (ast:as source alias:str)))))]
 
     [else
-     (raise-argument-error 'form "a table name, a schema name or a subquery")]))
+     (raise-argument-error 'form "a table name, a schema name or a subquery" source)]))
 
 (define/contract (join q
                        #:type type

@@ -299,9 +299,11 @@
     (pattern (subquery q:expr) #:with e #'(dyn:subquery q)))
 
   (define-syntax-class q-source
+    #:literals (unquote)
     (pattern schema:id #:with e #''schema)
     (pattern table:str #:with e #'table)
-    (pattern sub:subquery-expr #:with e #'sub.e))
+    (pattern sub:subquery-expr #:with e #'sub.e)
+    (pattern (unquote e:expr)))
 
   (define-syntax-class q-expr
     #:datum-literals (array as list null)
