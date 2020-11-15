@@ -1111,6 +1111,13 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.5.0} -- 2020-11-15}
+
+@bold{Added:}
+@itemlist[
+  @item{@racket[uuid/f] fields.}
+]
+
 @subsubsection{@exec{v0.4.0} -- 2020-10-10}
 
 @bold{Added:}
