@@ -5,6 +5,7 @@
           racket/sandbox
           scribble/example
           (for-label db
+                     db/util/postgresql
                      deta
                      gregor
                      json
@@ -1076,6 +1077,7 @@ Here are all the types and how they map to the different backends.
         (list @racket[time/f]         @racket[time-provider?]              @tt{TIME}               @tt{TEXT}         )
         (list @racket[datetime/f]     @racket[datetime-provider?]          @tt{TIMESTAMP}          @tt{TEXT}         )
         (list @racket[datetime-tz/f]  @racket[moment-provider?]            @tt{TIMESTMAPTZ}        @tt{TEXT}         )
+        (list @racket[uuid/f]         @racket[uuid?]                       @tt{UUID}               @tt{UNSUPPORTED}  )
         (list @racket[array/f]        @racket[vector?]                     @tt{ARRAY}              @tt{UNSUPPORTED}  )
         (list @racket[json/f]         @racket[jsexpr?]                     @tt{JSON}               @tt{UNSUPPORTED}  )
         (list @racket[jsonb/f]        @racket[jsexpr?]                     @tt{JSONB}              @tt{UNSUPPORTED}  )
@@ -1098,6 +1100,7 @@ Here are all the types and how they map to the different backends.
    @defthing[time/f type?]
    @defthing[datetime/f type?]
    @defthing[datetime-tz/f type?]
+   @defthing[uuid/f type?]
    @defproc[(array/f [t type?]) type?]
    @defthing[json/f type?]
    @defthing[jsonb/f type?])]{
