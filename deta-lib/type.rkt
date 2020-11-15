@@ -56,7 +56,10 @@
  json/f
 
  jsonb/f?
- jsonb/f)
+ jsonb/f
+
+ uuid/f?
+ uuid/f)
 
 (define gen:type-contract type-contract)
 (define gen:type-declaration type-declaration)
@@ -394,3 +397,19 @@
        (define (type-dump _ dialect v) v)])
 
     (values jsonb-field? (jsonb-field))))
+
+(define-values (uuid/f? uuid/f)
+  (let ()
+    (struct uuid-field ()
+      #:methods gen:type
+      [(define (type-contract _) uuid?)
+
+       (define (type-declaration t dialect)
+         (match dialect
+           ['postgresql "UUID"]
+           [_ (raise-user-error 'uuid/f "not supported")]))
+
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v) v)])
+
+    (values uuid-field? (uuid-field))))
