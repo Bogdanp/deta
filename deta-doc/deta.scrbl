@@ -14,6 +14,7 @@
                      racket/match
                      racket/sequence
                      racket/string
+                     (rename-in racket/list (group-by list/group-by))
                      threading))
 
 @title{@exec{deta}: Functional Database Mapping}
@@ -655,6 +656,14 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform[(group-by query q-expr ...+)]{
+  @margin-note{The module @racketmodname[racket/list] also provides a
+  @racketlink[list/group-by]{group-by} function; that may result in
+  name collision when importing both @racketmodname[racket/list] and
+  @racketmodname[deta]. In such case it is advisable to use
+  @racket[only-in], @racket[rename-in], @racket[except-in] or
+  @racket[prefix-in] to selectively require the needed functions
+  and/or rename them locally.}
+
   Adds a @tt{GROUP BY} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
   clause.
