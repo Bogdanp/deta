@@ -655,7 +655,7 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform[(group-by query q-expr ...+)]{
-  Adds a @tt{ORDER BY} clause to @racket[query].  If @racket[query]
+  Adds a @tt{GROUP BY} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
   clause.
 
