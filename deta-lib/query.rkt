@@ -69,7 +69,7 @@
       (for*/fold ([columns null]
                   [column-values null])
                  ([f (in-list (schema-fields schema))]
-                  #:unless (field-auto-increment? f))
+                  #:unless (or (field-auto-increment? f) (field-virtual? f)))
         (values (cons (field-name f) columns)
                 (cons (type-dump/null (field-type f)
                                       (dialect-name dialect)
