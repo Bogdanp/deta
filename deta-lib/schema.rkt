@@ -70,7 +70,7 @@
 
   (define-template-metafunction (make-fld-maker stx)
     (syntax-parse stx
-      [(_ struct-id fld-id fld-name fld-type fld-pk? fld-ai? fld-nullable? fld-unique?)
+      [(_ struct-id fld-id fld-name fld-type fld-pk? fld-ai? fld-nullable? fld-unique? fld-virtual?)
        (with-syntax ([getter-id  (format-id #'struct-id "~a-~a"        #'struct-id #'fld-id)]
                      [setter-id  (format-id #'struct-id "set-~a-~a"    #'struct-id #'fld-id)]
                      [updater-id (format-id #'struct-id "update-~a-~a" #'struct-id #'fld-id)])
@@ -83,7 +83,8 @@
                        #:primary-key? fld-pk?
                        #:auto-increment? fld-ai?
                        #:nullable? fld-nullable?
-                       #:unique? fld-unique?))]))
+                       #:unique? fld-unique?
+                       #:virtual? fld-virtual?))]))
 
   (define-template-metafunction (make-ctor-contract stx)
     (syntax-parse stx
@@ -126,6 +127,7 @@
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
              #:with unique? (if (attribute unique) #'#t #'#f)
+             #:with virtual? #'#f
              #:with name (if (attribute name-e)
                              #'name-e
                              #'(id->column-name 'id))
@@ -142,6 +144,7 @@
                                                    (~optional (~and #:auto-increment auto-increment))
                                                    (~optional (~and #:nullable nullable))
                                                    (~optional (~and #:unique unique))
+                                                   (~optional (~and #:virtual virtual))
                                                    (~optional (~seq #:name name-e:str))
                                                    (~optional (~seq #:contract contract-e:expr) #:defaults ([contract-e #'any/c]))
                                                    (~optional (~seq #:wrapper wrapper:expr) #:defaults ([wrapper #'values]))) ...)
@@ -149,11 +152,20 @@
                               (attribute nullable))
              "primary keys may not be nullable"
 
+             #:fail-when (and (attribute virtual)
+                              (or (attribute primary-key)
+                                  (attribute auto-increment)
+                                  (attribute nullable)
+                                  (attribute unique)
+                                  (attribute name-e)))
+             "virtual fields can not have database-related attributes"
+
              #:with required? #'#f
              #:with primary-key? (if (attribute primary-key) #'#t #'#f)
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
              #:with unique? (if (attribute unique) #'#t #'#f)
+             #:with virtual? (if (attribute virtual) #'#t #'#f)
              #:with name (if (attribute name-e)
                              #'name-e
                              #'(id->column-name 'id))
@@ -223,7 +235,8 @@
                                                          f.primary-key?
                                                          f.auto-increment?
                                                          f.nullable?
-                                                         f.unique?) ...)))))]))
+                                                         f.unique?
+                                                         f.virtual?) ...)))))]))
 
 ;; Heavily inspired from:
 ;; https://github.com/racket/racket/blob/20e669f47842d47b085ddedc5782e4a95495653a/racket/collects/racket/private/reqprov.rkt#L978

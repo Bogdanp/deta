@@ -20,7 +20,8 @@
    primary-key?
    auto-increment?
    nullable?
-   unique?))
+   unique?
+   virtual?))
 
 (define (make-field #:id id
                     #:name name
@@ -32,7 +33,8 @@
                     #:primary-key? primary-key?
                     #:auto-increment? auto-increment?
                     #:nullable? nullable?
-                    #:unique? unique?)
+                    #:unique? unique?
+                    #:virtual? virtual?)
   (field id
          name
          kwd
@@ -43,7 +45,8 @@
          primary-key?
          auto-increment?
          nullable?
-         unique?))
+         unique?
+         virtual?))
 
 (define (id->column-name id)
   (let* ([name (cond
