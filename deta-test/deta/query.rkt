@@ -31,7 +31,8 @@
      (drop-table! (current-conn) 'password-reset)
      (create-table! (current-conn) 'book-with-nulls)
      (create-table! (current-conn) 'user)
-     (create-table! (current-conn) 'password-reset))
+     (create-table! (current-conn) 'password-reset)
+     (create-table! (current-conn) 'hybrid))
 
    (test-suite
     "prop:statement"
@@ -67,7 +68,13 @@
          (and (exn:fail:contract? e)
               (check-regexp-match "unregistered schema" (exn-message e))))
        (lambda _
-         (create-table! (current-conn) 'idontexist)))))
+         (create-table! (current-conn) 'idontexist))))
+
+    (test-case "ignores virtual fields"
+      (define the-hybrid (make-hybrid #:slug "hello-world" #:metadata "some value"))
+      (insert-one! (current-conn) the-hybrid)
+      (define row (query-row (current-conn) "SELECT * FROM hybrids"))
+      (check-match row (vector (? number?) "hello-world"))))
 
    (test-suite
     "insert!"

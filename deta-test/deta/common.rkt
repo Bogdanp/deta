@@ -8,7 +8,8 @@
  deleted-users
  (schema-out book-with-nulls)
  (schema-out user)
- (schema-out password-reset))
+ (schema-out password-reset)
+ (schema-out hybrid))
 
 (define (generate-random-string)
   "a random string -- I promise")
@@ -46,3 +47,8 @@
   ([user-id id/f #:unique]
    [(token (generate-random-string)) string/f]
    [(expires-at (+days (now/moment) 1)) datetime-tz/f]))
+
+(define-schema hybrid
+  ([id id/f #:primary-key #:auto-increment]
+   [slug string/f #:unique]
+   [(metadata "irrelevant") string/f #:virtual]))
