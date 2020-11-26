@@ -10,6 +10,7 @@
          racket/set
          rackunit
          threading
+         syntax/macro-testing
          "common.rkt")
 
 (provide
@@ -35,7 +36,8 @@
     #:virtual
     ([id id/f #:primary-key #:auto-increment]
      [title string/f]
-     [author string/f])))
+     [author string/f]
+     [(metadata #f) jsonb/f #:virtual])))
 
 (require 'schema-out-test-sub)
 
@@ -129,6 +131,56 @@
                         (book-title))
                     "THE LORD OF THE RINGS")))))
 
+(define field-tests
+  (test-suite
+   "fields"
+
+   (test-suite
+    "virtual"
+
+    (test-case "raises an error on forbidden keywords on virtual fields"
+
+      (check-exn
+       exn:fail:syntax?
+       (lambda _
+         (convert-compile-time-error
+          (define-schema illegal
+            ([(metadata #f) jsonb/f #:unique #:virtual])))
+         (fail "should never get here")))
+
+      (check-exn
+       exn:fail:syntax?
+       (lambda _
+         (convert-compile-time-error
+          (define-schema illegal
+            ([(metadata #f) jsonb/f #:auto-increment #:virtual])))
+         (fail "should never get here")))
+
+      (check-exn
+       exn:fail:syntax?
+       (lambda _
+         (convert-compile-time-error
+          (define-schema illegal
+            ([(metadata #f) jsonb/f #:nullable #:virtual])))
+         (fail "should never get here")))
+
+      (check-exn
+       exn:fail:syntax?
+       (lambda _
+         (convert-compile-time-error
+          (define-schema illegal
+            ([(metadata #f) jsonb/f #:primary-key #:virtual])))
+         (fail "should never get here")))
+
+      (check-exn
+       exn:fail:syntax?
+       (lambda _
+         (convert-compile-time-error
+          (define-schema illegal
+            ([(metadata #f) jsonb/f #:name #:virtual])))
+         (fail "should never get here")))))))
+
 (module+ test
   (require rackunit/text-ui)
-  (run-tests schema-tests))
+  (run-tests schema-tests)
+  (run-tests field-tests))
