@@ -51,4 +51,4 @@
 (define-schema hybrid
   ([id id/f #:primary-key #:auto-increment]
    [slug string/f #:unique]
-   [(metadata "irrelevant") string/f #:virtual]))
+   [(comment "irrelevant") string/f #:virtual]))

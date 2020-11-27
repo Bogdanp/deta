@@ -71,7 +71,7 @@
          (create-table! (current-conn) 'idontexist))))
 
     (test-case "ignores virtual fields"
-      (define the-hybrid (make-hybrid #:slug "hello-world" #:metadata "some value"))
+      (define the-hybrid (make-hybrid #:slug "hello-world" #:comment "some value"))
       (insert-one! (current-conn) the-hybrid)
       (define row (query-row (current-conn) "SELECT * FROM hybrids"))
       (check-match row (vector (? number?) "hello-world"))))
