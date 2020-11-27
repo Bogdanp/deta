@@ -10,6 +10,7 @@
          racket/match
          racket/sequence
          racket/set
+         (only-in racket/list empty?)
          (prefix-in ast: "private/ast.rkt")
          "private/connection.rkt"
          "private/dialect/dialect.rkt"
@@ -117,8 +118,10 @@
 (define/contract (update! conn . entities)
   (-> connection? entity? ... (listof entity?))
   (define dialect (connection-dialect conn))
-  (for/list ([entity (in-list entities)] #:when (meta-can-update? (entity-meta entity)))
-    (update-entity! dialect conn entity)))
+  (define maybe-updated
+    (for/list ([entity (in-list entities)])
+      (update-entity! dialect conn entity)))
+  (remove* '(#f) maybe-updated))
 
 (define/contract (update-one! conn entity)
   (-> connection? entity? (or/c false/c entity?))
@@ -133,7 +136,7 @@
     (raise-argument-error 'update-entity! "entity with primary key field" entity))
 
   (cond
-    [(entity-changed? entity)
+    [(meta-can-update? (entity-meta entity))
      (define entity* ((schema-pre-persist-hook schema) entity))
      (define changes (meta-changes (entity-meta entity*)))
      (define-values (columns column-values)
@@ -141,30 +144,32 @@
                    [column-values null])
                   ([f (in-list (schema-fields schema))]
                    #:when (set-member? changes (field-id f))
-                   #:unless (field-auto-increment? f))
+                   #:unless (or (field-auto-increment? f) (field-virtual? f)))
          (values (cons (field-name f) columns)
                  (cons (type-dump/null (field-type f)
                                        (dialect-name dialect)
                                        ((field-getter f) entity*))
                        column-values))))
+     (cond
+       [(empty? columns) #f]
+       [else
+        (define stmt
+          (ast:make-update
+           #:table (ast:table (schema-table schema))
+           #:assignments (ast:assignments
+                          (for/list ([column (in-list columns)]
+                                     [value (in-list column-values)])
+                            (cons (ast:column column)
+                                  (ast:placeholder value))))
+           #:where (ast:where (ast:app (ast:ident '=)
+                                       (list (ast:column (field-name pk))
+                                             (ast:placeholder ((field-getter pk) entity*)))))))
 
-     (define stmt
-       (ast:make-update
-        #:table (ast:table (schema-table schema))
-        #:assignments (ast:assignments
-                       (for/list ([column (in-list columns)]
-                                  [value (in-list column-values)])
-                         (cons (ast:column column)
-                               (ast:placeholder value))))
-        #:where (ast:where (ast:app (ast:ident '=)
-                                    (list (ast:column (field-name pk))
-                                          (ast:placeholder ((field-getter pk) entity*)))))))
+        (define-values (query args)
+          (dialect-emit-query dialect stmt))
 
-     (define-values (query args)
-       (dialect-emit-query dialect stmt))
-
-     (apply query-exec conn query args)
-     ((schema-meta-updater schema) entity* meta-track-persisted)]
+        (apply query-exec conn query args)
+        ((schema-meta-updater schema) entity* meta-track-persisted)])]
 
     [else #f]))
 

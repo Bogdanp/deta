@@ -29,6 +29,7 @@
      (drop-table! (current-conn) 'book-with-nulls)
      (drop-table! (current-conn) 'user)
      (drop-table! (current-conn) 'password-reset)
+     (drop-table! (current-conn) 'hybrid)
      (create-table! (current-conn) 'book-with-nulls)
      (create-table! (current-conn) 'user)
      (create-table! (current-conn) 'password-reset)
@@ -120,6 +121,23 @@
     (test-case "does nothing to entities that haven't been persisted"
       (define u (make-user #:username "bogdan@example.com"))
       (check-equal? (update! (current-conn) u) null))
+
+    (test-case "does nothing to entities with only virtual fields changed"
+      (define the-hybrid (make-hybrid #:slug "eureka" #:comment "some value"))
+      (define changed-hybrid
+        (~> (insert-one! (current-conn) the-hybrid)
+            (set-hybrid-comment "some other value")))
+      (check-false (update-one! (current-conn) changed-hybrid)))
+
+    (test-case "does nothing to entities that haven't been changed"
+      (match-define (list u)
+        (insert! (current-conn)
+                 (make-user #:username "bogdan-for-noop-update@example.com")))
+
+      (check-equal? (meta-changes (entity-meta u)) (seteq))
+
+      (define u* (update-one! (current-conn) u))
+      (check-false u*))
 
     (test-case "updates entities that have been changed"
       (match-define (list u)
