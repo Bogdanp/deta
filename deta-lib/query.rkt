@@ -10,7 +10,6 @@
          racket/match
          racket/sequence
          racket/set
-         (only-in racket/list empty?)
          (prefix-in ast: "private/ast.rkt")
          "private/connection.rkt"
          "private/dialect/dialect.rkt"
@@ -121,7 +120,7 @@
   (define maybe-updated
     (for/list ([entity (in-list entities)])
       (update-entity! dialect conn entity)))
-  (remove* '(#f) maybe-updated))
+  (filter values maybe-updated))
 
 (define/contract (update-one! conn entity)
   (-> connection? entity? (or/c false/c entity?))
@@ -151,7 +150,7 @@
                                        ((field-getter f) entity*))
                        column-values))))
      (cond
-       [(empty? columns) #f]
+       [(null? columns) #f]
        [else
         (define stmt
           (ast:make-update
