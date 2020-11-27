@@ -8,6 +8,7 @@
 
 (provide
  make-schema
+ schema-fields-nonvirtual
  (struct-out schema))
 
 (struct schema
@@ -48,6 +49,11 @@
     (unless virtual?
       (register! id the-schema))))
 
+(define/contract (schema-fields-nonvirtual the-schema)
+  (-> schema? (listof field?))
+  (for/list ([fld (in-list (schema-fields the-schema))]
+             #:unless (field-virtual? fld))
+    fld))
 
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

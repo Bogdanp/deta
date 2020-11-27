@@ -278,6 +278,18 @@
 
         (check-true (> (length all-users) 0))))
 
+     (test-case "retrieves whole entities containing virtual fields from the database"
+       (drop-table! (current-conn) 'hybrid)
+       (create-table! (current-conn) 'hybrid)
+       (insert! (current-conn)
+                (make-hybrid #:slug "hybrid-0" #:comment "some value")
+                (make-hybrid #:slug "hybrid-1" #:comment "some other value"))
+       (define default-comment (hybrid-comment (make-hybrid #:slug "n/a")))
+       (for ([h (in-entities (current-conn) (~> (from hybrid #:as h) (order-by ([slug]))))]
+             [slug (in-list '("hybrid-0" "hybrid-1"))])
+         (check-equal? (hybrid-slug h) slug)
+         (check-equal? (hybrid-comment h) default-comment)))
+
      (test-suite
       "where"
 
