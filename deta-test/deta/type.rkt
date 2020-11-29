@@ -69,8 +69,25 @@
           "0b36d520-cf66-4cfe-bc48-8b69904b9b3a"))
       (for ([initial (in-list some-uuids)])
         (check-equal? (type-load uuid/f 'postgresql initial) initial)
-        (check-equal? (type-dump uuid/f 'postrgesql initial) initial))))))
+        (check-equal? (type-dump uuid/f 'postrgesql initial) initial))))
 
+   (test-suite
+    "any/f"
+
+    (test-case "raises on type-declaration"
+      (for ([dialect (in-list '(postgresql sqlite3))])
+        (check-exn exn:fail:user?
+                   (lambda () (type-declaration any/f dialect)))))
+
+    (test-case "raises on type-dump"
+      (for ([dialect (in-list '(postgresql sqlite3))])
+        (check-exn exn:fail:user?
+                   (lambda () (type-dump any/f dialect "somevalue")))))
+
+    (test-case "pass-through on type-load"
+      (for* ([val (in-list '("string" symbol 5 '(another list)))]
+             [dialect (in-list '(postgresql sqlite))])
+        (check-equal? (type-load any/f dialect val) val))))))
 
 (module+ test
   (require rackunit/text-ui)

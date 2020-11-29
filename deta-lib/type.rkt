@@ -59,7 +59,10 @@
  jsonb/f
 
  uuid/f?
- uuid/f)
+ uuid/f
+
+ any/f?
+ any/f)
 
 (define gen:type-contract type-contract)
 (define gen:type-declaration type-declaration)
@@ -413,3 +416,18 @@
        (define (type-dump _ dialect v) v)])
 
     (values uuid-field? (uuid-field))))
+
+(define-values (any/f? any/f)
+  (let ()
+    (struct any-field ()
+      #:methods gen:type
+      [(define (type-contract _) any/c)
+
+       (define (type-declaration t dialect)
+         (raise-user-error 'any/f "can only be used on virtual fields"))
+
+       (define (type-load _ dialect v) v)
+       (define (type-dump _ dialect v)
+         (raise-user-error 'any/f "can not be stored in database directly"))])
+
+    (values any-field? (any-field))))
