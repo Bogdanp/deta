@@ -29,12 +29,9 @@
 (define/contract (create-table! conn schema-or-name)
   (-> connection? (or/c schema? symbol?) void?)
   (define schema (schema-registry-lookup schema-or-name))
-  (define fields
-    (filter (lambda (fld) (not (field-virtual? fld)))
-            (schema-fields schema)))
   (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:create-table (schema-table schema)
-                                                       fields))))
+                                                       (schema-fields-nonvirtual schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
   (-> connection? (or/c schema? symbol?) void?)
