@@ -945,6 +945,7 @@ by other dialects, but using them may result in invalid queries.
                                         maybe-auto-increment
                                         maybe-unique
                                         maybe-nullable
+                                        maybe-virtual-field
                                         maybe-contract
                                         maybe-wrapper]))
           (maybe-name (code:line)
@@ -957,6 +958,8 @@ by other dialects, but using them may result in invalid queries.
                         (code:line #:unique))
           (maybe-nullable (code:line)
                           (code:line #:nullable))
+          (maybe-virtual-field (code:line)
+                               (code:line #:virtual))
           (maybe-contract (code:line)
                           (code:line #:contract e))
           (maybe-wrapper (code:line)
@@ -981,9 +984,16 @@ by other dialects, but using them may result in invalid queries.
   for the table.  Otherwise, an "s" is appended to the schema id to
   pluralize it.  Currently, there are no other pluralization rules.
 
-  If @racket[#:virtual] is provided, then the resulting schema's
-  entities will not be able to be persisted, nor will the schema be
-  registered in the global registry.
+  If @racket[#:virtual] is provided on a schema definition, then the
+  resulting schema's entities will not be able to be persisted, nor
+  will the schema be registered in the global registry.
+
+  Alternatively, individual fields may be set as @racket[#:virtual].
+  Such fields must have a default value defined, and will be ignored
+  when performing database operations. @racket[in-entities] will
+  produce entities with virtual fields set to their default values.
+  Virtual fields may be used for data not directly mapped to database
+  columns (see also the @racket[any/f] field type.)
 
   The @racket[pre-persist-hook] is run before an entity is either
   @racket[insert!]ed or @racket[update!]d.
@@ -1092,6 +1102,7 @@ Here are all the types and how they map to the different backends.
         (list @racket[array/f]        @racket[vector?]                     @tt{ARRAY}              @tt{UNSUPPORTED}  )
         (list @racket[json/f]         @racket[jsexpr?]                     @tt{JSON}               @tt{UNSUPPORTED}  )
         (list @racket[jsonb/f]        @racket[jsexpr?]                     @tt{JSONB}              @tt{UNSUPPORTED}  )
+        (list @racket[any/f]          @racket[any/c]                       @tt{N/A}                @tt{N/A}          )
         )]
 
 @subsubsection{Types}
@@ -1119,6 +1130,10 @@ Here are all the types and how they map to the different backends.
   The various types that deta supports.
 }
 
+@defthing[any/f type?]{
+  A special type used to indicate that no type restriction is applied
+  to a field. May only be used on virtual fields.
+}
 
 @subsection[#:tag "changelog"]{Changelog}
 
