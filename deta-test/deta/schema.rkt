@@ -145,40 +145,35 @@
        (lambda _
          (convert-compile-time-error
           (define-schema illegal
-            ([(metadata #f) jsonb/f #:unique #:virtual])))
-         (fail "should never get here")))
+            ([(metadata #f) jsonb/f #:unique #:virtual])))))
 
       (check-exn
        exn:fail:syntax?
        (lambda _
          (convert-compile-time-error
           (define-schema illegal
-            ([(metadata #f) jsonb/f #:auto-increment #:virtual])))
-         (fail "should never get here")))
+            ([(metadata #f) jsonb/f #:auto-increment #:virtual])))))
 
       (check-exn
        exn:fail:syntax?
        (lambda _
          (convert-compile-time-error
           (define-schema illegal
-            ([(metadata #f) jsonb/f #:nullable #:virtual])))
-         (fail "should never get here")))
+            ([(metadata #f) jsonb/f #:nullable #:virtual])))))
 
       (check-exn
        exn:fail:syntax?
        (lambda _
          (convert-compile-time-error
           (define-schema illegal
-            ([(metadata #f) jsonb/f #:primary-key #:virtual])))
-         (fail "should never get here")))
+            ([(metadata #f) jsonb/f #:primary-key #:virtual])))))
 
       (check-exn
        exn:fail:syntax?
        (lambda _
          (convert-compile-time-error
           (define-schema illegal
-            ([(metadata #f) jsonb/f #:name #:virtual])))
-         (fail "should never get here")))))))
+            ([(metadata #f) jsonb/f #:name #:virtual])))))))))
 
 (module+ test
   (require rackunit/text-ui)
