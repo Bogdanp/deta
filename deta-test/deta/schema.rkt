@@ -46,6 +46,35 @@
    (test-suite
     "define-schema"
 
+    (test-suite
+     "fields"
+
+     (test-suite
+      "virtual attribute"
+
+      (test-case "raises an error on forbidden keywords on virtual fields"
+        (define-syntax-rule (check-failure-cases [attr ...] ...)
+          (begin
+            (check-exn
+             (lambda (e)
+               (and (exn:fail:syntax? e)
+                    (regexp-match? "virtual fields may not have database-related attributes" (exn-message e))))
+             (lambda _
+               (convert-compile-time-error
+                (let ()
+                  (define-schema illegal
+                    ([(metadata #f) jsonb/f attr ... #:virtual]))
+                  illegal-schema)))
+             (format "keyword ~s must be forbidden on virtual field" 'kwd)) ...))
+
+        (check-failure-cases
+         [#:primary-key]
+         [#:auto-increment]
+         [#:primary-key #:auto-increment]
+         [#:nullable]
+         [#:unique]
+         [#:name "metadata"]))))
+
     (test-case "registers schema metadata in the registry"
       (check-eq? user-schema (schema-registry-lookup 'user)))
 
@@ -129,37 +158,6 @@
                         (book-title))
                     "THE LORD OF THE RINGS")))))
 
-(define field-tests
-  (test-suite
-   "fields"
-
-   (test-suite
-    "virtual"
-
-    (test-case "raises an error on forbidden keywords on virtual fields"
-      (define-syntax-rule (check-failure-cases [attr ...] ...)
-        (begin
-          (check-exn
-           (lambda (e)
-             (and (exn:fail:syntax? e)
-                  (regexp-match? "virtual fields may not have database-related attributes" (exn-message e))))
-           (lambda _
-             (convert-compile-time-error
-              (let ()
-                (define-schema illegal
-                  ([(metadata #f) jsonb/f attr ... #:virtual]))
-                illegal-schema)))
-           (format "keyword ~s must be forbidden on virtual field" 'kwd)) ...))
-
-      (check-failure-cases
-       [#:primary-key]
-       [#:auto-increment]
-       [#:primary-key #:auto-increment]
-       [#:nullable]
-       [#:unique]
-       [#:name "metadata"])))))
-
 (module+ test
   (require rackunit/text-ui)
-  (run-tests schema-tests)
-  (run-tests field-tests))
+  (run-tests schema-tests))
