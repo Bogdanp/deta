@@ -921,17 +921,7 @@ by other dialects, but using them may result in invalid queries.
            maybe-pre-delete-hook
            maybe-struct-option ...)
          #:grammar
-         [(maybe-table (code:line)
-                       (code:line #:table table-name))
-          (maybe-virtual (code:line)
-                         (code:line #:virtual))
-          (maybe-pre-persist-hook (code:line)
-                                  (code:line #:pre-persist-hook pre-persist-hook))
-          (maybe-pre-delete-hook (code:line)
-                                 (code:line #:pre-delete-hook pre-delete-hook))
-          (maybe-struct-option (code:line)
-                               (code:line struct-option))
-          (field-definition (code:line [id field-type
+         [(field-definition (code:line [id field-type
                                         maybe-name
                                         maybe-primary-key
                                         maybe-auto-increment
@@ -945,9 +935,13 @@ by other dialects, but using them may result in invalid queries.
                                         maybe-auto-increment
                                         maybe-unique
                                         maybe-nullable
-                                        maybe-virtual-field
+                                        maybe-virtual
                                         maybe-contract
                                         maybe-wrapper]))
+          (maybe-table (code:line)
+                       (code:line #:table table-name))
+          (maybe-virtual (code:line)
+                         (code:line #:virtual))
           (maybe-name (code:line)
                       (code:line #:name field-name))
           (maybe-primary-key (code:line)
@@ -958,12 +952,16 @@ by other dialects, but using them may result in invalid queries.
                         (code:line #:unique))
           (maybe-nullable (code:line)
                           (code:line #:nullable))
-          (maybe-virtual-field (code:line)
-                               (code:line #:virtual))
           (maybe-contract (code:line)
                           (code:line #:contract e))
           (maybe-wrapper (code:line)
-                          (code:line #:wrapper e))]
+                          (code:line #:wrapper e))
+          (maybe-pre-persist-hook (code:line)
+                                  (code:line #:pre-persist-hook pre-persist-hook))
+          (maybe-pre-delete-hook (code:line)
+                                 (code:line #:pre-delete-hook pre-delete-hook))
+          (maybe-struct-option (code:line)
+                               (code:line struct-option))]
          #:contracts
          ([table-name non-empty-string?]
           [field-name non-empty-string?]
