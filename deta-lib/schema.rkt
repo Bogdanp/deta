@@ -158,7 +158,7 @@
                                   (attribute nullable)
                                   (attribute unique)
                                   (attribute name-e)))
-             "virtual fields can not have database-related attributes"
+             "virtual fields may not have database-related attributes"
 
              #:with required? #'#f
              #:with primary-key? (if (attribute primary-key) #'#t #'#f)

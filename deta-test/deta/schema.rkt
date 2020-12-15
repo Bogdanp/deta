@@ -137,40 +137,27 @@
     "virtual"
 
     (test-case "raises an error on forbidden keywords on virtual fields"
-      (check-exn
-       exn:fail:syntax?
-       (lambda _
-         (convert-compile-time-error
-          (define-schema illegal
-            ([(metadata #f) jsonb/f #:unique #:virtual])))))
+      (define-syntax-rule (check-failure-cases [attr ...] ...)
+        (begin
+          (check-exn
+           (lambda (e)
+             (and (exn:fail:syntax? e)
+                  (regexp-match? "virtual fields may not have database-related attributes" (exn-message e))))
+           (lambda _
+             (convert-compile-time-error
+              (let ()
+                (define-schema illegal
+                  ([(metadata #f) jsonb/f attr ... #:virtual]))
+                illegal-schema)))
+           (format "keyword ~s must be forbidden on virtual field" 'kwd)) ...))
 
-      (check-exn
-       exn:fail:syntax?
-       (lambda _
-         (convert-compile-time-error
-          (define-schema illegal
-            ([(metadata #f) jsonb/f #:auto-increment #:virtual])))))
-
-      (check-exn
-       exn:fail:syntax?
-       (lambda _
-         (convert-compile-time-error
-          (define-schema illegal
-            ([(metadata #f) jsonb/f #:nullable #:virtual])))))
-
-      (check-exn
-       exn:fail:syntax?
-       (lambda _
-         (convert-compile-time-error
-          (define-schema illegal
-            ([(metadata #f) jsonb/f #:primary-key #:virtual])))))
-
-      (check-exn
-       exn:fail:syntax?
-       (lambda _
-         (convert-compile-time-error
-          (define-schema illegal
-            ([(metadata #f) jsonb/f #:name #:virtual])))))))))
+      (check-failure-cases
+       [#:primary-key]
+       [#:auto-increment]
+       [#:primary-key #:auto-increment]
+       [#:nullable]
+       [#:unique]
+       [#:name "metadata"])))))
 
 (module+ test
   (require rackunit/text-ui)
