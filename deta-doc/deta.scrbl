@@ -1135,6 +1135,16 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.6.0} -- 2020-12-20}
+
+@(define (author id) (hyperlink (format "https://github.com/~a" id) (format "@~a" id)))
+@(define (pr num) (hyperlink (format "https://github.com/Bogdanp/deta/pull/~a" num) (format "#~a" num)))
+
+@bold{Added:}
+@itemlist[
+  @item{Support for @racket[#:virtual] fields. (@author{yurkobb}, @pr{37})}
+]
+
 @subsubsection{@exec{v0.5.0} -- 2020-11-15}
 
 @bold{Added:}
