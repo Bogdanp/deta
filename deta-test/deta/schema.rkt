@@ -3,14 +3,12 @@
 (require deta
          deta/private/meta
          deta/private/schema
-         gregor
          racket/generic
          racket/match
-         racket/port
          racket/set
          rackunit
-         threading
          syntax/macro-testing
+         threading
          "common.rkt")
 
 (provide
@@ -139,7 +137,6 @@
     "virtual"
 
     (test-case "raises an error on forbidden keywords on virtual fields"
-
       (check-exn
        exn:fail:syntax?
        (lambda _

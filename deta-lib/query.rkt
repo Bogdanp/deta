@@ -31,7 +31,7 @@
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:create-table (schema-table schema)
-                                                       (schema-fields-nonvirtual schema)))))
+                                                       (schema-fields/nonvirtual schema)))))
 
 (define/contract (drop-table! conn schema-or-name)
   (-> connection? (or/c schema? symbol?) void?)

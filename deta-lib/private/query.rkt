@@ -120,7 +120,7 @@
       (ast:make-select
        #:from (ast:make-from
                #:tables (list (ast:as (ast:table (schema-table schema)) alias:str)))
-       #:columns (for/list ([f (in-list (schema-fields-nonvirtual schema))])
+       #:columns (for/list ([f (in-list (schema-fields/nonvirtual schema))])
                    (ast:column (ast:qualified alias:str (field-name f))))))]
 
     [(ast:subquery? source)

@@ -7,9 +7,9 @@
 ;; struct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
+ (struct-out schema)
  make-schema
- schema-fields-nonvirtual
- (struct-out schema))
+ schema-fields/nonvirtual)
 
 (struct schema
   (id
@@ -49,11 +49,10 @@
     (unless virtual?
       (register! id the-schema))))
 
-(define/contract (schema-fields-nonvirtual the-schema)
+(define/contract (schema-fields/nonvirtual the-schema)
   (-> schema? (listof field?))
-  (for/list ([fld (in-list (schema-fields the-schema))]
-             #:unless (field-virtual? fld))
-    fld))
+  (filter (compose1 not field-virtual?)
+          (schema-fields the-schema)))
 
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
