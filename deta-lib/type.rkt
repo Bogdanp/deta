@@ -424,10 +424,10 @@
       [(define (type-contract _) any/c)
 
        (define (type-declaration t dialect)
-         (raise-user-error 'any/f "can only be used on virtual fields"))
+         (raise-user-error 'any/f "may only be used on virtual fields"))
 
        (define (type-load _ dialect v) v)
        (define (type-dump _ dialect v)
-         (raise-user-error 'any/f "can not be stored in database directly"))])
+         (raise-user-error 'any/f "may not be stored in the database"))])
 
     (values any-field? (any-field))))
