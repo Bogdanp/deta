@@ -133,29 +133,30 @@
 
 (define/contract (join q
                        #:type type
-                       #:with schema-or-name
+                       #:with tbl-e
                        #:as alias
                        #:on constraint)
   (-> select-query?
       #:type (or/c 'inner 'left 'right 'full 'cross)
-      #:with (or/c schema? string? symbol?)
+      #:with (or/c ast:subquery? schema? string? symbol?)
       #:as symbol?
       #:on ast:expr?
       query?)
 
-  (define table-name
-    (cond
-      [(string? schema-or-name) schema-or-name]
-      [else
-       (define schema (schema-registry-lookup schema-or-name))
-       (schema-table schema)]))
+  (define tbl-clause
+    (match tbl-e
+      [(? ast:subquery?) tbl-e]
+      [_ (ast:table
+          (cond
+            [(string? tbl-e) tbl-e]
+            [else (schema-table (schema-registry-lookup tbl-e))]))]))
 
   (match q
     [(query schema stmt)
      (query schema (struct-copy ast:select stmt
                                 [from (add-join
                                        (ast:select-from stmt)
-                                       (ast:join type (ast:as (ast:table table-name) alias) constraint))]))]))
+                                       (ast:join type (ast:as tbl-clause alias) constraint))]))]))
 
 (define/contract (select q column0 . columns)
   (-> query? ast:expr? ast:expr? ... query?)

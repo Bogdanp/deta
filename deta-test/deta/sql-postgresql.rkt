@@ -289,7 +289,15 @@
             (join #:left "comments" #:as c #:on (= p.id c.post-id))
             (select a.* c.*))
 
-        "SELECT a.*, c.* FROM posts AS p LEFT JOIN comments AS c ON p.id = c.post_id")))
+        "SELECT a.*, c.* FROM posts AS p LEFT JOIN comments AS c ON p.id = c.post_id"))
+
+     (test-case "emits joins for subqueries"
+       (check-emitted
+        (~> (from "posts" #:as p)
+            (join #:left (subquery (select _ 1)) #:as c #:on #t)
+            (select p.* c.*))
+
+        "SELECT p.*, c.* FROM posts AS p LEFT JOIN (SELECT 1) AS c ON TRUE")))
 
     (test-suite
      "group-by"
