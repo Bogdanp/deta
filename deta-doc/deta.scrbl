@@ -603,6 +603,16 @@ by other dialects, but using them may result in invalid queries.
         )
 ]
 
+@deftogether[(
+  @defidform[array]
+  @defidform[as]
+  @defidform[fragment]
+  @defidform[subquery]
+)]{
+  The various "keywords" used within queries.  See the grammar of
+  @racket[q-expr] for details on how each of these are used.
+}
+
 @defproc[(query? [q any/c]) boolean?]{
   Returns @racket[#t] when @racket[q] is a query.
 }
@@ -1134,6 +1144,13 @@ Here are all the types and how they map to the different backends.
 }
 
 @subsection[#:tag "changelog"]{Changelog}
+
+@subsubsection{@exec{HEAD}}
+@bold{Changed:}
+@itemlist[
+  @item{The @racket[array], @racket[as], @racket[fragment] and
+  @racket[subquery] keywords are now detected by binding.}
+]
 
 @subsubsection{@exec{v0.7.0} -- 2021-02-04}
 @bold{Changed:}

@@ -256,6 +256,15 @@
 
   ((schema-meta-updater schema) e meta-track-persisted))
 
+(define-syntax-rule (define-keywords id ...)
+  (begin
+    (provide id ...)
+    (define-syntax (id stx)
+      (raise-syntax-error 'id "not allowed outside of a query" stx)) ...))
+
+(define-keywords
+  array as subquery fragment)
+
 (define/contract (in-entities conn q
                               #:batch-size [batch-size +inf.0])
   (->* (connection? dyn:query?)
@@ -295,11 +304,11 @@
     (pattern (unquote placeholder) #:with e #'(ast:placeholder placeholder)))
 
   (define-syntax-class fragment-expr
-    #:datum-literals (fragment)
+    #:literals (fragment)
     (pattern (fragment node:expr) #:with e #'node))
 
   (define-syntax-class subquery-expr
-    #:datum-literals (subquery)
+    #:literals (subquery)
     (pattern (subquery q:expr) #:with e #'(dyn:subquery q)))
 
   (define-syntax-class q-source
@@ -310,8 +319,8 @@
     (pattern (unquote e:expr)))
 
   (define-syntax-class q-expr
-    #:datum-literals (array as list null)
-    #:literals (and case cond else or quote unquote-splicing)
+    #:datum-literals (list null)
+    #:literals (array as and case cond else or quote unquote-splicing)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
