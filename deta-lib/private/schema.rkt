@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require racket/contract
-         racket/match
          "field.rkt")
 
 ;; struct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -70,22 +69,20 @@
   (parameter/c (hash/c symbol? schema?))
   (make-parameter (hasheq)))
 
-(define (register! id schema)
+(define (register! id s)
   (define registry (schema-registry))
   (when (hash-has-key? registry id)
     (raise-user-error 'register! "schema ~a conflicts with a previous one" id))
 
   (schema-registry
-   (hash-set registry id schema)))
+   (hash-set registry id s)))
 
 (define/contract (schema-registry-lookup schema-or-id)
   (-> (or/c schema? symbol?) schema?)
-  (define schema
-    (match schema-or-id
-      [(? schema?)                             schema-or-id    ]
-      [(? symbol?) (hash-ref (schema-registry) schema-or-id #f)]))
-
-  (unless schema
-    (raise-argument-error 'lookup-schema "unregistered schema" schema-or-id))
-
-  schema)
+  (cond
+    [(schema? schema-or-id) schema-or-id]
+    [else (hash-ref
+           (schema-registry)
+           schema-or-id
+           (lambda ()
+             (raise-user-error 'lookup-schema "unregistered schema~n  id: ~s" schema-or-id)))]))
