@@ -184,6 +184,10 @@
         (~alt (~optional (~seq #:pre-persist-hook pre-persist-hook-e:expr) #:defaults ([pre-persist-hook-e #'values]))
               (~optional (~seq #:pre-delete-hook pre-delete-hook-e:expr)   #:defaults ([pre-delete-hook-e  #'values]))) ...
         struct-option ...)
+
+     #:fail-when (> (length (filter values (syntax->datum #'(f.primary-key? ...)))) 1)
+     "at most one field can be marked as a #:primary-key"
+
      (with-syntax* ([pluralized-name (datum->syntax #'struct-id (pluralize (syntax->datum #'struct-id)))]
                     [table-name #'(~? table-name pluralized-name)]
                     [virtual? (if (attribute virtual) #'#t #'#f)]

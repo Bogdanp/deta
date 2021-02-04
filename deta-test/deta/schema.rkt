@@ -49,6 +49,18 @@
     (test-suite
      "fields"
 
+     (test-case "at most one field can be a #:primary-key"
+       (check-exn
+        (lambda (e)
+          (and (exn:fail:syntax? e)
+               (regexp-match? "at most one field can be marked as a #:primary-key" (exn-message e))))
+        (lambda ()
+          (convert-compile-time-error
+           (let ()
+             (define-schema invalid
+               ([a integer/f #:primary-key]
+                [b integer/f #:primary-key])))))))
+
      (test-suite
       "virtual attribute"
 
