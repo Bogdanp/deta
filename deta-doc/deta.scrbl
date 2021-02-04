@@ -1135,6 +1135,13 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{v0.7.0} -- 2021-02-04}
+@bold{Changed:}
+@itemlist[
+  @item{A syntax error is now reported if two or more fields in a
+  schema are marked as @racket[#:primary-key]s.}
+]
+
 @subsubsection{@exec{v0.6.1} -- 2021-01-11}
 @bold{Fixed:}
 @itemlist[
