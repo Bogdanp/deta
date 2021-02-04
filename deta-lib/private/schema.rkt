@@ -33,6 +33,13 @@
                      #:pre-delete-hook pre-delete-hook
                      #:fields fields)
 
+  (define pk-fields
+    (filter field-primary-key? fields))
+  (when (> (length pk-fields) 1)
+    (raise-arguments-error 'make-schema
+                           "at most one filed may be marked as the #:primary-key"
+                           "bad fields" (map field-id pk-fields)))
+
   (define the-schema
     (schema id
             table
@@ -43,7 +50,7 @@
             pre-persist-hook
             pre-delete-hook
             fields
-            (findf field-primary-key? fields)))
+            (findf field-primary-key? pk-fields)))
 
   (begin0 the-schema
     (unless virtual?
