@@ -478,17 +478,18 @@ The following query forms are not currently supported:
 
 @centered{
   @racketgrammar*[
-    #:literals (array as and case else fragment list or quote unquote unquote-splicing)
+    #:literals (array as and case else fragment list or quote subquery unquote unquote-splicing)
 
-    [q-expr (array q-expr ...)
+    [q-expr (and q-expr ...+)
+            (array q-expr ...)
             (as q-expr id)
-            (and q-expr ...+)
             (case [q-expr q-expr] ...+)
             (case [q-expr q-expr] ...+
                   [else q-expr])
             (fragment expr)
             (or q-expr ...+)
             (list q-expr ...)
+            (subquery expr)
             (quote (q-expr ...))
             (unquote expr)
             (unquote-splicing expr)
@@ -1146,6 +1147,10 @@ Here are all the types and how they map to the different backends.
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
+@bold{Added:}
+@itemlist[
+  @item{Support for @racket[subquery] within @racket[select].}
+]
 @bold{Changed:}
 @itemlist[
   @item{The @racket[array], @racket[as], @racket[fragment] and

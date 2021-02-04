@@ -242,6 +242,14 @@
      (test-suite
       "subquery"
 
+      (test-case "emits subqueries in select clauses"
+        (check-emitted
+         (select
+          _
+          (as (subquery (select _ 1)) a)
+          (as (subquery (select (from "b" #:as b) b.x)) x))
+         "SELECT (SELECT 1) AS a, (SELECT b.x FROM b AS b) AS x"))
+
       (test-case "emits subqueries in from clauses"
         (check-emitted
          (~> (from (subquery (select _ (as 1 x))) #:as a)

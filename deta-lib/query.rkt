@@ -320,7 +320,7 @@
 
   (define-syntax-class q-expr
     #:datum-literals (list null)
-    #:literals (array as and case cond else or quote unquote-splicing)
+    #:literals (array as and case cond else or quote subquery unquote-splicing)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
              #:with e (let ([ref (syntax->column-reference this-syntax)])
@@ -372,6 +372,9 @@
 
     (pattern (or a:q-expr b:q-expr)
              #:with e #'(ast:app (ast:ident 'or) (list a.e b.e)))
+
+    (pattern (subquery q)
+             #:with e #'(ast:subquery (dyn:query-stmt q)))
 
     (pattern (fun:q-expr arg:q-expr ...)
              #:with e #'(ast:app fun.e (list arg.e ...))))
@@ -459,10 +462,10 @@
 (define-syntax (select stx)
   (syntax-parse stx
     #:datum-literals (_)
-    [(select _ e:q-expr ...+)
+    [(_select _ e:q-expr ...+)
      #'(dyn:select (dyn:make-empty-query) e.e ...)]
 
-    [(select q:expr e:q-expr ...+)
+    [(_select q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))
 
 (define-syntax (update stx)
