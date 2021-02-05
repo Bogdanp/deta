@@ -69,14 +69,17 @@
       (for*/fold ([columns null]
                   [column-values null])
                  ([f (in-list (schema-fields schema))]
-                  #:unless (or (field-auto-increment? f) (field-virtual? f)))
+                  #:unless (or (field-auto-increment? f)
+                               (field-virtual? f)))
         (values (cons (field-name f) columns)
                 (cons (type-dump/null (field-type f)
                                       (dialect-name dialect)
                                       ((field-getter f) entity))
                       column-values))))
 
-    (define pk (schema-primary-key schema))
+    (define pk
+      (let ([pk (schema-primary-key schema)])
+        (and pk (field-auto-increment? pk) pk)))
     (define stmt
       (ast:make-insert
        #:into (ast:table (schema-table schema))
@@ -159,7 +162,9 @@
                                   (ast:placeholder value))))
            #:where (ast:where (ast:app (ast:ident '=)
                                        (list (ast:column (field-name pk))
-                                             (ast:placeholder ((field-getter pk) entity*)))))))
+                                             (ast:placeholder (type-dump/null (field-type pk)
+                                                                              (dialect-name dialect)
+                                                                              ((field-getter pk) entity*))))))))
 
         (define-values (query args)
           (dialect-emit-query dialect stmt))
@@ -201,7 +206,9 @@
        #:from (ast:make-from #:tables (list (ast:table (schema-table schema))))
        #:where (ast:where (ast:app (ast:ident '=)
                                    (list (ast:column (field-name pk))
-                                         (ast:placeholder ((field-getter pk) entity)))))))
+                                         (ast:placeholder (type-dump/null (field-type pk)
+                                                                          (dialect-name dialect)
+                                                                          ((field-getter pk) entity))))))))
 
     (define-values (query args)
       (dialect-emit-query dialect stmt))

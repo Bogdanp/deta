@@ -1156,6 +1156,11 @@ Here are all the types and how they map to the different backends.
   @item{The @racket[array], @racket[as], @racket[fragment] and
   @racket[subquery] keywords are now detected by binding.}
 ]
+@bold{Fixed:}
+@itemlist[
+  @item{Support for non-integer primary keys in @racket[lookup],
+  @racket[insert!], @racket[update!] and @racket[delete!].}
+]
 
 @subsubsection{@exec{v0.7.0} -- 2021-02-04}
 @bold{Changed:}
