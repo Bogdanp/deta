@@ -1157,6 +1157,7 @@ Here are all the types and how they map to the different backends.
 @bold{Added:}
 @itemlist[
   @item{Support for @racket[subquery] within @racket[select].}
+  @item{@racket[make-entity] is now part of the public interface.}
 ]
 @bold{Changed:}
 @itemlist[
