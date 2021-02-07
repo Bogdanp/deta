@@ -356,7 +356,6 @@ The following query forms are not currently supported:
        (ev '(require db deta racket/string threading)))))
 
 @subsection{Query}
-@defmodule[deta/query]
 
 @subsubsection{DDL}
 
@@ -913,11 +912,20 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @subsection{Schema}
-@defmodule[deta/schema]
 
 @defproc[(entity? [e any/c]) boolean?]{
   Returns @racket[#t] when @racket[e] is an instance of a schema
-  struct (i.e. an "entity").
+  struct (i.e. an @deftech{entity}).
+}
+
+@defproc[(make-entity [conn connection?]
+                      [schema schema?]
+                      [cols (listof any/c)]) entity?]{
+
+  Instantiates an @tech{entity} from @racket[schema] using the given set
+  of @racket[cols] and and @racket[conn]'s dialect. The @racket[cols]
+  must be provided in the same order as @racket[schema]'s fields.
+  Virtual fields must be omitted.
 }
 
 @defproc[(schema? [s any/c]) boolean?]{
@@ -1083,7 +1091,6 @@ by other dialects, but using them may result in invalid queries.
 
 
 @subsection{Type}
-@defmodule[deta/type]
 
 These are all the field types currently supported by deta.  Note that
 not all database backends support all of these types.

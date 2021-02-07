@@ -238,12 +238,18 @@
  (rename-out [dyn:query? query?])
  (rename-out [dyn:delete delete])
  (rename-out [dyn:union union])
- (rename-out [dyn:project-onto project-onto]))
+ (rename-out [dyn:project-onto project-onto])
 
-(define (make-entity-instance dialect schema cols)
+ (contract-out
+  [make-entity
+   (-> connection? schema? (listof any/c) entity?)]))
+
+(define (make-entity conn schema cols)
+  (define dialect
+    (dbsystem-name (connection-dbsystem conn)))
   (define pairs
     (for/fold ([pairs null])
-              ([f (in-list (schema-fields schema))]
+              ([f (in-list (schema-fields/nonvirtual schema))]
                [v (in-list cols)])
       (cons (cons (field-kwd f)
                   (type-load/null (field-type f) dialect v))
@@ -277,13 +283,18 @@
   (->* (connection? dyn:query?)
        (#:batch-size (or/c exact-positive-integer? +inf.0))
        sequence?)
-  (define dialect (dbsystem-name (connection-dbsystem conn)))
-  (define schema (dyn:query-schema q))
-  (sequence-map (lambda cols
-                  (if schema
-                      (make-entity-instance dialect schema cols)
-                      (apply values cols)))
-                (in-query conn q #:fetch batch-size)))
+  (define results-seq
+    (in-query conn q #:fetch batch-size))
+  (cond
+    [(dyn:query-schema q)
+     => (lambda (s)
+          (sequence-map
+           (lambda cols
+             (make-entity conn s cols))
+           results-seq))]
+
+    [else
+     results-seq]))
 
 (define/contract (lookup conn q)
   (-> connection? dyn:query? any)
