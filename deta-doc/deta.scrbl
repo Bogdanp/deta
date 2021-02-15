@@ -918,14 +918,15 @@ by other dialects, but using them may result in invalid queries.
   struct (i.e. an @deftech{entity}).
 }
 
-@defproc[(make-entity [conn connection?]
+@defproc[(make-entity [conn-or-dialect (or/c connection? symbol?)]
                       [schema schema?]
                       [cols (listof any/c)]) entity?]{
 
-  Instantiates an @tech{entity} from @racket[schema] using the given set
-  of @racket[cols] and and @racket[conn]'s dialect. The @racket[cols]
-  must be provided in the same order as @racket[schema]'s fields.
-  Virtual fields must be omitted.
+  Instantiates an @tech{entity} from @racket[schema] using the
+  given set of @racket[cols] and either the dialect represented
+  by @racket[conn-or-dialect] or its inferred dialect if it is a
+  @racket[connection?]. The @racket[cols] must be provided in the same
+  order as @racket[schema]'s fields. Virtual fields must be omitted.
 }
 
 @defproc[(schema? [s any/c]) boolean?]{

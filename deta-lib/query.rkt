@@ -242,11 +242,13 @@
 
  (contract-out
   [make-entity
-   (-> connection? schema? (listof any/c) entity?)]))
+   (-> (or/c connection? symbol?) schema? (listof any/c) entity?)]))
 
-(define (make-entity conn schema cols)
+(define (make-entity conn-or-dialect schema cols)
   (define dialect
-    (dbsystem-name (connection-dbsystem conn)))
+    (if (connection? conn-or-dialect)
+        (dbsystem-name (connection-dbsystem conn-or-dialect))
+        conn-or-dialect))
   (define pairs
     (for/fold ([pairs null])
               ([f (in-list (schema-fields/nonvirtual schema))]
@@ -283,6 +285,8 @@
   (->* (connection? dyn:query?)
        (#:batch-size (or/c exact-positive-integer? +inf.0))
        sequence?)
+  (define dialect
+    (dbsystem-name (connection-dbsystem conn)))
   (define results-seq
     (in-query conn q #:fetch batch-size))
   (cond
@@ -290,7 +294,7 @@
      => (lambda (s)
           (sequence-map
            (lambda cols
-             (make-entity conn s cols))
+             (make-entity dialect s cols))
            results-seq))]
 
     [else
