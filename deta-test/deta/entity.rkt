@@ -38,7 +38,7 @@
        (make-book #:title "A Title" #:author "An Author" #:published-at d)
        (make-book #:title "A Title" #:author "A Different Author" #:published-at d)))
 
-    (test-case "entites with the same schema and data not equal"
+    (test-case "entites with the same schema and data are equal"
       (define d (now/moment))
       (check-equal?
        (make-book #:title "A Title" #:author "An Author" #:published-at d)
