@@ -927,10 +927,13 @@ by other dialects, but using them may result in invalid queries.
   by @racket[conn-or-dialect] or its inferred dialect if it is a
   @racket[connection?]. The @racket[cols] must be provided in the same
   order as @racket[schema]'s fields. Virtual fields must be omitted.
+
+  Two entites are @racket[equal?] when they have the same
+  @tech{schema} and all their fields are @racket[equal?].
 }
 
 @defproc[(schema? [s any/c]) boolean?]{
-  Returns @racket[#t] when @racket[s] is a schema.
+  Returns @racket[#t] when @racket[s] is a @deftech{schema}.
 }
 
 @defform[(define-schema id
@@ -1159,6 +1162,7 @@ Here are all the types and how they map to the different backends.
 @itemlist[
   @item{Support for @racket[subquery] within @racket[select].}
   @item{@racket[make-entity] is now part of the public interface.}
+  @item{@racket[equal?] comparisons between entities are now supported.}
 ]
 @bold{Changed:}
 @itemlist[
