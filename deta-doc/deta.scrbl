@@ -928,7 +928,7 @@ by other dialects, but using them may result in invalid queries.
   @racket[connection?]. The @racket[cols] must be provided in the same
   order as @racket[schema]'s fields. Virtual fields must be omitted.
 
-  Two entites are @racket[equal?] when they have the same
+  Two entites are @racket[equal?] when they are instances of the same
   @tech{schema} and all their fields are @racket[equal?].
 }
 
