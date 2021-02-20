@@ -232,26 +232,31 @@
  order-by
  returning
  select
+ select-for-schema
  update
  where
 
- (rename-out [dyn:query? query?])
- (rename-out [dyn:delete delete])
- (rename-out [dyn:union union])
- (rename-out [dyn:project-onto project-onto])
+ (rename-out
+  [dyn:query? query?]
+  [dyn:delete delete]
+  [dyn:union union]
+  [dyn:project-onto project-onto]
+  [dyn:project-virtual-fields project-virtual-fields])
 
  (contract-out
   [make-entity
    (-> (or/c connection? symbol?) schema? (listof any/c) entity?)]))
 
-(define (make-entity conn-or-dialect schema cols)
+(define (make-entity conn-or-dialect schema cols [project-virtual? #f])
   (define dialect
     (if (connection? conn-or-dialect)
         (dbsystem-name (connection-dbsystem conn-or-dialect))
         conn-or-dialect))
   (define pairs
     (for/fold ([pairs null])
-              ([f (in-list (schema-fields/nonvirtual schema))]
+              ([f (in-list (if project-virtual?
+                               (schema-fields schema)
+                               (schema-fields/nonvirtual schema)))]
                [v (in-list cols)])
       (cons (cons (field-kwd f)
                   (type-load/null (field-type f) dialect v))
@@ -292,9 +297,12 @@
   (cond
     [(dyn:query-schema q)
      => (lambda (s)
+          (define project-virtual?
+            (dyn:opts-project-virtual-fields? (dyn:query-opts q)))
+
           (sequence-map
            (lambda cols
-             (make-entity dialect s cols))
+             (make-entity dialect s cols project-virtual?))
            results-seq))]
 
     [else
@@ -489,6 +497,19 @@
 
     [(_select q:expr e:q-expr ...+)
      #'(dyn:select q e.e ...)]))
+
+(define-syntax (select-for-schema stx)
+  (syntax-parse stx
+    [(_ q:expr schema:id
+        #:from tbl-alias:expr)
+     #'(select-for-schema q schema #:from tbl-alias #:overrides ())]
+
+    [(_ q:expr schema:id
+        #:from tbl-alias:expr
+        #:overrides ([fld-id:id e:q-expr] ...))
+     #'(dyn:select-for-schema q 'schema
+                              (symbol->string 'tbl-alias)
+                              (make-hasheq (list (cons 'fld-id e.e) ...)))]))
 
 (define-syntax (update stx)
   (syntax-parse stx
