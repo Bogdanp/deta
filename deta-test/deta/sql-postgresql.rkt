@@ -493,6 +493,28 @@
       "SELECT 1 UNION (SELECT 2 UNION (SELECT 3 UNION (SELECT 4)))")))
 
    (test-suite
+    "select-for-schema"
+
+    (let ()
+      (define-schema example
+        #:virtual
+        ([a integer/f]
+         [b string/f]))
+
+      (check-emitted
+       (~> (from "examples" #:as e)
+           (select-for-schema ,example-schema #:from e))
+       "SELECT e.a, e.b FROM examples AS e")
+
+      (check-emitted
+       (~> (from "examples" #:as e)
+           (select-for-schema ,example-schema
+                              #:from e
+                              #:customizing
+                              ([b 42])))
+       "SELECT e.a, 42 FROM examples AS e")))
+
+   (test-suite
     "update"
 
     (check-emitted
