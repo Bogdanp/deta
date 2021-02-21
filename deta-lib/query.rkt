@@ -245,9 +245,12 @@
 
  (contract-out
   [make-entity
-   (-> (or/c connection? symbol?) schema? (listof any/c) entity?)]))
+   (->* ((or/c connection? symbol?) schema? (listof any/c))
+        (#:project-virtual-fields? boolean?)
+        entity?)]))
 
-(define (make-entity conn-or-dialect schema cols [project-virtual? #f])
+(define (make-entity conn-or-dialect schema cols
+                     #:project-virtual-fields? [project-virtual? #f])
   (define dialect
     (if (connection? conn-or-dialect)
         (dbsystem-name (connection-dbsystem conn-or-dialect))
@@ -302,7 +305,8 @@
 
           (sequence-map
            (lambda cols
-             (make-entity dialect s cols project-virtual?))
+             (make-entity dialect s cols
+                          #:project-virtual-fields? project-virtual?))
            results-seq))]
 
     [else
@@ -499,15 +503,20 @@
      #'(dyn:select q e.e ...)]))
 
 (define-syntax (select-for-schema stx)
-  (syntax-parse stx
-    [(_ q:expr schema:id
-        #:from tbl-alias:expr)
-     #'(select-for-schema q schema #:from tbl-alias #:overrides ())]
+  (define-syntax-class schema-expr
+    #:literals (unquote)
+    (pattern schema:id #:with e #''schema)
+    (pattern (unquote e:expr)))
 
-    [(_ q:expr schema:id
+  (syntax-parse stx
+    [(_ q:expr schema:schema-expr
+        #:from tbl-alias:expr)
+     #'(select-for-schema q schema #:from tbl-alias #:customizing ())]
+
+    [(_ q:expr schema:schema-expr
         #:from tbl-alias:expr
-        #:overrides ([fld-id:id e:q-expr] ...))
-     #'(dyn:select-for-schema q 'schema
+        #:customizing ([fld-id:id e:q-expr] ...))
+     #'(dyn:select-for-schema q schema.e
                               (symbol->string 'tbl-alias)
                               (make-hasheq (list (cons 'fld-id e.e) ...)))]))
 

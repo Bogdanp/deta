@@ -171,11 +171,11 @@
     [(query _  opts stmt)
      (query #f opts (struct-copy ast:select stmt [columns (cons column0 columns)]))]))
 
-(define/contract (select-for-schema q schema-or-id tbl-alias overrides)
+(define/contract (select-for-schema q schema-or-id tbl-alias customizations)
   (-> query? (or/c schema? symbol?) string? (hash/c symbol? ast:expr?) query?)
   (define s (schema-registry-lookup schema-or-id))
   (define q* (apply select q (for/list ([fld (schema-fields s)])
-                               (hash-ref overrides
+                               (hash-ref customizations
                                          (field-id fld)
                                          (lambda ()
                                            (ast:qualified tbl-alias (field-name fld)))))))
