@@ -758,7 +758,9 @@ by other dialects, but using them may result in invalid queries.
   [(maybe-direction (code:line)
                     (code:line #:asc)
                     (code:line #:desc)
-                    (code:line (unquote e)))]]{
+                    (code:line (unquote direction-expr)))]
+  #:contracts
+  [(direction-expr (or/c 'asc 'desc))]]{
 
   Adds an @tt{ORDER BY} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
