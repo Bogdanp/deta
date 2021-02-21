@@ -29,7 +29,7 @@
         (~alt
          (~optional (~or (~seq #:contract contract-e)
                          (~seq #:contract-fn contract-fn-e)))
-         (~seq #:declaration declaration-e)
+         (~optional (~seq #:declaration declaration-e))
          (~optional (~seq #:load load-e))
          (~optional (~seq #:dump dump-e))
          (~optional (~seq #:constructor constructor-e))) ...)
@@ -37,6 +37,10 @@
      #:with id-field? (format-id #'id "~a-field?" #'id)
      #:with id/f      (format-id #'id "~a/f" #'id)
      #:with id/f?     (format-id #'id "~a/f?" #'id)
+
+     #:fail-unless (attribute declaration-e)
+     "every type must have a #:declaration"
+
      #'(begin
          (provide id/f id/f?)
          (struct id-field (~? (fld ...) ())
@@ -44,7 +48,7 @@
            [(define (type-contract type)
               (~? contract-e (~? (contract-fn-e type) any/c)))
             (define (type-declaration type dialect)
-              (let ([decl declaration-e ...])
+              (let ([decl declaration-e])
                 (if (procedure? decl)
                     (decl type dialect)
                     decl)))
