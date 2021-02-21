@@ -15,8 +15,8 @@
 (provide
  type?)
 
-(define (raise-dialect-error d)
-  (raise-user-error "unsupported dialect ~s" d))
+(define (raise-dialect-error who d)
+  (raise-user-error who "unsupported dialect ~s" d))
 
 (define gen:type-contract type-contract)
 (define gen:type-declaration type-declaration)
@@ -42,10 +42,7 @@
          (struct id-field (~? (fld ...) ())
            #:methods gen:type
            [(define (type-contract type)
-              (~? contract-e
-                  (~? (let ([f contract-fn-e])
-                        (f type))
-                      any/c)))
+              (~? contract-e (~? (contract-fn-e type) any/c)))
             (define (type-declaration type dialect)
               (let ([decl declaration-e ...])
                 (if (procedure? decl)
@@ -93,9 +90,9 @@
   #:declaration
   (lambda (_ dialect)
     (case dialect
-      [(sqlite3)    "BLOB"]
-      [(postgresql) "BYTEA"]
-      [else (raise-dialect-error dialect)])))
+      [(mysql sqlite3) "BLOB"]
+      [(postgresql)    "BYTEA"]
+      [else (raise-dialect-error 'binary/f dialect)])))
 
 (define-type symbol
   #:contract symbol?
@@ -112,125 +109,107 @@
   #:declaration
   (lambda (_ dialect)
     (case dialect
-      [(sqlite3)    "INTEGER"]
-      [(postgresql) "BOOLEAN"]
-      [else (raise-dialect-error dialect)]))
+      [(sqlite3) "INTEGER"]
+      [else      "BOOLEAN"]))
   #:load
   (lambda (_ dialect v)
     (case dialect
-      [(sqlite3)   (= v 1)]
-      [(postgresql)   v   ]
-      [else (raise-dialect-error dialect)]))
+      [(sqlite3) (= v 1)]
+      [else         v]))
   #:dump
   (lambda (_ dialect v)
     (case dialect
-      [(sqlite3)    (if v 1 0)]
-      [(postgresql)     v     ]
-      [else (raise-dialect-error dialect)])))
+      [(sqlite3) (if v 1 0)]
+      [else          v     ])))
 
 (define-type date
   #:contract date-provider?
   #:declaration
   (lambda (_ dialect)
     (case dialect
-      [(sqlite3)    "TEXT"]
-      [(postgresql) "DATE"]
-      [else (raise-dialect-error dialect)]))
+      [(sqlite3) "TEXT"]
+      [else      "DATE"]))
   #:load
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (iso8601->date v)]
 
-      [(postgresql)
+      [else
        (date (sql-date-year  v)
              (sql-date-month v)
-             (sql-date-day   v))]
-
-      [else
-       (raise-dialect-error dialect)]))
+             (sql-date-day   v))]))
   #:dump
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (date->iso8601 (->date v))]
 
-      [(postgresql)
+      [else
        (sql-date (->year  v)
                  (->month v)
-                 (->day   v))]
-
-      [else
-       (raise-dialect-error dialect)])))
+                 (->day   v))])))
 
 (define-type time
   #:contract time-provider?
   #:declaration
   (lambda (_ dialect)
     (case dialect
-      [(sqlite3)    "TEXT"]
-      [(postgresql) "TIME"]))
+      [(sqlite3) "TEXT"]
+      [else      "TIME"]))
   #:load
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (iso8601->time v)]
 
-      [(postgresql)
+      [else
        (time (sql-time-hour       v)
              (sql-time-minute     v)
              (sql-time-second     v)
-             (sql-time-nanosecond v))]
-
-      [else
-       (raise-dialect-error dialect)]))
+             (sql-time-nanosecond v))]))
   #:dump
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (time->iso8601 (->time v))]
 
-      [(postgresql)
+      [else
        (sql-time (->hours       v)
                  (->minutes     v)
                  (->seconds     v)
-                 (->nanoseconds v))]
-
-      [else
-       (raise-dialect-error dialect)])))
+                 (->nanoseconds v))])))
 
 (define-type datetime
   #:contract datetime-provider?
   #:declaration
   (lambda (_ dialect)
     (case dialect
-      [(sqlite3)    "TEXT"]
+      [(mysql)      "DATETIME"]
       [(postgresql) "TIMESTAMP"]
-      [else (raise-dialect-error dialect)]))
+      [(sqlite3)    "TEXT"]
+      [else (raise-dialect-error 'datetime/f dialect)]))
   #:load
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (iso8601->datetime v)]
 
-      [(postgresql)
+      [else
        (datetime (sql-timestamp-year       v)
                  (sql-timestamp-month      v)
                  (sql-timestamp-day        v)
                  (sql-timestamp-hour       v)
                  (sql-timestamp-minute     v)
                  (sql-timestamp-second     v)
-                 (sql-timestamp-nanosecond v))]
-
-      [else
-       (raise-dialect-error dialect)]))
+                 (sql-timestamp-nanosecond v))]))
   #:dump
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (datetime->iso8601 (->datetime/local v))]
 
-      [(postgresql)
+      [else
        (sql-timestamp (->year        v)
                       (->month       v)
                       (->day         v)
@@ -238,26 +217,23 @@
                       (->minutes     v)
                       (->seconds     v)
                       (->nanoseconds v)
-                      #f)]
-
-      [else
-       (raise-dialect-error dialect)])))
+                      #f)])))
 
 (define-type datetime-tz
   #:contract moment-provider?
   #:declaration
   (lambda (_ dialect)
     (case dialect
+      [(mysql)      "TIMESTAMP"]
       [(sqlite3)    "TEXT"]
-      [(postgresql) "TIMESTAMPTZ"]
-      [else (raise-dialect-error dialect)]))
+      [(postgresql) "TIMESTAMPTZ"]))
   #:load
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (iso8601/tzid->moment v)]
 
-      [(postgresql)
+      [else
        (moment (sql-timestamp-year       v)
                (sql-timestamp-month      v)
                (sql-timestamp-day        v)
@@ -265,17 +241,14 @@
                (sql-timestamp-minute     v)
                (sql-timestamp-second     v)
                (sql-timestamp-nanosecond v)
-               #:tz (sql-timestamp-tz    v))]
-
-      [else
-       (raise-dialect-error dialect)]))
+               #:tz (sql-timestamp-tz    v))]))
   #:dump
   (lambda (_ dialect v)
     (case dialect
       [(sqlite3)
        (moment->iso8601/tzid (->moment v))]
 
-      [(postgresql)
+      [else
        (sql-timestamp (->year        v)
                       (->month       v)
                       (->day         v)
@@ -283,10 +256,7 @@
                       (->minutes     v)
                       (->seconds     v)
                       (->nanoseconds v)
-                      (->utc-offset  v))]
-
-      [else
-       (raise-dialect-error dialect)])))
+                      (->utc-offset  v))])))
 
 (define-type array (subtype size)
   #:contract-fn
@@ -310,7 +280,7 @@
        (~a subtype-declaration  "[" size:str "]")]
 
       [else
-       (raise-dialect-error dialect)]))
+       (raise-dialect-error 'array/f dialect)]))
   #:load
   (lambda (t dialect v)
     (define subtype (array-field-subtype t))
@@ -327,8 +297,8 @@
   #:declaration
   (lambda (_ dialect)
     (case dialect
-      [(postgresql) "JSON"]
-      [else (raise-dialect-error dialect)])))
+      [(mysql postgresql) "JSON"]
+      [else (raise-dialect-error 'json/f dialect)])))
 
 (define-type jsonb
   #:contract jsexpr?
@@ -336,7 +306,7 @@
   (lambda (_ dialect)
     (case dialect
       [(postgresql) "JSONB"]
-      [else (raise-dialect-error dialect)])))
+      [else (raise-dialect-error 'jsonb/f dialect)])))
 
 (define-type uuid
   #:contract uuid?
@@ -344,7 +314,7 @@
   (lambda (_ dialect)
     (case dialect
       [(postgresql) "UUID"]
-      [else (raise-dialect-error dialect)])))
+      [else (raise-dialect-error 'uuid/f dialect)])))
 
 (define-type any
   #:contract any/c
