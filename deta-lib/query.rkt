@@ -510,11 +510,11 @@
 
   (syntax-parse stx
     [(_ q:expr schema:schema-expr
-        #:from tbl-alias:expr)
+        #:from tbl-alias:id)
      #'(select-for-schema q schema #:from tbl-alias #:customizing ())]
 
     [(_ q:expr schema:schema-expr
-        #:from tbl-alias:expr
+        #:from tbl-alias:id
         #:customizing ([fld-id:id e:q-expr] ...))
      #'(dyn:select-for-schema q schema.e
                               (symbol->string 'tbl-alias)

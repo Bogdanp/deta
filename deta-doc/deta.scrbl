@@ -817,6 +817,12 @@ by other dialects, but using them may result in invalid queries.
   ]
 }
 
+@defproc[(project-virtual-fields [q query?]) query?]{
+  Modifies @racket[q] such that any virtual fields belonging to its
+  projected schema will be populated by @racket[in-entities] and
+  @racket[lookup].
+}
+
 @defform[(returning query q-expr ...+)]{
   Adds a @tt{RETURNING} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
@@ -851,6 +857,45 @@ by other dialects, but using them may result in invalid queries.
     (select _ 1 2)
     (select (from "users" #:as u) u.username)
   ]
+}
+
+@defform*[
+  ((select-for-schema query schema
+                        #:from tbl-alias-id)
+   (select-for-schema query schema
+                        #:from tbl-alias-id
+                        #:customizing ([field-id q-expr] ...)))
+  #:grammar
+  ([schema schema-id
+           schema-expr])
+  #:contracts
+  ([query query?]
+   [schema-expr schema?])
+]{
+  Adds a select clause to @racket[query] for every field in
+  @racket[schema].  Expressions for individual fields may be
+  customized via the @racket[#:customizing] option.
+
+  @interaction[
+    #:eval reference-eval
+    (define-schema example
+     ([a string/f]
+      [b integer/f]
+      [c integer/f]))
+
+    (code:line)
+    (~> (from example #:as e)
+        (join "some_table" #:as t #:on (= t.a e.a))
+        (select-for-schema
+         example
+         #:from e
+         #:customizing
+         ([c (* t.c 2)])))
+  ]
+
+  Use this operator in conjunction with @racket[project-virtual-fields]
+  to project joined or otherwise constructed virtual fields onto a
+  schema.
 }
 
 @defform[
@@ -930,6 +975,10 @@ by other dialects, but using them may result in invalid queries.
 
   Two entites are @racket[equal?] when they are instances of the same
   @tech{schema} and all their fields are @racket[equal?].
+}
+
+@defproc[(entity-schema [e entity?]) schema?]{
+  Retrieves @racket[e]'s schema.
 }
 
 @defproc[(schema? [s any/c]) boolean?]{
@@ -1163,6 +1212,9 @@ Here are all the types and how they map to the different backends.
   @item{Support for @racket[subquery] within @racket[select].}
   @item{@racket[make-entity] is now part of the public interface.}
   @item{@racket[equal?] comparisons between entities are now supported.}
+  @item{The @racket[select-for-schema] operator.}
+  @item{The @racket[project-virtual-fields] operator.}
+  @item{The @racket[entity-schema] function.}
 ]
 @bold{Changed:}
 @itemlist[
