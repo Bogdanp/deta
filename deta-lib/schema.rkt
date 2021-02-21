@@ -243,11 +243,11 @@
                                                          f.unique?
                                                          f.virtual?) ...)))))]))
 
-;; Heavily inspired from:
+;; Heavily inspired by:
 ;; https://github.com/racket/racket/blob/20e669f47842d47b085ddedc5782e4a95495653a/racket/collects/racket/private/reqprov.rkt#L978
 (define-syntax schema-out
   (make-provide-transformer
-   (lambda (stx modes)
+   (lambda (stx _modes)
      (syntax-parse stx
        [(_ struct-id:id)
         (define v (syntax-local-value #'struct-id (const #f)))

@@ -1,433 +1,356 @@
 #lang at-exp racket/base
 
-(require db
+(require (for-syntax racket/base
+                     racket/syntax
+                     syntax/parse)
+         db
          db/util/postgresql
          gregor
          gregor/time
          json
          racket/contract
          racket/format
-         racket/match
          "private/type.rkt")
 
 (provide
- type?
+ type?)
 
- id/f?
- id/f
-
- integer/f?
- integer/f
-
- real/f?
- real/f
-
- numeric/f?
- numeric/f
-
- string/f?
- string/f
-
- binary/f?
- binary/f
-
- symbol/f?
- symbol/f
-
- boolean/f?
- boolean/f
-
- date/f?
- date/f
-
- time/f?
- time/f
-
- datetime/f?
- datetime/f
-
- datetime-tz/f?
- datetime-tz/f
-
- array/f?
- array/f
-
- json/f?
- json/f
-
- jsonb/f?
- jsonb/f
-
- uuid/f?
- uuid/f
-
- any/f?
- any/f)
+(define (raise-dialect-error d)
+  (raise-user-error "unsupported dialect ~s" d))
 
 (define gen:type-contract type-contract)
 (define gen:type-declaration type-declaration)
 (define gen:type-load type-load)
 (define gen:type-dump type-dump)
 
-(define-values (id/f? id/f)
-  (let ()
-    (struct id-field ()
-      #:methods gen:type
-      [(define (type-contract _) exact-nonnegative-integer?)
-       (define (type-declaration _ dialect) "INTEGER")
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
+(define-syntax (define-type stx)
+  (syntax-parse stx
+    [(_ id:id (~optional (fld:id ...))
+        (~alt
+         (~optional (~or (~seq #:contract contract-e)
+                         (~seq #:contract-fn contract-fn-e)))
+         (~seq #:declaration declaration-e)
+         (~optional (~seq #:load load-e))
+         (~optional (~seq #:dump dump-e))
+         (~optional (~seq #:constructor constructor-e))) ...)
+     #:with id-field  (format-id #'id "~a-field" #'id)
+     #:with id-field? (format-id #'id "~a-field?" #'id)
+     #:with id/f      (format-id #'id "~a/f" #'id)
+     #:with id/f?     (format-id #'id "~a/f?" #'id)
+     #'(begin
+         (provide id/f id/f?)
+         (struct id-field (~? (fld ...) ())
+           #:methods gen:type
+           [(define (type-contract type)
+              (~? contract-e
+                  (~? (let ([f contract-fn-e])
+                        (f type))
+                      any/c)))
+            (define (type-declaration type dialect)
+              (let ([decl declaration-e ...])
+                (if (procedure? decl)
+                    (decl type dialect)
+                    decl)))
+            (define (type-load type dialect v)
+              (~? (load-e type dialect v) v))
+            (define (type-dump type dialect v)
+              (~? (dump-e type dialect v) v))])
+         (define id/f? id-field?)
+         (define id/f
+           (~? constructor-e (id-field))))]))
 
-    (values id-field? (id-field))))
+(define-type id
+  #:contract exact-nonnegative-integer?
+  #:declaration "INTEGER")
 
-(define-values (integer/f? integer/f)
-  (let ()
-    (struct integer-field ()
-      #:methods gen:type
-      [(define (type-contract _) exact-integer?)
-       (define (type-declaration _ dialect) "INTEGER")
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
+(define-type integer
+  #:contract exact-integer?
+  #:declaration "INTEGER")
 
-    (values integer-field? (integer-field))))
+(define-type real
+  #:contract real?
+  #:declaration "REAL")
 
-(define-values (real/f? real/f)
-  (let ()
-    (struct real-field ()
-      #:methods gen:type
-      [(define (type-contract _) real?)
-       (define (type-declaration _ dialect) "REAL")
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
+(define-type numeric (precision scale)
+  #:contract (or/c rational? +nan.0)
+  #:declaration
+  (lambda (t _dialect)
+    @~a{NUMERIC(@(numeric-field-precision t), @(numeric-field-scale t))})
+  #:constructor
+  (lambda (precision scale)
+    (unless (exact-positive-integer? precision)
+      (raise-argument-error 'numeric/f "exact-positive-integer?" precision))
+    (unless (exact-nonnegative-integer? scale)
+      (raise-argument-error 'numeric/f "exact-nonnegative-integer?" scale))
+    (numeric-field precision scale)))
 
-    (values real-field? (real-field))))
+(define-type string
+  #:contract string?
+  #:declaration "TEXT")
 
-(define-values (numeric/f? numeric/f)
-  (let ()
-    (struct numeric-field (precision scale)
-      #:methods gen:type
-      [(define (type-contract _) (or/c rational? +nan.0))
+(define-type binary
+  #:contract bytes?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(sqlite3)    "BLOB"]
+      [(postgresql) "BYTEA"]
+      [else (raise-dialect-error dialect)])))
 
-       (define (type-declaration t dialect)
-         @~a{NUMERIC(@(numeric-field-precision t), @(numeric-field-scale t))})
+(define-type symbol
+  #:contract symbol?
+  #:declaration "TEXT"
+  #:load
+  (lambda (_ _dialect v)
+    (string->symbol v))
+  #:dump
+  (lambda (_ _dialect v)
+    (symbol->string v)))
 
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
+(define-type boolean
+  #:contract boolean?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(sqlite3)    "INTEGER"]
+      [(postgresql) "BOOLEAN"]
+      [else (raise-dialect-error dialect)]))
+  #:load
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)   (= v 1)]
+      [(postgresql)   v   ]
+      [else (raise-dialect-error dialect)]))
+  #:dump
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)    (if v 1 0)]
+      [(postgresql)     v     ]
+      [else (raise-dialect-error dialect)])))
 
-    (define/contract (make-numeric-field precision scale)
-      (-> exact-positive-integer? exact-nonnegative-integer? numeric-field?)
-      (numeric-field precision scale))
+(define-type date
+  #:contract date-provider?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(sqlite3)    "TEXT"]
+      [(postgresql) "DATE"]
+      [else (raise-dialect-error dialect)]))
+  #:load
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (iso8601->date v)]
 
-    (values numeric-field? numeric-field)))
+      [(postgresql)
+       (date (sql-date-year  v)
+             (sql-date-month v)
+             (sql-date-day   v))]
 
-(define-values (string/f? string/f)
-  (let ()
-    (struct string-field ()
-      #:methods gen:type
-      [(define (type-contract _) string?)
-       (define (type-declaration _ dialect) "TEXT")
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
+      [else
+       (raise-dialect-error dialect)]))
+  #:dump
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (date->iso8601 (->date v))]
 
-    (values string-field? (string-field))))
+      [(postgresql)
+       (sql-date (->year  v)
+                 (->month v)
+                 (->day   v))]
 
-(define-values (binary/f? binary/f)
-  (let ()
-    (struct binary-field ()
-      #:methods gen:type
-      [(define (type-contract _) bytes?)
-       (define (type-declaration _ dialect)
-         (match dialect
-           ['sqlite3    "BLOB"]
-           ['postgresql "BYTEA"]))
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
+      [else
+       (raise-dialect-error dialect)])))
 
-    (values binary-field? (binary-field))))
+(define-type time
+  #:contract time-provider?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(sqlite3)    "TEXT"]
+      [(postgresql) "TIME"]))
+  #:load
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (iso8601->time v)]
 
-(define-values (symbol/f? symbol/f)
-  (let ()
-    (struct symbol-field ()
-      #:methods gen:type
-      [(define (type-contract _) symbol?)
-       (define (type-declaration _ dialect) "TEXT")
+      [(postgresql)
+       (time (sql-time-hour       v)
+             (sql-time-minute     v)
+             (sql-time-second     v)
+             (sql-time-nanosecond v))]
 
-       (define (type-load _ dialect v) (string->symbol v))
-       (define (type-dump _ dialect v) (symbol->string v))])
+      [else
+       (raise-dialect-error dialect)]))
+  #:dump
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (time->iso8601 (->time v))]
 
-    (values symbol-field? (symbol-field))))
+      [(postgresql)
+       (sql-time (->hours       v)
+                 (->minutes     v)
+                 (->seconds     v)
+                 (->nanoseconds v))]
 
-(define-values (boolean/f? boolean/f)
-  (let ()
-    (struct boolean-field ()
-      #:methods gen:type
-      [(define (type-contract _) boolean?)
+      [else
+       (raise-dialect-error dialect)])))
 
-       (define (type-declaration _ dialect)
-         (match dialect
-           ['sqlite3    "INTEGER"]
-           ['postgresql "BOOLEAN"]))
+(define-type datetime
+  #:contract datetime-provider?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(sqlite3)    "TEXT"]
+      [(postgresql) "TIMESTAMP"]
+      [else (raise-dialect-error dialect)]))
+  #:load
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (iso8601->datetime v)]
 
-       (define (type-load _ dialect v)
-         (match dialect
-           ['sqlite3    (= v 1)]
-           ['postgresql    v   ]))
+      [(postgresql)
+       (datetime (sql-timestamp-year       v)
+                 (sql-timestamp-month      v)
+                 (sql-timestamp-day        v)
+                 (sql-timestamp-hour       v)
+                 (sql-timestamp-minute     v)
+                 (sql-timestamp-second     v)
+                 (sql-timestamp-nanosecond v))]
 
-       (define (type-dump _ dialect v)
-         (match dialect
-           ['sqlite3    (if v 1 0)]
-           ['postgresql     v     ]))])
+      [else
+       (raise-dialect-error dialect)]))
+  #:dump
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (datetime->iso8601 (->datetime/local v))]
 
-    (values boolean-field? (boolean-field))))
-
-(define-values (date/f? date/f)
-  (let ()
-    (struct date-field ()
-      #:methods gen:type
-      [(define (type-contract _) date-provider?)
-
-       (define (type-declaration _ dialect)
-         (match dialect
-           ['sqlite3    "TEXT"]
-           ['postgresql "DATE"]))
-
-       (define (type-load _ dialect v)
-         (match dialect
-           ['sqlite3
-            (iso8601->date v)]
-
-           ['postgresql
-            (date (sql-date-year  v)
-                  (sql-date-month v)
-                  (sql-date-day   v))]))
-
-       (define (type-dump _ dialect v)
-         (match dialect
-           ['sqlite3
-            (date->iso8601 (->date v))]
-
-           ['postgresql
-            (sql-date (->year  v)
-                      (->month v)
-                      (->day   v))]))])
-
-    (values date-field? (date-field))))
-
-(define-values (time/f? time/f)
-  (let ()
-    (struct time-field ()
-      #:methods gen:type
-      [(define (type-contract _) time-provider?)
-
-       (define (type-declaration _ dialect)
-         (match dialect
-           ['sqlite3    "TEXT"]
-           ['postgresql "TIME"]))
-
-       (define (type-load _ dialect v)
-         (match dialect
-           ['sqlite3
-            (iso8601->time v)]
-
-           ['postgresql
-            (time (sql-time-hour       v)
-                  (sql-time-minute     v)
-                  (sql-time-second     v)
-                  (sql-time-nanosecond v))]))
-
-       (define (type-dump _ dialect v)
-         (match dialect
-           ['sqlite3
-            (time->iso8601 (->time v))]
-
-           ['postgresql
-            (sql-time (->hours       v)
+      [(postgresql)
+       (sql-timestamp (->year        v)
+                      (->month       v)
+                      (->day         v)
+                      (->hours       v)
                       (->minutes     v)
                       (->seconds     v)
-                      (->nanoseconds v))]))])
+                      (->nanoseconds v)
+                      #f)]
 
-    (values time-field? (time-field))))
+      [else
+       (raise-dialect-error dialect)])))
 
-(define-values (datetime/f? datetime/f)
-  (let ()
-    (struct datetime-field ()
-      #:methods gen:type
-      [(define (type-contract _) datetime-provider?)
+(define-type datetime-tz
+  #:contract moment-provider?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(sqlite3)    "TEXT"]
+      [(postgresql) "TIMESTAMPTZ"]
+      [else (raise-dialect-error dialect)]))
+  #:load
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (iso8601/tzid->moment v)]
 
-       (define (type-declaration _ dialect)
-         (match dialect
-           ['sqlite3    "TEXT"]
-           ['postgresql "TIMESTAMP"]))
+      [(postgresql)
+       (moment (sql-timestamp-year       v)
+               (sql-timestamp-month      v)
+               (sql-timestamp-day        v)
+               (sql-timestamp-hour       v)
+               (sql-timestamp-minute     v)
+               (sql-timestamp-second     v)
+               (sql-timestamp-nanosecond v)
+               #:tz (sql-timestamp-tz    v))]
 
-       (define (type-load _ dialect v)
-         (match dialect
-           ['sqlite3
-            (iso8601->datetime v)]
+      [else
+       (raise-dialect-error dialect)]))
+  #:dump
+  (lambda (_ dialect v)
+    (case dialect
+      [(sqlite3)
+       (moment->iso8601/tzid (->moment v))]
 
-           ['postgresql
-            (datetime (sql-timestamp-year       v)
-                      (sql-timestamp-month      v)
-                      (sql-timestamp-day        v)
-                      (sql-timestamp-hour       v)
-                      (sql-timestamp-minute     v)
-                      (sql-timestamp-second     v)
-                      (sql-timestamp-nanosecond v))]))
+      [(postgresql)
+       (sql-timestamp (->year        v)
+                      (->month       v)
+                      (->day         v)
+                      (->hours       v)
+                      (->minutes     v)
+                      (->seconds     v)
+                      (->nanoseconds v)
+                      (->utc-offset  v))]
 
-       (define (type-dump _ dialect v)
-         (match dialect
-           ['sqlite3
-            (datetime->iso8601 (->datetime/local v))]
+      [else
+       (raise-dialect-error dialect)])))
 
-           ['postgresql
-            (sql-timestamp (->year        v)
-                           (->month       v)
-                           (->day         v)
-                           (->hours       v)
-                           (->minutes     v)
-                           (->seconds     v)
-                           (->nanoseconds v)
-                           #f)]))])
+(define-type array (subtype size)
+  #:contract-fn
+  (lambda (t)
+    (vectorof (gen:type-contract (array-field-subtype t))))
+  #:constructor
+  (lambda (subtype [size #f])
+    (array-field subtype size))
+  #:declaration
+  (lambda (t dialect)
+    (case dialect
+      [(postgresql)
+       (define subtype-declaration
+         (gen:type-declaration (array-field-subtype t) dialect))
 
-    (values datetime-field? (datetime-field))))
+       (define size:str
+         (cond
+           [(array-field-size t) => number->string]
+           [else ""]))
 
-(define-values (datetime-tz/f? datetime-tz/f)
-  (let ()
-    (struct datetime-tz-field ()
-      #:methods gen:type
-      [(define (type-contract _) moment-provider?)
+       (~a subtype-declaration  "[" size:str "]")]
 
-       (define (type-declaration _ dialect)
-         (match dialect
-           ['sqlite3    "TEXT"]
-           ['postgresql "TIMESTAMPTZ"]))
+      [else
+       (raise-dialect-error dialect)]))
+  #:load
+  (lambda (t dialect v)
+    (define subtype (array-field-subtype t))
+    (for/vector ([x (in-vector (pg-array-contents v))])
+      (gen:type-load subtype dialect x)))
+  #:dump
+  (lambda (t dialect v)
+    (define subtype (array-field-subtype t))
+    (for/list ([x (in-vector v)])
+      (gen:type-dump subtype dialect x))))
 
-       (define (type-load _ dialect v)
-         (match dialect
-           ['sqlite3
-            (iso8601/tzid->moment v)]
+(define-type json
+  #:contract jsexpr?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(postgresql) "JSON"]
+      [else (raise-dialect-error dialect)])))
 
-           ['postgresql
-            (moment (sql-timestamp-year       v)
-                    (sql-timestamp-month      v)
-                    (sql-timestamp-day        v)
-                    (sql-timestamp-hour       v)
-                    (sql-timestamp-minute     v)
-                    (sql-timestamp-second     v)
-                    (sql-timestamp-nanosecond v)
-                    #:tz (sql-timestamp-tz    v))]))
+(define-type jsonb
+  #:contract jsexpr?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(postgresql) "JSONB"]
+      [else (raise-dialect-error dialect)])))
 
-       (define (type-dump _ dialect v)
-         (match dialect
-           ['sqlite3
-            (moment->iso8601/tzid (->moment v))]
+(define-type uuid
+  #:contract uuid?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(postgresql) "UUID"]
+      [else (raise-dialect-error dialect)])))
 
-           ['postgresql
-            (sql-timestamp (->year        v)
-                           (->month       v)
-                           (->day         v)
-                           (->hours       v)
-                           (->minutes     v)
-                           (->seconds     v)
-                           (->nanoseconds v)
-                           (->utc-offset  v))]))])
-
-    (values datetime-tz-field? (datetime-tz-field))))
-
-(define-values (array/f? array/f)
-  (let ()
-    (struct array-field (subtype size)
-      #:methods gen:type
-      [(define (type-contract t)
-         (vectorof (gen:type-contract (array-field-subtype t))))
-
-       (define (type-declaration t dialect)
-         (match dialect
-           ['postgresql
-            (define subtype-declaration
-              (gen:type-declaration (array-field-subtype t) dialect))
-
-            (define size:str
-              (cond
-                [(array-field-size t) => number->string]
-                [else ""]))
-
-            (~a subtype-declaration  "[" size:str "]")]
-
-           [_ (raise-user-error 'array/f "not supported")]))
-
-       (define (type-load t dialect v)
-         (define subtype (array-field-subtype t))
-         (for/vector ([x (in-vector (pg-array-contents v))])
-           (gen:type-load subtype dialect x)))
-
-       (define (type-dump t dialect v)
-         (define subtype (array-field-subtype t))
-         (for/list ([x (in-vector v)])
-           (gen:type-dump subtype dialect x)))])
-
-    (values array-field?
-            (lambda (subtype [size #f])
-              (array-field subtype size)))))
-
-(define-values (json/f? json/f)
-  (let ()
-    (struct json-field ()
-      #:methods gen:type
-      [(define (type-contract _) jsexpr?)
-
-       (define (type-declaration t dialect)
-         (match dialect
-           ['postgresql "JSON"]
-           [_ (raise-user-error 'json/f "not supported")]))
-
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
-
-    (values json-field? (json-field))))
-
-(define-values (jsonb/f? jsonb/f)
-  (let ()
-    (struct jsonb-field ()
-      #:methods gen:type
-      [(define (type-contract _) jsexpr?)
-
-       (define (type-declaration t dialect)
-         (match dialect
-           ['postgresql "JSONB"]
-           [_ (raise-user-error 'json/f "not supported")]))
-
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
-
-    (values jsonb-field? (jsonb-field))))
-
-(define-values (uuid/f? uuid/f)
-  (let ()
-    (struct uuid-field ()
-      #:methods gen:type
-      [(define (type-contract _) uuid?)
-
-       (define (type-declaration t dialect)
-         (match dialect
-           ['postgresql "UUID"]
-           [_ (raise-user-error 'uuid/f "not supported")]))
-
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v) v)])
-
-    (values uuid-field? (uuid-field))))
-
-(define-values (any/f? any/f)
-  (let ()
-    (struct any-field ()
-      #:methods gen:type
-      [(define (type-contract _) any/c)
-
-       (define (type-declaration t dialect)
-         (raise-user-error 'any/f "may only be used on virtual fields"))
-
-       (define (type-load _ dialect v) v)
-       (define (type-dump _ dialect v)
-         (raise-user-error 'any/f "may not be stored in the database"))])
-
-    (values any-field? (any-field))))
+(define-type any
+  #:contract any/c
+  #:declaration
+  (lambda (_ _dialect)
+    (raise-user-error 'any/f "may only be used with virtual fields"))
+  #:dump
+  (lambda (_ _dialect _v)
+    (raise-user-error 'any/f "may not be stored in the database")))

@@ -2,7 +2,6 @@
 
 (require db
          deta
-         racket/sequence
          threading)
 
 (define-schema book
