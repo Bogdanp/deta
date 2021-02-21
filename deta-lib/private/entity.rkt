@@ -7,6 +7,7 @@
 
 (provide
  (struct-out entity)
+ entity-schema
  entity-changed?)
 
 (define (entity=? a b recur)
@@ -32,6 +33,9 @@
   [(define equal-proc entity=?)
    (define hash-proc  entity-hash-code)
    (define hash2-proc entity-hash-code)])
+
+(define (entity-schema e)
+  (meta-schema (entity-meta e)))
 
 (define (entity-changed? e)
   (not (set-empty? (meta-changes (entity-meta e)))))

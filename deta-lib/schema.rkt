@@ -22,6 +22,7 @@
 (provide
  entity?
  entity-meta
+ entity-schema
 
  define-schema
  schema?
