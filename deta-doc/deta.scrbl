@@ -860,6 +860,7 @@ by other dialects, but using them may result in invalid queries.
 }
 
 @defform*[
+  #:literals (unquote)
   ((select-for-schema query schema
                         #:from tbl-alias-id)
    (select-for-schema query schema
@@ -867,7 +868,7 @@ by other dialects, but using them may result in invalid queries.
                         #:customizing ([field-id q-expr] ...)))
   #:grammar
   ([schema schema-id
-           schema-expr])
+           (unquote schema-expr)])
   #:contracts
   ([query query?]
    [schema-expr schema?])
