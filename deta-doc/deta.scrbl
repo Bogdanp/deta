@@ -886,6 +886,10 @@ by other dialects, but using them may result in invalid queries.
 
     (code:line)
     (~> (from example #:as e)
+        (select-for-schema example #:from e))
+
+    (code:line)
+    (~> (from example #:as e)
         (join "some_table" #:as t #:on (= t.a e.a))
         (select-for-schema
          example
@@ -895,7 +899,7 @@ by other dialects, but using them may result in invalid queries.
   ]
 
   Use this operator in conjunction with @racket[project-virtual-fields]
-  to project joined or otherwise constructed virtual fields onto a
+  to project joined or otherwise-constructed virtual fields onto a
   schema.
 }
 
