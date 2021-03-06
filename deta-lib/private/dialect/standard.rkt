@@ -320,10 +320,12 @@
        (for ([join (in-list joins)])
          (display/stmt join)))]
 
-    [(join type with constraint)
+    [(join type lateral? with constraint)
      (display " ")
      (display (join-type->string type))
      (display " ")
+     (when lateral?
+       (display "LATERAL "))
      (display/expr with)
      (display " ON ")
      (display/expr constraint)]

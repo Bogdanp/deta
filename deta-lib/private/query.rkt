@@ -140,11 +140,13 @@
 
 (define/contract (join q
                        #:type type
+                       #:lateral? lateral?
                        #:with tbl-e
                        #:as alias
                        #:on constraint)
   (-> select-query?
       #:type (or/c 'inner 'left 'right 'full 'cross)
+      #:lateral? boolean?
       #:with (or/c ast:subquery? schema? string? symbol?)
       #:as symbol?
       #:on ast:expr?
@@ -163,7 +165,7 @@
      (query schema opts (struct-copy ast:select stmt
                                      [from (add-join
                                             (ast:select-from stmt)
-                                            (ast:join type (ast:as tbl-clause alias) constraint))]))]))
+                                            (ast:join type lateral? (ast:as tbl-clause alias) constraint))]))]))
 
 (define/contract (select q column0 . columns)
   (-> query? ast:expr? ast:expr? ... query?)

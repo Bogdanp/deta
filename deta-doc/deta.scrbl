@@ -690,17 +690,19 @@ by other dialects, but using them may result in invalid queries.
 
 @defform*[
   #:literals (subquery unquote)
-  ((join query maybe-type table-name #:as alias #:on q-expr)
-   (join query maybe-type schema-id #:as alias #:on q-expr)
-   (join query maybe-type (subquery query) #:as alias #:on q-expr)
-   (join query maybe-type (unquote table-name-expr) #:as alias #:on q-expr))
+  ((join query maybe-type maybe-lateral table-name #:as alias #:on q-expr)
+   (join query maybe-type maybe-lateral schema-id #:as alias #:on q-expr)
+   (join query maybe-type maybe-lateral (subquery query) #:as alias #:on q-expr)
+   (join query maybe-type maybe-lateral (unquote table-name-expr) #:as alias #:on q-expr))
   #:grammar
   ([maybe-type (code:line)
                (code:line #:inner)
                (code:line #:left)
                (code:line #:right)
                (code:line #:full)
-               (code:line #:cross)])
+               (code:line #:cross)]
+   [maybe-lateral (code:line)
+                  (code:line #:lateral)])
   #:contracts
   ([table-name non-empty-string?]
    [query query?])]{
@@ -1222,6 +1224,7 @@ Here are all the types and how they map to the different backends.
   @item{The @racket[select-for-schema] operator.}
   @item{The @racket[project-virtual-fields] operator.}
   @item{The @racket[entity-schema] function.}
+  @item{Support for @racket[#:lateral] @racket[join]s.}
 ]
 @bold{Changed:}
 @itemlist[

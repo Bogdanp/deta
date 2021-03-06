@@ -107,7 +107,7 @@
 (struct group-by clause (columns)
   #:transparent)
 
-(struct join clause (type with constraint)
+(struct join clause (type lateral? with constraint)
   #:transparent)
 
 (struct limit clause (n)

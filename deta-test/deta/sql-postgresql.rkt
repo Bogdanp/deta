@@ -305,7 +305,21 @@
             (join #:left (subquery (select _ 1)) #:as c #:on #t)
             (select p.* c.*))
 
-        "SELECT p.*, c.* FROM posts AS p LEFT JOIN (SELECT 1) AS c ON TRUE")))
+        "SELECT p.*, c.* FROM posts AS p LEFT JOIN (SELECT 1) AS c ON TRUE"))
+
+     (test-case "emits lateral joins"
+       (check-emitted
+        (~> (from "posts" #:as p)
+            (join #:left
+                  #:lateral
+                  (subquery (~> (from "post_images" #:as pi)
+                                (where (= pi.post-id p.id))
+                                (order-by ([pi.id #:desc]))
+                                (limit 1)))
+                  #:as pi
+                  #:on #t)
+            (select p.* pi.*))
+        "SELECT p.*, pi.* FROM posts AS p LEFT JOIN LATERAL (SELECT * FROM post_images AS pi WHERE pi.post_id = p.id ORDER BY pi.id DESC LIMIT 1) AS pi ON TRUE")))
 
     (test-suite
      "group-by"

@@ -450,15 +450,18 @@
   (syntax-parse stx
     [(_ q:expr
         (~optional t:join-type)
+        (~optional (~and #:lateral lateral))
         source:q-source
         #:as alias:id
         #:on constraint:q-expr)
-     (with-syntax ([type #'(~? t.type 'inner)])
-       #'(dyn:join q
-                   #:type type
-                   #:with source.e
-                   #:as 'alias
-                   #:on constraint.e))]))
+     #:with type #'(~? t.type 'inner)
+     #:with lateral? (if (attribute lateral) #'#t #'#f)
+     #'(dyn:join q
+                 #:type type
+                 #:lateral? lateral?
+                 #:with source.e
+                 #:as 'alias
+                 #:on constraint.e)]))
 
 (define-syntax (limit stx)
   (syntax-parse stx
