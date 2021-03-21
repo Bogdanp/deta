@@ -340,7 +340,6 @@ The following query forms are not currently supported:
 @itemlist[
   @item{@tt{WITH ... { @select-link | @update-link | @delete-link }  ...}}
   @item{@tt{@update-link ... FROM ...}}
-  @item{@tt{@select-link DISTINCT ...}}
   @item{@tt{@select-link ... HAVING ...}}
   @item{@tt{@select-link ... WINDOW ...}}
   @item{@tt{@select-link ... {INTERSECT | EXCEPT} ...}}
@@ -842,8 +841,11 @@ by other dialects, but using them may result in invalid queries.
 
 @defform*[
   #:literals (_)
-  ((select _ q-expr ...+)
-   (select query q-expr ...+))
+  ((select _ maybe-distinct q-expr ...+)
+   (select query maybe-distinct q-expr ...+))
+  #:grammar
+  [(maybe-distinct (code:line)
+                   #:distinct)]
   #:contracts
   ([query query?])]{
 

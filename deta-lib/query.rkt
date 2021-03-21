@@ -497,13 +497,19 @@
      #'(dyn:returning q e.e ...)]))
 
 (define-syntax (select stx)
-  (syntax-parse stx
+  (define-syntax-class from-expr
     #:datum-literals (_)
-    [(_select _ e:q-expr ...+)
-     #'(dyn:select (dyn:make-empty-query) e.e ...)]
+    (pattern _ #:with e #'(dyn:make-empty-query))
+    (pattern e:expr))
 
-    [(_select q:expr e:q-expr ...+)
-     #'(dyn:select q e.e ...)]))
+  (syntax-parse stx
+    [(_ q:from-expr
+        (~alt (~optional (~and #:distinct distinct))) ...
+        e:q-expr ...+)
+     #:with distinct? (if (attribute distinct) #'#t #'#f)
+     #'(dyn:select
+        #:distinct? distinct?
+        q.e e.e ...)]))
 
 (define-syntax (select-for-schema stx)
   (define-syntax-class schema-expr

@@ -260,8 +260,10 @@
     [(list exprs ...)
      (display/sep exprs display/expr)]
 
-    [(select columns from where group-by union order-by offset limit)
+    [(select distinct? columns from where group-by union order-by offset limit)
      (display "SELECT ")
+     (when distinct?
+       (display "DISTINCT "))
      (cond
        [(null? columns) (display "*")]
        [else            (display/stmt columns)])

@@ -175,10 +175,11 @@
                      #:returning [returning #f])
   (update table assignments where returning))
 
-(struct select stmt (columns from where group-by union order-by offset limit)
+(struct select stmt (distinct? columns from where group-by union order-by offset limit)
   #:transparent)
 
-(define (make-select #:columns [columns null]
+(define (make-select #:distinct? [distinct? #f]
+                     #:columns [columns null]
                      #:from [from #f]
                      #:where [where #f]
                      #:group-by [group-by #f]
@@ -186,4 +187,4 @@
                      #:order-by [order-by #f]
                      #:offset [offset #f]
                      #:limit [limit #f])
-  (select columns from where group-by union order-by offset limit))
+  (select distinct? columns from where group-by union order-by offset limit))

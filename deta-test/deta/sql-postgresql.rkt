@@ -41,6 +41,9 @@
     (check-emitted (select _ 1)
                    "SELECT 1")
 
+    (check-emitted (select _ #:distinct 1)
+                   "SELECT DISTINCT 1")
+
     (check-emitted (select _ 1.5)
                    "SELECT 1.5")
 
@@ -206,6 +209,12 @@
                    is_between))
 
      "SELECT ((NOW()) BETWEEN ((NOW()) - (INTERVAL '7 days')) AND ((NOW()) + (INTERVAL '7 days'))) AS is_between")
+
+    (test-case "supports DISTINCT in from-queries"
+      (check-emitted
+       (~> (from "tags" #:as t)
+           (select #:distinct t.name t.count))
+       "SELECT DISTINCT t.name, t.count FROM tags AS t"))
 
     (test-case "supports COND as an alias for CASE"
       (check-emitted

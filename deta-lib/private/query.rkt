@@ -167,11 +167,18 @@
                                             (ast:select-from stmt)
                                             (ast:join type lateral? (ast:as tbl-clause alias) constraint))]))]))
 
-(define/contract (select q column0 . columns)
-  (-> query? ast:expr? ast:expr? ... query?)
+(define/contract (select q column0
+                         #:distinct? [distinct? #f]
+                         . columns)
+  (->* (query? ast:expr?)
+       (#:distinct? boolean?)
+       #:rest (listof ast:expr?)
+       query?)
   (match q
     [(query _  opts stmt)
-     (query #f opts (struct-copy ast:select stmt [columns (cons column0 columns)]))]))
+     (query #f opts (struct-copy ast:select stmt
+                                 [distinct? distinct?]
+                                 [columns (cons column0 columns)]))]))
 
 (define/contract (select-for-schema q schema-or-id tbl-alias customizations)
   (-> query? (or/c schema? symbol?) string? (hash/c symbol? ast:expr?) query?)
