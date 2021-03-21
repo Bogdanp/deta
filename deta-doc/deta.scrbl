@@ -1217,6 +1217,12 @@ Here are all the types and how they map to the different backends.
 
 @subsection[#:tag "changelog"]{Changelog}
 
+@subsubsection{@exec{HEAD}}
+@bold{Added:}
+@itemlist[
+  @item{Support for @tt{SELECT DISTINCT} queries.}
+]
+
 @subsubsection{@exec{v0.8.0} -- 2021-03-06}
 @bold{Added:}
 @itemlist[
