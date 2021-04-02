@@ -26,21 +26,21 @@
    (hyperlink "https://github.com/Bogdanp/deta" label))
 
 This library automatically maps database tables to Racket structs and
-lets you perform CRUD operations on them as well as arbitrary queries.
-Sort of like an ORM, but without associations and all the bad bits.
+lets you perform CRUD operations and arbitrary queries on them. Sort of
+like an ORM.
 
-The API is currently fairly stable, but it may change before 1.0.
+The API is currently stable, but small things may change before 1.0.
 Watch the @repo-link{GitHub repository} if you want to stay on top of
 potential changes.
 
 
 @section[#:tag "principles"]{Principles}
 
-The main principle backing this library is "explicitness without
-tedium."  By that I mean that it should be crystal clear to someone
-who is reading code that uses this library how the code maps to
-database operations, while making the common cases of mapping data
-between database tables and Racket structs straightforward and simple.
+The main principle behind this library is "explicitness without tedium."
+By that I mean that it should be clear to someone who is reading code
+that uses this library how that code maps to database operations, while
+making the common cases of mapping data between database tables and
+Racket structs straightforward and simple.
 
 @subsection{Non-goals}
 
@@ -61,6 +61,29 @@ between database tables and Racket structs straightforward and simple.
 
 If you're down with that, then, by all means, carry on and read the
 tutorial!
+
+
+@section[#:tag "versus"]{Compared to ...}
+
+@subsection{Racquel}
+
+Racquel takes a more classic approach to database mapping by being a
+real ORM. It is based on the class system, with entities backed by
+mutable objects and with support for associations via lazy loading.
+Deta's approach is the opposite of this by focusing on working with
+immutable structs, avoiding associations and any sort of lazy behavior
+altogether.
+
+@subsection{sql}
+
+The @tt{sql} library is great at statically generating SQL queries. The
+problem is that the generated queries are not composable at runtime.
+You have to write macros to compose them and I've found that that gets
+tedious quickly.
+
+On top of giving you composable queries -- as you can hopefully see
+from the tutorial --, deta also automatically maps CRUD operations to
+structs, which is out of scope for @tt{sql}.
 
 
 @section[#:tag "tutorial"]{Tutorial}
@@ -111,7 +134,7 @@ Next, let's define a schema for books:
 
 The above generates a struct named @racket[book] with fields for the
 table's @racket[id], @racket[title], @racket[author] and @racket[published-on]
-columns, an associated "smart constructor" called @racket[make-book]
+columns, an associated ``smart constructor'' called @racket[make-book]
 and functional setter and updater functions for each field.
 
 @interaction[
@@ -289,62 +312,6 @@ Re-run the last query to make sure it worked:
 That's all there is to it.  You now know the basics of deta.  Thanks
 for following along!  If you want to learn more be sure to check out
 the reference documentation below.
-
-
-@section[#:tag "versus"]{Compared to *}
-
-@subsection{Racquel}
-
-Racquel takes a more classic approach to database mapping by being a
-"real" ORM.  It is based on the class system, with entities (data
-objects, as it calls them) being backed by mutable objects and having
-support for associations via lazy loading.  deta's approach is nearly
-the opposite of this by focusing on working with immutable structs,
-avoiding associations altogether and any sort of lazy behaviour.
-
-@subsection{sql}
-
-The @tt{sql} library is great at statically generating SQL queries.
-The problem is that the generated queries are not composable at
-runtime.  You have to write macros upon macros to handle composition
-and I've found that that gets tedious quickly.
-
-On top of giving you composable queries -- as you can hopefully see
-from the tutorial --, deta also automatically maps CRUD operations to
-structs, which is out of scope for @tt{sql}.
-
-
-@section[#:tag "todos"]{TODOs}
-
-@(define insert-link
-   (hyperlink "https://www.postgresql.org/docs/11/sql-insert.html" "INSERT"))
-
-@(define select-link
-   (hyperlink "https://www.postgresql.org/docs/11/sql-select.html" "SELECT"))
-
-@(define update-link
-   (hyperlink "https://www.postgresql.org/docs/11/sql-update.html" "UPDATE"))
-
-@(define delete-link
-   (hyperlink "https://www.postgresql.org/docs/11/sql-delete.html" "DELETE"))
-
-The following features are planned:
-
-@itemlist[
-  @item{@tt{VALUES} expressions}
-  @item{Column constraints for DDL}
-]
-
-The following query forms are not currently supported:
-
-@itemlist[
-  @item{@tt{WITH ... { @select-link | @update-link | @delete-link }  ...}}
-  @item{@tt{@update-link ... FROM ...}}
-  @item{@tt{@select-link ... HAVING ...}}
-  @item{@tt{@select-link ... WINDOW ...}}
-  @item{@tt{@select-link ... {INTERSECT | EXCEPT} ...}}
-  @item{@tt{@select-link ... FOR UPDATE ...}}
-]
 
 
 @section[#:tag "reference"]{Reference}
