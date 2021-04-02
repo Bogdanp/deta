@@ -7,6 +7,7 @@
           (for-label db
                      db/util/postgresql
                      deta
+                     deta/reflect
                      gregor
                      json
                      (except-in racket/base date date? time)
@@ -256,9 +257,9 @@ statement.  This makes it safe and easy to parameterize your queries
 without having to worry about SQL injection attacks.
 
 Oftentimes, you'll want to query data from the DB that doesn't match
-your schema.  For example, let's say we want to grab the number of
-books published by year from our database.  To do that, we can declare
-a "virtual" schema -- one whose entities can't be persisted -- and
+your schema. For example, let's say we want to grab the number of books
+published by year from our database. To do that, we can declare a
+@deftech{virtual schema} -- one whose entities can't be persisted -- and
 project our queries onto that schema.
 
 @interaction[
@@ -1213,6 +1214,64 @@ Here are all the types and how they map to the different backends.
   to a field. May only be used on virtual fields.
 }
 
+@subsection[#:tag "reflection"]{Reflection}
+
+@defmodule[deta/reflect]
+
+The bindings provided by this module let you access schema and field
+metadata at runtime. Before 1.0 is released, I might make breaking
+changes to this module. It's unlikely, but it could happen so keep that
+in mind!
+
+@defparam[current-schema-registry registry (hash/c symbol? schema?) #:value (make-hasheq)]{
+  Holds the current schema registry hash.
+}
+
+@defproc[(schema-registry-lookup [id symbol?]) schema?]{
+  Returns the schema whose id is @racket[id] from the registry.
+  If a schema with the requested id is not registered, an
+  @racket[exn:fail:user?] is raised.
+}
+
+@defproc[(schema-virtual? [s schema?]) boolean?]{
+  Returns @racket[#t] when @racket[s] is a @tech{virtual schema}.
+}
+
+@defproc[(schema-fields [s schema?]) (listof field?)]{
+  Returns a list of every field defined in @racket[s].
+}
+
+@defproc[(schema-table [s schema?]) string?]{
+  Returns the name of the table @racket[s] maps to.
+}
+
+@defproc[(field? [v any/c]) boolean?]{
+  Returns @racket[#t] when @racket[v] is a deta field.
+}
+
+@defproc[(field-id [f field?]) symbol?]{
+  Returns the Racket name of @racket[f].
+}
+
+@defproc[(field-name [f field?]) string?]{
+  Returns the name of the database column @racket[f] is associated with.
+}
+
+@defproc[(field-type [f field?]) type?]{
+  Returns the deta type of @racket[f].
+}
+
+@defproc[(type? [v any/c]) boolean?]{
+  Returns @racket[#t] when @racket[v] is a deta type.
+}
+
+@defproc[(type-declaration [t type?]
+                           [dialect (or/c 'postgresql 'sqlite3)]) string?]{
+  Returns the DDL type declaration for the type @racket[t] under
+  the @racket[dialect] SQL dialect.
+}
+
+
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
@@ -1220,6 +1279,7 @@ Here are all the types and how they map to the different backends.
 @itemlist[
   @item{Support for @tt{SELECT DISTINCT} queries.}
   @item{The @racket[entity->hash] function.}
+  @item{The @racketmodname[deta/reflect] module.}
 ]
 
 @subsubsection{@exec{v0.8.0} -- 2021-03-06}

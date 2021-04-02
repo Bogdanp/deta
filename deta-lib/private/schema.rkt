@@ -63,26 +63,29 @@
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
+ current-schema-registry
  schema-registry-lookup)
 
-(define/contract schema-registry
+(define/contract current-schema-registry
   (parameter/c (hash/c symbol? schema?))
-  (make-parameter (hasheq)))
+  (make-parameter (make-hasheq)))
 
 (define (register! id s)
-  (define registry (schema-registry))
+  (define registry (current-schema-registry))
   (when (hash-has-key? registry id)
     (raise-user-error 'register! "schema ~a conflicts with a previous one" id))
 
-  (schema-registry
-   (hash-set registry id s)))
+  (hash-set! registry id s))
 
 (define/contract (schema-registry-lookup schema-or-id)
   (-> (or/c schema? symbol?) schema?)
   (cond
-    [(schema? schema-or-id) schema-or-id]
-    [else (hash-ref
-           (schema-registry)
-           schema-or-id
-           (lambda ()
-             (raise-user-error 'lookup-schema "unregistered schema~n  id: ~s" schema-or-id)))]))
+    [(schema? schema-or-id)
+     schema-or-id]
+
+    [else
+     (hash-ref
+      (current-schema-registry)
+      schema-or-id
+      (lambda ()
+        (raise-user-error 'lookup-schema "unregistered schema~n  id: ~s" schema-or-id)))]))
