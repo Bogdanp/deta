@@ -992,6 +992,37 @@ by other dialects, but using them may result in invalid queries.
   Retrieves @racket[e]'s schema.
 }
 
+@defproc[(entity->hash [e entity?]
+                       [f (-> symbol? any/c any/c) (λ (k v) v)]) (hash/c symbol? any/c)]{
+  Returns an immutable @racket[hash?] where the entries are the ids of
+  every field in @racket[e] and their associated values.
+
+  The @racket[f] argument can be used to convert individual fields'
+  values before they are added to the hash.
+
+  @interaction[
+    #:eval reference-eval
+    (require gregor)
+    (define-schema book
+      #:virtual
+      ([title string/f]
+       [author string/f]
+       [published-at datetime-tz/f]))
+     (define b
+      (make-book
+       #:title "Lord of the Rings"
+       #:author "J. R. R. Tolkien"
+       #:published-at (iso8601->moment "1954-07-29T00:00:00Z")))
+     (entity->hash b)
+     (entity->hash b (λ (_ v)
+                         (cond
+                           [(moment? v)
+                            (moment->iso8601 v)]
+                           [else
+                            v])))
+  ]
+}
+
 @defproc[(schema? [s any/c]) boolean?]{
   Returns @racket[#t] when @racket[s] is a @deftech{schema}.
 }
@@ -1221,6 +1252,7 @@ Here are all the types and how they map to the different backends.
 @bold{Added:}
 @itemlist[
   @item{Support for @tt{SELECT DISTINCT} queries.}
+  @item{The @racket[entity->hash] function.}
 ]
 
 @subsubsection{@exec{v0.8.0} -- 2021-03-06}

@@ -23,6 +23,7 @@
  entity?
  entity-meta
  entity-schema
+ entity->hash
 
  define-schema
  schema?

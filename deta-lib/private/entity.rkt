@@ -8,7 +8,8 @@
 (provide
  (struct-out entity)
  entity-schema
- entity-changed?)
+ entity-changed?
+ entity->hash)
 
 (define (entity=? a b recur)
   (and (entity? b)
@@ -39,3 +40,9 @@
 
 (define (entity-changed? e)
   (not (set-empty? (meta-changes (entity-meta e)))))
+
+(define (entity->hash e [f (λ (_k v) v)])
+  (for*/hasheq ([fld (in-list (schema-fields (entity-schema e)))]
+                [key (in-value (field-id fld))]
+                [val (in-value (f key ((field-getter fld) e)))])
+    (values key val)))
