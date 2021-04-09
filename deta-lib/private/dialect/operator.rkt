@@ -12,7 +12,6 @@
 (define-syntax (define-ops stx)
   (syntax-parse stx
     [(_ kind:id [op:id (~optional maybe-op-str:str)] ...)
-     #:with (op-id ...) #'(op ...)
      #:with (op-str ...) (for/list ([op (in-list (syntax-e #'(op ...)))]
                                     [maybe-str (in-list (syntax-e #'((~? maybe-op-str #f) ...)))])
                            (cond
@@ -20,35 +19,20 @@
                              [else (datum->syntax op (string-upcase (symbol->string (syntax->datum op))))]))
      #:with write-operator-id (format-id stx "write-~a-operator" #'kind)
      #:with match-expander-id (format-id stx "~a-operator" #'kind)
-     #:with literal-set-id (format-id stx "~a-ops" #'kind)
-     #:with syntax-class-id (format-id stx "~a-op" #'kind)
      (syntax/loc stx
        (begin
-         (provide op ...)
-         (define-syntax (op stx)
-           (raise-syntax-error 'op "cannot be used outside of a query" stx)) ...
-         (module+ private
-           (provide
-            write-operator-id
-            match-expander-id)
-           (define (write-operator-id id)
-             (write-string
-              (case id
-                [(op) op-str] ...)))
-           (define-match-expander match-expander-id
-             (lambda (stx)
-               (syntax-parse stx
-                 [(_) #'(or 'op ...)]
-                 [(_ out) #'(and (or 'op ...) out)]))))
-         (module+ syntax
-           (provide
-            (for-syntax syntax-class-id))
-           (begin-for-syntax
-             (define-literal-set literal-set-id
-               (op ...))
-             (define-syntax-class syntax-class-id
-               #:literal-sets ([literal-set-id])
-               (pattern op #:with e #''op-id) ...)))))]))
+         (provide
+          write-operator-id
+          match-expander-id)
+         (define (write-operator-id id)
+           (write-string
+            (case id
+              [(op) op-str] ...)))
+         (define-match-expander match-expander-id
+           (lambda (stx)
+             (syntax-parse stx
+               [(_) #'(or 'op ...)]
+               [(_ out) #'(and (or 'op ...) out)])))))]))
 
 (define-ops unary
   [bitwise-not "~"]
@@ -71,6 +55,14 @@
   [in]
   [is-distinct "IS DISTINCT"]
   [is]
+  [json-contains-all? "?&"]
+  [json-contains-any? "?|"]
+  [json-contains-path? "@?"]
+  [json-contains? "?"]
+  [json-ref-text "->>"]
+  [json-ref-text/path "#>>"]
+  [json-subset? "<@"]
+  [json-superset? "@>"]
   [like]
   [position]
   [similar-to "SIMILAR TO"])
@@ -88,8 +80,9 @@
   [bitwise-and "&"]
   [bitwise-or "|"]
   [bitwise-xor "#"]
+  [json-concat "||"]
   [json-ref "->"]
-  [json-ref-text "->>"]
-  [json-ref-text/path "#>>"]
   [json-ref/path "#>"]
+  [json-remove "-"]
+  [json-remove/path "#-"]
   [or])

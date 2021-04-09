@@ -2,12 +2,14 @@
 
 (require db
          racket/contract
+         racket/format
          racket/match
          racket/port
          "../ast.rkt"
          "../field.rkt"
          "../type.rkt"
          "dialect.rkt"
+         "operator.rkt"
          "standard.rkt")
 
 (provide
@@ -84,6 +86,11 @@
 
 (define (emit-expr e)
   (match e
+    [(app (ident (unary-operator 'json)) args)
+     (write-string "JSON(")
+     (emit-expr (car args))
+     (write-string ")")]
+
     [(app (and (ident (or 'date 'time 'datetime)) op) args)
      (emit-expr op)
      (write-string "(")

@@ -6,7 +6,7 @@
          racket/string
          "../ast.rkt"
          "dialect.rkt"
-         (submod "operator.rkt" private))
+         "operator.rkt")
 
 ;; Implements a "standard" emitter for SQL from our AST.  I say
 ;; "standard", but what I really mean is as close to the standard as
@@ -152,7 +152,7 @@
      (display/maybe-parenthize c)
      (write-string ")")]
 
-    [(app (ident (and (variadic-operator) op)) es)
+    [(app (ident (variadic-operator op)) es)
      (define separator
        (with-output-to-string
          (lambda ()

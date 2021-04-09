@@ -440,11 +440,11 @@ the reference documentation below.
 }
 
 
-@subsubsection{Query Combinators}
+@subsubsection{Queries}
 
 @centered{
   @racketgrammar*[
-    #:literals (array as and case else fragment list or quote subquery unquote unquote-splicing)
+    #:literals (array as and case else fragment list not or quote subquery unquote unquote-splicing)
 
     [q-expr (and q-expr ...+)
             (array q-expr ...)
@@ -453,6 +453,7 @@ the reference documentation below.
             (case [q-expr q-expr] ...+
                   [else q-expr])
             (fragment expr)
+            (not q-expr)
             (or q-expr ...+)
             (list q-expr ...)
             (subquery expr)
@@ -470,7 +471,7 @@ the reference documentation below.
     [ident symbol]]
 }
 
-The grammar for SQL expressions.
+The grammar for @deftech{query expressions}.
 
 Tuples are created using the @racket[(list 1 2 3)] or @racket['(1 2 3)] syntax:
 
@@ -505,80 +506,74 @@ queries predictably.  Operator names are always lower-case so
 find an operator that you need doesn't produce the query you expect,
 then open an issue on GitHub and I'll fix it as soon as I can.
 
-Within an SQL expression, the following identifiers are treated
+Within a query expression, the following identifiers are treated
 specially by the base (i.e. PostgreSQL) dialect.  These are inherited
 by other dialects, but using them may result in invalid queries.
 
-@tabular[
-  #:sep @hspace[2]
-  #:style 'boxed
-  #:row-properties '(bottom-border)
-  (list (list @bold{Identifier} "")
-        (list @tt{array-concat}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(array-concat (array 1) (array 2 3))])
-                      (list @bold{output:} @tt{ARRAY[1] || ARRAY[2, 3]}))])
+@(define-syntax-rule (defop id example ...)
+  (defidform #:kind "operator" id (interaction #:eval reference-eval example) ...))
 
-        (list @tt{array-contains?}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(array-contains? (array 1 2) (array 1))])
-                      (list @bold{output:} @tt{ARRAY[1, 2] @"@"> ARRAY[1]}))])
+@defop[+ (display (select _ (+ 1 2 3)))]
+@defop[- (display (select _ (- 3 1 0)))]
+@defop[* (display (select _ (* 2 2 3)))]
+@defop[/ (display (select _ (/ 1 2 3)))]
+@defop[% (display (select _ (% 10 2)))]
+@defop[<< (display (select _ (<< 10 2)))]
+@defop[>> (display (select _ (<< 10 2)))]
+@defop[= (display (select _ (= 1 1)))
+         (display (select _ (= "a" "a")))]
+@defop[> (display (select _ (> 2 1)))]
+@defop[< (display (select _ (> 1 2)))]
+@defop[>= (display (select _ (>= 2 1)))]
+@defop[<= (display (select _ (>= 1 2)))]
+@defop[<> (display (select _ (<> 1 2)))]
+@defop[!= (display (select _ (!= 1 2)))]
+@defop[array (display (select _ (array 1 2 3)))]
+@defop[array-concat (display (select _ (array-concat (array 1 2) (array 3))))]
+@defop[array-contains? (display (select _ (array-contains? (array 1 2) (array 1))))]
+@defop[array-overlap? (display (select _ (array-overlap? (array 1) (array 1 2))))]
+@defop[array-ref (display (select _ (array-ref (array 1 2 3) 1)))]
+@defop[array-slice (display (select _ (array-slice (array 1 2 3 4 5) 1 3)))]
+@defop[as (display (select _ (as 1 x)))]
+@defop[between (display (select _ (between (date "2021-04-09")
+                                           (date "2021-04-01")
+                                           (date "2021-05-01"))))]
+@defop[bitwise-and (display (select _ (bitwise-and 1 2)))]
+@defop[bitwise-not (display (select _ (bitwise-not 0)))]
+@defop[bitwise-or (display (select _ (bitwise-or 0 1)))]
+@defop[bitwise-xor (display (select _ (bitwise-xor 1 1)))]
+@defop[cast (display (select _ (cast 1 float)))]
+@defop[date (display (select _ (date "2021-04-09")))]
+@defop[extract (display (select _ (extract hour (timestamp "2021-04-09 18:25:00"))))]
+@defop[fragment]
+@defop[ilike (display (select _ (ilike "A" "%a%")))]
+@defop[in (display (select _ (in 5 '(1 2 3 4 5))))]
+@defop[interval (display (select _ (interval "5 minutes")))]
+@defop[is (display (select _ (is null null)))]
+@defop[is-distinct (display (select _ (is-distinct 1 null)))]
+@defop[json (display (select _ (json "{}")))]
+@defop[json-concat (display (select _ (json-concat (json "{}")
+                                                   (json "{\"a\": 42}"))))]
+@defop[json-contains-all? (display (select _ (json-contains-all? (json "{\"a\": 1}") (array "a" "b"))))]
+@defop[json-contains-any? (display (select _ (json-contains-any? (json "{\"a\": 1}") (array "a" "b"))))]
+@defop[json-contains-path? (display (select _ (json-contains-path? (json "{\"a\": {\"b\": 42}}") (array "a" "b"))))]
+@defop[json-contains? (display (select _ (json-contains-path? (json "{\"a\": 42}") "a")))]
+@defop[json-ref (display (select _ (json-ref (json "{\"a\": {\"b\": 42}}") "a" "b")))]
+@defop[json-ref-text (display (select _ (json-ref-text (json "{\"a\": \"hello\"}") "a")))]
+@defop[json-ref-text/path (display (select _ (json-ref-text/path (json "{\"a\": \"hello\"}") (array "a"))))]
+@defop[json-ref/path (display (select _ (json-ref/path (json "{\"a\": \"hello\"}") (array "a"))))]
+@defop[json-remove (display (select _ (json-remove (json "{\"a\": \"hello\"}") "a")))]
+@defop[json-remove/path (display (select _ (json-remove/path (json "{\"a\": \"hello\"}") (array "a"))))]
+@defop[jsonb (display (select _ (json "{}")))]
+@defop[like (display (select _ (like "a" "%a%")))]
+@defop[position (display (select _ (position "om" "Thomas")))]
+@defop[similar-to (display (select _ (similar-to "a" "abc")))]
+@defop[subquery (display (select _ (as (subquery (select _ 1)) x)))]
+@defop[time (display (select _ (time "18:45:00")))]
+@defop[timestamp (display (select _ (timestamp "2021-04-09 18:45:00")))]
 
-        (list @tt{array-overlap?}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(array-overlap? (array 1 2) (array 1))])
-                      (list @bold{output:} @tt{ARRAY[1, 2] && ARRAY[1]}))])
 
-        (list @tt{array-ref}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(array-ref (array 1 2) 1)])
-                      (list @bold{output:} @tt{ARRAY[1, 2][1]}))])
-
-        (list @tt{array-slice}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(array-slice (array 1 2) 1 3)])
-                      (list @bold{output:} @tt{ARRAY[1, 2][1:3]}))])
-
-        (list @tt{bitwise-not}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(bitwise-not 1)])
-                      (list @bold{output:} @tt{~ 1}))])
-
-        (list @tt{bitwise-and}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(bitwise-and 1 2)])
-                      (list @bold{output:} @tt{1 & 2}))])
-
-        (list @tt{bitwise-or}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(bitwise-or 1 2)])
-                      (list @bold{output:} @tt{1 | 2}))])
-
-        (list @tt{bitwise-xor}
-              @tabular[
-                #:sep @hspace[2]
-                (list (list @bold{usage:}  @racket[(bitwise-xor 1 2)])
-                      (list @bold{output:} @tt{1 # 2}))])
-        )
-]
-
-@deftogether[(
-  @defidform[array]
-  @defidform[as]
-  @defidform[fragment]
-  @defidform[subquery]
-)]{
-  The various "keywords" used within queries.  See the grammar of
-  @racket[q-expr] for details on how each of these are used.
-}
+@subsubsection{Query Combinators}
 
 @defproc[(query? [q any/c]) boolean?]{
   Returns @racket[#t] when @racket[q] is a query.

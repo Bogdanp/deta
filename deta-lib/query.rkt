@@ -13,7 +13,6 @@
          (prefix-in ast: "private/ast.rkt")
          "private/connection.rkt"
          "private/dialect/dialect.rkt"
-         (submod "private/dialect/operator.rkt" syntax)
          "private/entity.rkt"
          "private/field.rkt"
          "private/meta.rkt"
@@ -410,18 +409,6 @@
 
     (pattern (subquery q)
              #:with e #'(ast:subquery (dyn:query-stmt q)))
-
-    (pattern (op:unary-op arg:q-expr)
-             #:with e #'(ast:app (ast:ident op.e) (list arg.e)))
-
-    (pattern (op:binary-op a:q-expr b:q-expr)
-             #:with e #'(ast:app (ast:ident op.e) (list a.e b.e)))
-
-    (pattern (op:ternary-op a:q-expr b:q-expr c:q-expr)
-             #:with e #'(ast:app (ast:ident op.e) (list a.e b.e c.e)))
-
-    (pattern (op:variadic-op arg:q-expr ...)
-             #:with e #'(ast:app (ast:ident op.e) (list arg.e ...)))
 
     (pattern (fun:q-expr arg:q-expr ...)
              #:with e #'(ast:app fun.e (list arg.e ...))))

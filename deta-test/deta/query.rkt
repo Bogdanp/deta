@@ -267,6 +267,14 @@
          (check-true (res? r))
          (check-equal? (res-roles r) #("a" "b" "c"))))
 
+     (test-case "can retrieve JSON data"
+       (when (current-conn-postgres?)
+         (check-equal?
+          (query-value
+           (current-conn)
+           (select _ (json-ref (json "{\"a\": {\"b\": 42}}") "a" "b")))
+          42)))
+
      (test-suite
       "from"
 
