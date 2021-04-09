@@ -440,7 +440,7 @@ the reference documentation below.
 }
 
 
-@subsubsection{Queries}
+@subsubsection{Query Expressions}
 
 @centered{
   @racketgrammar*[
@@ -568,6 +568,7 @@ by other dialects, but using them may result in invalid queries.
 @defop[like (display (select _ (like "a" "%a%")))]
 @defop[position (display (select _ (position "om" "Thomas")))]
 @defop[similar-to (display (select _ (similar-to "a" "abc")))]
+@defop[string-concat (display (select _ (string-concat "a" "bc" "def")))]
 @defop[subquery (display (select _ (as (subquery (select _ 1)) x)))]
 @defop[time (display (select _ (time "18:45:00")))]
 @defop[timestamp (display (select _ (timestamp "2021-04-09 18:45:00")))]
