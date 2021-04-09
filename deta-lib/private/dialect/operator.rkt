@@ -85,4 +85,5 @@
   [json-ref/path "#>"]
   [json-remove "-"]
   [json-remove/path "#-"]
-  [or])
+  [or]
+  [string-concat "||"])
