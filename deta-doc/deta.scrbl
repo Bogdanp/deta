@@ -552,11 +552,12 @@ by other dialects, but using them may result in invalid queries.
 @defop[is (display (select _ (is null null)))]
 @defop[is-distinct (display (select _ (is-distinct 1 null)))]
 @defop[json (display (select _ (json "{}")))]
+@defop[json-check-path (display (select _ (json-check-path (json "{}") "$.a[*] > 2")))]
 @defop[json-concat (display (select _ (json-concat (json "{}")
                                                    (json "{\"a\": 42}"))))]
 @defop[json-contains-all? (display (select _ (json-contains-all? (json "{\"a\": 1}") (array "a" "b"))))]
 @defop[json-contains-any? (display (select _ (json-contains-any? (json "{\"a\": 1}") (array "a" "b"))))]
-@defop[json-contains-path? (display (select _ (json-contains-path? (json "{\"a\": {\"b\": 42}}") (array "a" "b"))))]
+@defop[json-contains-path? (display (select _ (json-contains-path? (json "{\"a\": {\"b\": 42}}") "$.a.b")))]
 @defop[json-contains? (display (select _ (json-contains-path? (json "{\"a\": 42}") "a")))]
 @defop[json-ref (display (select _ (json-ref (json "{\"a\": {\"b\": 42}}") "a" "b")))]
 @defop[json-ref-text (display (select _ (json-ref-text (json "{\"a\": \"hello\"}") "a")))]
@@ -1276,6 +1277,7 @@ in mind!
   @item{Support for @tt{SELECT DISTINCT} queries.}
   @item{The @racket[entity->hash] function.}
   @item{The @racketmodname[deta/reflect] module.}
+  @item{Support for more postgres JSON operators.}
 ]
 
 @subsubsection{@exec{v0.8.0} -- 2021-03-06}

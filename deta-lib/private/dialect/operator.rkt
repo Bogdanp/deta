@@ -55,6 +55,7 @@
   [in]
   [is-distinct "IS DISTINCT"]
   [is]
+  [json-check-path "@@"]
   [json-contains-all? "?&"]
   [json-contains-any? "?|"]
   [json-contains-path? "@?"]
