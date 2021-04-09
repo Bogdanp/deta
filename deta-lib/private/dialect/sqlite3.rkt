@@ -86,11 +86,12 @@
   (match e
     [(app (and (ident (or 'date 'time 'datetime)) op) args)
      (emit-expr op)
-     (display "(")
-     (display/sep args emit-expr)
-     (display ")")]
+     (write-string "(")
+     (write/sep args emit-expr)
+     (write-string ")")]
 
-    [_ (emit-expr/standard e)]))
+    [_
+     (emit-expr/standard e)]))
 
 (define emit-expr/standard
   (make-expr-emitter emit-expr
@@ -105,10 +106,11 @@
 (define (emit-stmt/sqlite3 e)
   (match e
     [(union stmt)
-     (display "UNION ")
+     (write-string "UNION ")
      (emit-stmt/sqlite3 stmt)]
 
-    [_ (emit-stmt/standard e)]))
+    [_
+     (emit-stmt/standard e)]))
 
 (define emit-stmt/standard
   (make-stmt-emitter emit-stmt/sqlite3 emit-expr))

@@ -1,12 +1,12 @@
 #lang racket/base
 
-(require (for-syntax racket/base
-                     syntax/parse)
-         racket/match
+(require racket/match
+         racket/port
          racket/sequence
          racket/string
          "../ast.rkt"
-         "dialect.rkt")
+         "dialect.rkt"
+         (submod "operator.rkt" private))
 
 ;; Implements a "standard" emitter for SQL from our AST.  I say
 ;; "standard", but what I really mean is as close to the standard as
@@ -16,257 +16,207 @@
  quote/standard
  make-expr-emitter
  make-stmt-emitter
- display/sep)
-
-(define-match-expander unary-operator
-  (lambda (stx)
-    (syntax-parse stx
-      [(_)
-       #'(or
-          ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
-          'bitwise-not
-
-          ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
-          'not
-
-          ;; date ops: https://www.postgresql.org/docs/9.1/functions-datetime.html
-          'date 'interval 'time 'timestamp
-          )])))
-
-(define-match-expander binary-operator
-  (lambda (stx)
-    (syntax-parse stx
-      [(_)
-       #'(or
-          ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
-          'array-contains? 'array-overlap?
-
-          ;; comparison ops: https://www.postgresql.org/docs/current/functions-comparison.html
-          '= '> '< '>= '<= '<> '!= 'ilike 'like 'in 'is 'is-distinct
-
-          ;; string ops: https://www.postgresql.org/docs/current/functions-string.html
-          'similar-to
-          )])))
-
-(define-match-expander variadic-operator
-  (lambda (stx)
-    (syntax-parse stx
-      [(_)
-       #'(or
-          ;; array ops: https://www.postgresql.org/docs/current/functions-array.html
-          'array-concat
-
-          ;; bitwise ops: https://www.postgresql.org/docs/current/functions-math.html
-          'bitwise-and 'bitwise-or 'bitwise-xor '<< '>>
-
-          ;; logical ops: https://www.postgresql.org/docs/current/functions-logical.html
-          'and 'or
-
-          ;; math ops: https://www.postgresql.org/docs/current/functions-math.html
-          '+ '- '* '/ '%
-          )])))
-
-(define lowercase-alphanum-re
-  #rx"[a-z_][a-z0-9_]*")
+ write/sep)
 
 (define (quote/standard e)
   (cond
     [(symbol? e) (symbol->string e)]
     [(string=? e "*") "*"]
-    [(regexp-match-exact? lowercase-alphanum-re e) e]
+    [(regexp-match-exact? #rx"[a-z_][a-z0-9_]*" e) e]
     [else (string-append "\"" e "\"")]))
 
-(define ((make-expr-emitter display/expr display/stmt) e)
+(define ((make-expr-emitter write-expr write-stmt) e)
   (define (display/maybe-parenthize e)
     (match e
       [(app (ident 'any) _)
-       (display/expr e)]
+       (write-expr e)]
 
       [(? expr-terminal?)
-       (display/expr e)]
+       (write-expr e)]
 
       [_
-       (display "(")
-       (display/expr e)
-       (display ")")]))
+       (write-string "(")
+       (write-expr e)
+       (write-string ")")]))
 
   (define (display/quoted e)
-    (display (quote/standard e)))
-
-  (define (display/spaced e)
-    (display " ")
-    (display/expr e)
-    (display " "))
+    (write-string (quote/standard e)))
 
   (match e
     [(? string?)
-     (display (quote/standard e))]
+     (write-string (quote/standard e))]
 
-    [(table e)  (display/expr e)]
-    [(column e) (display/expr e)]
+    [(table e)  (write-expr e)]
+    [(column e) (write-expr e)]
 
     [(ident i)
-     (display (ident->string i))]
+     (write-string (ident->string i))]
 
     [(placeholder v)
-     (display "$")
+     (write-string "$")
      (display (track-placeholder! v))]
 
-    [(scalar #t) (display "TRUE")]
-    [(scalar #f) (display "FALSE")]
+    [(scalar #t) (write-string "TRUE")]
+    [(scalar #f) (write-string "FALSE")]
 
     [(scalar (and (? list?) items))
-     (display "(")
-     (display/sep items display/expr)
-     (display ")")]
+     (write-string "(")
+     (write/sep items write-expr)
+     (write-string ")")]
 
     [(scalar (and (? string?) str))
-     (display "'")
-     (display (string-replace str "'" "''"))
-     (display "'")]
+     (write-string "'")
+     (write-string (string-replace str "'" "''"))
+     (write-string "'")]
 
     [(scalar (and (? vector?) v))
-     (display "ARRAY[")
-     (display/sep v display/expr)
-     (display "]")]
+     (write-string "ARRAY[")
+     (write/sep v write-expr)
+     (write-string "]")]
 
     [(scalar v)
      (display v)]
 
     [(qualified parent name)
-     (display/expr parent)
-     (display ".")
+     (write-expr parent)
+     (write-string ".")
      (display/quoted name)]
 
     [(as e alias)
      (display/maybe-parenthize e)
-     (display " AS ")
+     (write-string " AS ")
      (display/quoted alias)]
 
-    [(app (and (ident (unary-operator)) op) (list a))
-     (display/expr op)
-     (display " ")
+    [(app (ident (unary-operator op)) (list a))
+     (write-unary-operator op)
+     (write-string " ")
      (display/maybe-parenthize a)]
 
-    [(app (and (ident (binary-operator)) op) (list a b))
+    [(app (ident (binary-operator 'array-ref)) (list a b))
+     (write-string "(")
+     (write-expr a)
+     (write-string ")[")
+     (display/maybe-parenthize b)
+     (write-string "]")]
+
+    [(app (ident (binary-operator 'cast)) (list a b))
+     (write-string "CAST(")
      (display/maybe-parenthize a)
-     (display/spaced op)
+     (write-string " AS ")
+     (write-expr b)
+     (write-string ")")]
+
+    [(app (ident (binary-operator 'extract)) (list a b))
+     (write-string "EXTRACT(")
+     (write-expr a)
+     (write-string " FROM ")
+     (display/maybe-parenthize b)
+     (write-string ")")]
+
+    [(app (ident (binary-operator 'position)) (list a b))
+     (write-string "POSITION(")
+     (display/maybe-parenthize a)
+     (write-string " IN ")
+     (display/maybe-parenthize b)
+     (write-string ")")]
+
+    [(app (ident (binary-operator op)) (list a b))
+     (display/maybe-parenthize a)
+     (write-string " ")
+     (write-binary-operator op)
+     (write-string " ")
      (display/maybe-parenthize b)]
+
+    [(app (ident (ternary-operator 'array-slice)) (list a b c))
+     (write-string "(")
+     (write-expr a)
+     (write-string ")[")
+     (display/maybe-parenthize b)
+     (write-string ":")
+     (display/maybe-parenthize c)
+     (write-string "]")]
+
+    [(app (ident (ternary-operator 'between)) (list a b c))
+     (display/maybe-parenthize a)
+     (write-string " BETWEEN ")
+     (display/maybe-parenthize b)
+     (write-string " AND ")
+     (display/maybe-parenthize c)]
+
+    [(app (ident (ternary-operator 'trim)) (list a b c))
+     (write-string "TRIM(")
+     (display/maybe-parenthize a)
+     (write-string " ")
+     (display/maybe-parenthize b)
+     (write-string " FROM ")
+     (display/maybe-parenthize c)
+     (write-string ")")]
 
     [(app (ident (and (variadic-operator) op)) es)
      (define separator
-       (string-append " " (ident->string op) " "))
+       (with-output-to-string
+         (lambda ()
+           (display " ")
+           (write-variadic-operator op)
+           (display " "))))
 
-     (display/sep
+     (write/sep
       #:sep separator
       es display/maybe-parenthize)]
 
-    [(app (ident 'array-ref) (list a b))
-     (display "(")
-     (display/expr a)
-     (display ")[")
-     (display/maybe-parenthize b)
-     (display "]")]
-
-    [(app (ident 'array-slice) (list a b c))
-     (display "(")
-     (display/expr a)
-     (display ")[")
-     (display/maybe-parenthize b)
-     (display ":")
-     (display/maybe-parenthize c)
-     (display "]")]
-
-    [(app (ident 'between) (list a b c))
-     (display/maybe-parenthize a)
-     (display " BETWEEN ")
-     (display/maybe-parenthize b)
-     (display " AND ")
-     (display/maybe-parenthize c)]
-
-    [(app (ident 'cast) (list a b))
-     (display "CAST(")
-     (display/maybe-parenthize a)
-     (display " AS ")
-     (display/expr b)
-     (display ")")]
-
-    [(app (ident 'extract) (list a b))
-     (display "EXTRACT(")
-     (display/expr a)
-     (display " FROM ")
-     (display/maybe-parenthize b)
-     (display ")")]
-
-    [(app (ident 'position) (list a b))
-     (display "POSITION(")
-     (display/maybe-parenthize a)
-     (display " IN ")
-     (display/maybe-parenthize b)
-     (display ")")]
-
-    [(app (ident 'trim) (list a b c))
-     (display "TRIM(")
-     (display/maybe-parenthize a)
-     (display " ")
-     (display/maybe-parenthize b)
-     (display " FROM ")
-     (display/maybe-parenthize c)
-     (display ")")]
-
     [(app f args)
-     (display/expr f)
-     (display "(")
-     (display/sep args display/expr)
-     (display ")")]
+     (write-expr f)
+     (write-string "(")
+     (write/sep args write-expr)
+     (write-string ")")]
 
     [(case-e cases else-case)
-     (display "CASE")
+     (write-string "CASE")
 
      (for ([c (in-list cases)])
-       (display " WHEN ")
-       (display/expr (car c))
-       (display " THEN ")
-       (display/expr (cdr c)))
+       (write-string " WHEN ")
+       (write-expr (car c))
+       (write-string " THEN ")
+       (write-expr (cdr c)))
 
      (when else-case
-       (display " ELSE ")
-       (display/expr else-case))
+       (write-string " ELSE ")
+       (write-expr else-case))
 
-     (display " END")]
+     (write-string " END")]
 
     [(subquery stmt)
-     (display "(")
-     (display/stmt stmt)
-     (display ")")]))
+     (write-string "(")
+     (write-stmt stmt)
+     (write-string ")")]))
 
-(define ((make-stmt-emitter display/stmt
-                            display/expr
+(define ((make-stmt-emitter write-stmt
+                            write-expr
                             #:supports-returning? [supports-returning? #f]) e)
 
   (define (display/space e)
-    (display " ")
-    (display/stmt e))
+    (write-string " ")
+    (write-stmt e))
 
   (define (display/parens e)
-    (display "(")
-    (display/stmt e)
-    (display ")"))
+    (write-string "(")
+    (write-stmt e)
+    (write-string ")"))
 
   (match e
     [(? expr?)
-     (display/expr e)]
+     (write-expr e)]
 
     [(list exprs ...)
-     (display/sep exprs display/expr)]
+     (write/sep exprs write-expr)]
 
     [(select distinct? columns from where group-by union order-by offset limit)
-     (display "SELECT ")
+     (write-string "SELECT ")
      (when distinct?
-       (display "DISTINCT "))
+       (write-string "DISTINCT "))
      (cond
-       [(null? columns) (display "*")]
-       [else            (display/stmt columns)])
+       [(null? columns) (write-string "*")]
+       [else            (write-stmt columns)])
 
      (when from     (display/space from))
      (when where    (display/space where))
@@ -277,8 +227,8 @@
      (when offset   (display/space offset))]
 
     [(update table assignments where returning)
-     (display "UPDATE ")
-     (display/expr table)
+     (write-string "UPDATE ")
+     (write-expr table)
 
      (when assignments (display/space assignments))
      (when where       (display/space where))
@@ -286,111 +236,101 @@
        (display/space returning))]
 
     [(delete from where returning)
-     (display "DELETE ")
-     (display/stmt from)
+     (write-string "DELETE ")
+     (write-stmt from)
      (when where (display/space where))
      (when (and returning supports-returning?)
        (display/space returning))]
 
     [(insert table columns column-values returning)
-     (display "INSERT INTO ")
-     (display/expr table)
+     (write-string "INSERT INTO ")
+     (write-expr table)
      (display/parens columns)
-     (display " VALUES ")
+     (write-string " VALUES ")
      (display/parens column-values)
      (when (and returning supports-returning?)
        (display/space returning))]
 
     [(assignments pairs)
-     (display "SET ")
-     (display/sep
+     (write-string "SET ")
+     (write/sep
       pairs
       (match-lambda
         [(cons l r)
-         (display/expr l)
-         (display " = ")
-         (display/expr r)]))]
+         (write-expr l)
+         (write-string " = ")
+         (write-expr r)]))]
 
     [(limit e)
-     (display "LIMIT ")
-     (display/expr e)]
+     (write-string "LIMIT ")
+     (write-expr e)]
 
     [(from tables joins)
-     (display "FROM ")
-     (display/sep tables display/stmt)
+     (write-string "FROM ")
+     (write/sep tables write-stmt)
      (unless (null? joins)
        (for ([join (in-list joins)])
-         (display/stmt join)))]
+         (write-stmt join)))]
 
     [(join type lateral? with constraint)
-     (display " ")
-     (display (join-type->string type))
-     (display " ")
+     (write-string " ")
+     (write-string (join-type->string type))
+     (write-string " ")
      (when lateral?
-       (display "LATERAL "))
-     (display/expr with)
-     (display " ON ")
-     (display/expr constraint)]
+       (write-string "LATERAL "))
+     (write-expr with)
+     (write-string " ON ")
+     (write-expr constraint)]
 
     [(where e)
-     (display "WHERE ")
-     (display/expr e)]
+     (write-string "WHERE ")
+     (write-expr e)]
 
     [(group-by cols)
-     (display "GROUP BY ")
-     (display/stmt cols)]
+     (write-string "GROUP BY ")
+     (write-stmt cols)]
 
     [(offset e)
-     (display "OFFSET ")
-     (display/expr e)]
+     (write-string "OFFSET ")
+     (write-expr e)]
 
     [(returning es)
-     (display "RETURNING ")
-     (display/stmt es)]
+     (write-string "RETURNING ")
+     (write-stmt es)]
 
     [(order-by pairs)
-     (display "ORDER BY ")
-     (display/sep
+     (write-string "ORDER BY ")
+     (write/sep
       pairs
       (match-lambda
         [(cons e dir)
-         (display/expr e)
+         (write-expr e)
          (when (eq? dir 'desc)
-           (display " DESC"))]))]
+           (write-string " DESC"))]))]
 
     [(union stmt)
-     (display "UNION (")
-     (display/stmt stmt)
-     (display ")")]))
+     (write-string "UNION (")
+     (write-stmt stmt)
+     (write-string ")")]))
 
-(define (display/sep xs display-p
-                     #:sep [sep ", "])
+(define (write/sep xs write-proc
+                   #:sep [sep ", "])
   (define n-xs
     (sequence-length xs))
 
   (for ([i (in-naturals 1)]
         [x xs])
-    (display-p x)
+    (write-proc x)
     (unless (= i n-xs)
-      (display sep))))
+      (write-string sep))))
 
-(define ident->string
-  (match-lambda
-    ['array-concat    "||"]
-    ['array-contains? "@>"]
-    ['array-overlap?  "&&"]
-    ['bitwise-not     "~"]
-    ['bitwise-and     "&"]
-    ['bitwise-or      "|"]
-    ['bitwise-xor     "#"]
-    ['is-distinct     "IS DISTINCT"]
-    ['similar-to      "SIMILAR TO"]
-    [name             (string-upcase (symbol->string name))]))
+(define (ident->string s)
+  (string-upcase (symbol->string s)))
 
-(define join-type->string
-  (match-lambda
-    ['inner       "JOIN"]
-    ['left   "LEFT JOIN"]
-    ['right "RIGHT JOIN"]
-    ['full   "FULL JOIN"]
-    ['cross "CROSS JOIN"]))
+(define (join-type->string t)
+  (case t
+    [(inner)       "JOIN"]
+    [(left)   "LEFT JOIN"]
+    [(right) "RIGHT JOIN"]
+    [(full)   "FULL JOIN"]
+    [(cross) "CROSS JOIN"]))
