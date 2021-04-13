@@ -500,15 +500,16 @@ Arrays are created using the @racket[(array 1 2 3)] syntax:
   (select _ (array-concat (array 1 2) (array 3 4)))
 ]
 
-Various operators (like @tt{in}) have built-in support and generate
-queries predictably.  Operator names are always lower-case so
-@racket[(in a b)] is valid, while @racket[(IN a b)] is not.  If you
-find an operator that you need doesn't produce the query you expect,
-then open an issue on GitHub and I'll fix it as soon as I can.
+Various operators have built-in support and generate queries
+predictably. Operator names are always lower-case so @racket[(in a b)]
+is valid, while @racket[(IN a b)] is not. If you find an operator that
+you need doesn't produce the query you expect, then open an issue on
+GitHub and I'll fix it as soon as I can.
 
 Within a query expression, the following identifiers are treated
-specially by the base (i.e. PostgreSQL) dialect.  These are inherited
-by other dialects, but using them may result in invalid queries.
+specially by the base (i.e. PostgreSQL) dialect. These are inherited by
+other dialects, but using them with those dialects may result in invalid
+queries.
 
 @(define-syntax-rule (defop id example ...)
   (defidform #:kind "operator" id (interaction #:eval reference-eval example) ...))
@@ -558,13 +559,15 @@ by other dialects, but using them may result in invalid queries.
 @defop[json-contains-all? (display (select _ (json-contains-all? (json "{\"a\": 1}") (array "a" "b"))))]
 @defop[json-contains-any? (display (select _ (json-contains-any? (json "{\"a\": 1}") (array "a" "b"))))]
 @defop[json-contains-path? (display (select _ (json-contains-path? (json "{\"a\": {\"b\": 42}}") "$.a.b")))]
-@defop[json-contains? (display (select _ (json-contains-path? (json "{\"a\": 42}") "a")))]
+@defop[json-contains? (display (select _ (json-contains? (json "{\"a\": 42}") "a")))]
 @defop[json-ref (display (select _ (json-ref (json "{\"a\": {\"b\": 42}}") "a" "b")))]
 @defop[json-ref-text (display (select _ (json-ref-text (json "{\"a\": \"hello\"}") "a")))]
 @defop[json-ref-text/path (display (select _ (json-ref-text/path (json "{\"a\": \"hello\"}") (array "a"))))]
 @defop[json-ref/path (display (select _ (json-ref/path (json "{\"a\": \"hello\"}") (array "a"))))]
 @defop[json-remove (display (select _ (json-remove (json "{\"a\": \"hello\"}") "a")))]
 @defop[json-remove/path (display (select _ (json-remove/path (json "{\"a\": \"hello\"}") (array "a"))))]
+@defop[json-subset? (display (select _ (json-subset? (jsonb "{}") (jsonb "{\"a\": 1}"))))]
+@defop[json-superset? (display (select _ (json-superset? (jsonb "{\"a\": 1}") (jsonb "{}"))))]
 @defop[jsonb (display (select _ (json "{}")))]
 @defop[like (display (select _ (like "a" "%a%")))]
 @defop[position (display (select _ (position "om" "Thomas")))]
@@ -1277,7 +1280,7 @@ in mind!
   @item{Support for @tt{SELECT DISTINCT} queries.}
   @item{The @racket[entity->hash] function.}
   @item{The @racketmodname[deta/reflect] module.}
-  @item{Support for more postgres JSON operators.}
+  @item{Support for more PostgreSQL JSON operators.}
 ]
 
 @subsubsection{@exec{v0.8.0} -- 2021-03-06}
