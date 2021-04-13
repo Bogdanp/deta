@@ -1281,6 +1281,7 @@ in mind!
   @item{The @racket[entity->hash] function.}
   @item{The @racketmodname[deta/reflect] module.}
   @item{Support for more PostgreSQL JSON operators.}
+  @item{Operator arity errors are now enforced.}
 ]
 
 @subsubsection{@exec{v0.8.0} -- 2021-03-06}

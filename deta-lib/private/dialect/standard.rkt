@@ -164,6 +164,15 @@
       #:sep separator
       es display/maybe-parenthize)]
 
+    [(app (ident (unary-operator op)) args)
+     (apply raise-arity-error op 1 args)]
+
+    [(app (ident (binary-operator op)) args)
+     (apply raise-arity-error op 2 args)]
+
+    [(app (ident (ternary-operator op)) args)
+     (apply raise-arity-error op 3 args)]
+
     [(app f args)
      (write-expr f)
      (write-string "(")

@@ -18,11 +18,13 @@
     [(query? q) (query-stmt q)]
     [else q]))
 
-(define-check (check-emitted q expected)
+(define (emit q)
   (define-values (query _)
     (dialect-emit-query postgresql-dialect (query->stmt q)))
+  query)
 
-  (check-equal? query expected))
+(define-check (check-emitted q expected)
+  (check-equal? (emit q) expected))
 
 (define-check (check-emitted/placeholders q expected-query expected-placeholders)
   (define-values (query args)
@@ -209,6 +211,16 @@
                    is_between))
 
      "SELECT ((NOW()) BETWEEN ((NOW()) - (INTERVAL '7 days')) AND ((NOW()) + (INTERVAL '7 days'))) AS is_between")
+
+    (test-case "fails when known operators are called with bad arities"
+      (check-exn
+       #rx"not: arity mismatch"
+       (lambda ()
+         (emit (select _ (not)))))
+      (check-exn
+       #rx"json-subset.: arity mismatch"
+       (lambda ()
+         (emit (select _ (json-subset? "{}" "{}" "{}"))))))
 
     (test-case "supports DISTINCT in from-queries"
       (check-emitted
