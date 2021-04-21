@@ -430,6 +430,34 @@
           (~> (from "books" #:as b)
               (order-by ([(fragment 1)]))))))
 
+     (test-case "supports NULLS FIRST"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (order-by ([b.title #:nulls 'first]
+                       [b.year])))
+        "SELECT * FROM books AS b ORDER BY b.title NULLS FIRST, b.year"))
+
+     (test-case "supports NULLS LAST"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (order-by ([b.title #:nulls 'last]
+                       [b.year])))
+        "SELECT * FROM books AS b ORDER BY b.title NULLS LAST, b.year"))
+
+     (test-case "supports DESC NULLS LAST"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (order-by ([b.title #:desc #:nulls 'last]
+                       [b.year])))
+        "SELECT * FROM books AS b ORDER BY b.title DESC NULLS LAST, b.year"))
+
+     (test-case "supports DESC NULLS LAST (dynamic ordering)"
+       (check-emitted
+        (~> (from "books" #:as b)
+            (order-by ([b.title 'desc #:nulls 'last]
+                       [b.year])))
+        "SELECT * FROM books AS b ORDER BY b.title DESC NULLS LAST, b.year"))
+
      (test-case "supports dynamic lists"
        (check-emitted
         (~> (from "books" #:as b)
