@@ -420,14 +420,22 @@
 
   (define-syntax-class q-order-pair
     #:literals (unquote)
-    (pattern [column:q-expr (~or (~optional (~and #:asc  dir-asc ))
-                                 (~optional (~and #:desc dir-desc))
-                                 (~optional (unquote dir-expr:expr)))]
-             #:with dir (cond
-                          [(attribute dir-expr) #'dir-expr]
-                          [(attribute dir-desc) #''desc]
-                          [else #''asc])
-             #:with e #'(cons column.e dir))))
+    (pattern [column:q-expr (~optional (~or (~and #:asc  dir-asc )
+                                            (~and #:desc dir-desc)
+                                            (unquote dir-expr:expr)))
+                            (~optional (~or (~and #:nulls-first nulls-first*)
+                                            (~and #:nulls-last  nulls-last* )
+                                            (unquote nulls-expr:expr)))]
+             #:with dir
+             (cond [(attribute dir-expr) #'dir-expr]
+                   [(attribute dir-desc) #''desc]
+                   [else #''asc])
+             #:with nulls-dir
+             (cond [(attribute nulls-expr) #'nulls-expr]
+                   [(attribute nulls-first*) #''nulls-first]
+                   [(attribute nulls-last*) #''nulls-last]
+                   [else #'#f])
+             #:with e #'(list column.e dir nulls-dir))))
 
 (define-syntax (from stx)
   (syntax-parse stx

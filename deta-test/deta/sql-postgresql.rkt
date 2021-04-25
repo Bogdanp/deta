@@ -431,32 +431,35 @@
               (order-by ([(fragment 1)]))))))
 
      (test-case "supports NULLS FIRST"
-       (check-emitted
-        (~> (from "books" #:as b)
-            (order-by ([b.title #:nulls 'first]
-                       [b.year])))
-        "SELECT * FROM books AS b ORDER BY b.title NULLS FIRST, b.year"))
+       (define q (from "books" #:as b))
+       (define result
+         "SELECT * FROM books AS b ORDER BY b.title NULLS FIRST, b.year")
+       (check-emitted (order-by q ([b.title #:nulls-first] [b.year])) result)
+       (check-emitted (order-by q ([b.title #:asc ,'nulls-first] [b.year])) result)
+       (check-emitted (order-by q ([b.title ,'asc ,'nulls-first] [b.year])) result)
+       (check-emitted (order-by q ([b.title ,'asc #:nulls-first] [b.year])) result))
 
-     (test-case "supports NULLS LAST"
-       (check-emitted
-        (~> (from "books" #:as b)
-            (order-by ([b.title #:nulls 'last]
-                       [b.year])))
-        "SELECT * FROM books AS b ORDER BY b.title NULLS LAST, b.year"))
+     (test-case "supports NULLS LAST"  ; ASC NULLS LAST is actually Postgres' default
+       (define q (from "books" #:as b))
+       (define result
+         "SELECT * FROM books AS b ORDER BY b.title NULLS LAST, b.year")
+       (check-emitted (order-by q ([b.title #:nulls-last] [b.year])) result))
 
      (test-case "supports DESC NULLS LAST"
-       (check-emitted
-        (~> (from "books" #:as b)
-            (order-by ([b.title #:desc #:nulls 'last]
-                       [b.year])))
-        "SELECT * FROM books AS b ORDER BY b.title DESC NULLS LAST, b.year"))
+       (define q (from "books" #:as b))
+       (define result
+         "SELECT * FROM books AS b ORDER BY b.title DESC NULLS LAST, b.year")
+       (check-emitted (order-by q ([b.title #:desc #:nulls-last] [b.year])) result)
+       (check-emitted (order-by q ([b.title ,'desc ,'nulls-last] [b.year])) result)
+       (check-emitted (order-by q ([b.title #:desc ,'nulls-last] [b.year])) result)
+       (check-emitted (order-by q ([b.title ,'desc #:nulls-last] [b.year])) result))
 
-     (test-case "supports DESC NULLS LAST (dynamic ordering)"
-       (check-emitted
-        (~> (from "books" #:as b)
-            (order-by ([b.title 'desc #:nulls 'last]
-                       [b.year])))
-        "SELECT * FROM books AS b ORDER BY b.title DESC NULLS LAST, b.year"))
+     (test-case "errors out when given an invalid dynamic nulls direction"
+       (check-exn
+        exn:fail:contract?
+        (lambda _
+          (~> (from "books" #:as b)
+              (order-by ([b.title #:asc ,'foo]))))))
 
      (test-case "supports dynamic lists"
        (check-emitted

@@ -312,10 +312,15 @@
      (write/sep
       pairs
       (match-lambda
-        [(cons e dir)
+        [(list e dir nulls-dir)
          (write-expr e)
          (when (eq? dir 'desc)
-           (write-string " DESC"))]))]
+           (write-string " DESC"))
+         (when nulls-dir
+           (write-string " NULLS")
+           (case nulls-dir
+             [(nulls-first) (write-string " FIRST")]
+             [(nulls-last) (write-string " LAST")]))]))]
 
     [(union stmt)
      (write-string "UNION (")

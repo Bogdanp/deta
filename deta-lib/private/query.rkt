@@ -216,7 +216,7 @@
      (query schema opts (struct-copy ast:select stmt [offset (ast:offset n)]))]))
 
 (define order-by-pair/c
-  (cons/c ast:expr? (or/c 'asc 'desc)))
+  (list/c ast:expr? (or/c 'asc 'desc) (or/c #f 'nulls-first 'nulls-last)))
 
 (define/contract (union q1 q2)
   (-> select-query? select-query? query?)
