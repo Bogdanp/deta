@@ -434,7 +434,7 @@
        (define q (from "books" #:as b))
        (define result
          "SELECT * FROM books AS b ORDER BY b.title NULLS FIRST, b.year")
-       (check-emitted (order-by q ([b.title #:nulls-first] [b.year])) result)
+       (check-emitted (order-by q ([b.title #:asc #:nulls-first] [b.year])) result)
        (check-emitted (order-by q ([b.title #:asc ,'nulls-first] [b.year])) result)
        (check-emitted (order-by q ([b.title ,'asc ,'nulls-first] [b.year])) result)
        (check-emitted (order-by q ([b.title ,'asc #:nulls-first] [b.year])) result))
@@ -443,7 +443,7 @@
        (define q (from "books" #:as b))
        (define result
          "SELECT * FROM books AS b ORDER BY b.title NULLS LAST, b.year")
-       (check-emitted (order-by q ([b.title #:nulls-last] [b.year])) result))
+       (check-emitted (order-by q ([b.title #:asc #:nulls-last] [b.year])) result))
 
      (test-case "supports DESC NULLS LAST"
        (define q (from "books" #:as b))
