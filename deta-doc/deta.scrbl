@@ -725,11 +725,16 @@ queries.
   (order-by query ([column maybe-direction] ...+))
   #:grammar
   [(maybe-direction (code:line)
-                    (code:line #:asc)
-                    (code:line #:desc)
-                    (code:line (unquote direction-expr)))]
+                    (code:line #:asc maybe-nulls-direction)
+                    (code:line #:desc maybe-nulls-direction)
+                    (code:line (unquote direction-expr) maybe-nulls-direction))
+   (maybe-nulls-direction (code:line)
+                          (code:line #:nulls-first)
+                          (code:line #:nulls-last)
+                          (code:line (unquote nulls-direction-expr)))]
   #:contracts
-  [(direction-expr (or/c 'asc 'desc))]]{
+  [(direction-expr (or/c 'asc 'desc))
+   (nulls-direction-expr (or/c 'nulls-first 'nulls-last))]]{
 
   Adds an @tt{ORDER BY} clause to @racket[query].  If @racket[query]
   already has one, then the new columns are appended to the existing
@@ -748,6 +753,11 @@ queries.
     (~> (from "users" #:as u)
         (order-by ([u.last-login ,direction])))
   ]
+
+  @interaction[
+    #:eval reference-eval
+    (~> (from "artworks" #:as a)
+        (order-by ([a.year #:desc #:nulls-last])))]
 }
 
 @defproc[(project-onto [q query?]
@@ -1281,6 +1291,7 @@ in mind!
   @item{The @racket[entity->hash] function.}
   @item{The @racketmodname[deta/reflect] module.}
   @item{Support for more PostgreSQL JSON operators.}
+  @item{Support for PostgreSQL @tt{NULLS FIRST} and @tt{NULLS LAST}.}
   @item{Operator arity errors are now enforced.}
 ]
 
