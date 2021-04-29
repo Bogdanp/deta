@@ -418,7 +418,7 @@
              #:with e (with-syntax ([name (datum->syntax #'r (id->column-name (syntax->datum #'column)))])
                         #'(cons (ast:column name) value.e))))
 
-  (define-syntax-class q-order-pair
+  (define-syntax-class q-ordering
     #:literals (unquote)
     (pattern [column:q-expr (~optional
                              (~seq (~or (~and #:asc  dir-asc )
@@ -498,7 +498,7 @@
 
 (define-syntax (order-by stx)
   (syntax-parse stx
-    [(_ q:expr (e:q-order-pair ...+))
+    [(_ q:expr (e:q-ordering ...+))
      #'(dyn:order-by q e.e ...)]))
 
 (define-syntax (returning stx)

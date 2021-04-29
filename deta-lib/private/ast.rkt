@@ -119,7 +119,7 @@
 (struct union clause (stmt)
   #:transparent)
 
-(struct order-by clause (pairs)
+(struct order-by clause (orderings)
   #:transparent)
 
 (struct returning clause (es)

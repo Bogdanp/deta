@@ -307,10 +307,10 @@
      (write-string "RETURNING ")
      (write-stmt es)]
 
-    [(order-by pairs)
+    [(order-by orderings)
      (write-string "ORDER BY ")
      (write/sep
-      pairs
+      orderings
       (match-lambda
         [(list e dir nulls-dir)
          (write-expr e)

@@ -215,7 +215,7 @@
     [(query schema opts stmt)
      (query schema opts (struct-copy ast:select stmt [offset (ast:offset n)]))]))
 
-(define order-by-pair/c
+(define ordering/c
   (list/c ast:expr? (or/c 'asc 'desc) (or/c #f 'nulls-first 'nulls-last)))
 
 (define/contract (union q1 q2)
@@ -236,18 +236,18 @@
     [(query schema opts (and (struct* ast:select ([union u])) stmt))
      (query schema opts (struct-copy ast:select stmt [union (ast:union (union* (ast:union-stmt u) (query-stmt q2)))]))]))
 
-(define/contract (order-by q pair0 . pairs)
-  (-> select-query? order-by-pair/c order-by-pair/c ... query?)
+(define/contract (order-by q ordering0 . orderings)
+  (-> select-query? ordering/c ordering/c ... query?)
 
-  (define all-pairs
-    (cons pair0 pairs))
+  (define all-orderings
+    (cons ordering0 orderings))
 
   (match q
     [(query schema opts (and (struct* ast:select ([order-by #f])) stmt))
-     (query schema opts (struct-copy ast:select stmt [order-by (ast:order-by all-pairs)]))]
+     (query schema opts (struct-copy ast:select stmt [order-by (ast:order-by all-orderings)]))]
 
-    [(query schema opts (and (struct* ast:select ([order-by (ast:order-by existing-pairs)])) stmt))
-     (query schema opts (struct-copy ast:select stmt [order-by (ast:order-by (append existing-pairs all-pairs))]))]))
+    [(query schema opts (and (struct* ast:select ([order-by (ast:order-by existing-orderings)])) stmt))
+     (query schema opts (struct-copy ast:select stmt [order-by (ast:order-by (append existing-orderings all-orderings))]))]))
 
 (define/contract (project-onto q s)
   (-> query? schema? query?)
