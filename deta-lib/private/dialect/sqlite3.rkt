@@ -2,7 +2,6 @@
 
 (require db
          racket/contract
-         racket/format
          racket/match
          racket/port
          "../ast.rkt"
