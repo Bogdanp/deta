@@ -1293,6 +1293,8 @@ in mind!
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
+
+@subsubsection{@exec{v0.9.0} -- 2021-07-25}
 @bold{Added:}
 @itemlist[
   @item{Support for @tt{SELECT DISTINCT} queries.}
@@ -1301,6 +1303,7 @@ in mind!
   @item{Support for more PostgreSQL JSON operators.}
   @item{Support for PostgreSQL @tt{NULLS FIRST} and @tt{NULLS LAST}.}
   @item{Operator arity errors are now enforced.}
+  @item{The @racket[schema-registry-allow-conflicts?] parameter.}
 ]
 
 @subsubsection{@exec{v0.8.0} -- 2021-03-06}
