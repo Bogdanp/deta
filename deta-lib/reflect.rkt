@@ -6,6 +6,7 @@
 
 (provide
  current-schema-registry
+ schema-registry-allow-conflicts?
  schema-registry-lookup
 
  schema-virtual?

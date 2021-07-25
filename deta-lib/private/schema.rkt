@@ -64,7 +64,12 @@
 
 (provide
  current-schema-registry
+ schema-registry-allow-conflicts?
  schema-registry-lookup)
+
+(define/contract schema-registry-allow-conflicts?
+  (parameter/c boolean?)
+  (make-parameter #f))
 
 (define/contract current-schema-registry
   (parameter/c (hash/c symbol? schema?))
@@ -72,8 +77,8 @@
 
 (define (register! id s)
   (define registry (current-schema-registry))
-  (when (hash-has-key? registry id)
-    (raise-user-error 'register! "schema ~a conflicts with a previous one" id))
+  (when (and (hash-has-key? registry id) (not (schema-registry-allow-conflicts?)))
+    (raise-user-error 'register! "a schema with id ~s is already registered" id))
 
   (hash-set! registry id s))
 

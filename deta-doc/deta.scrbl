@@ -13,6 +13,7 @@
                      (except-in racket/base date date? time)
                      racket/contract
                      racket/match
+                     racket/rerequire
                      racket/sequence
                      racket/string
                      (rename-in racket/list (group-by list/group-by))
@@ -1235,6 +1236,13 @@ in mind!
 
 @defparam[current-schema-registry registry (hash/c symbol? schema?) #:value (make-hasheq)]{
   Holds the current schema registry hash.
+}
+
+@defparam[schema-registry-allow-conflicts? allow? boolean? #:value #f]{
+  When this parameter is @racket[#f] (the default), registering
+  multiple schemas with the same id fails with a user error.  It may
+  be useful to set this to @racket[#t] when reloading code with
+  @racket[dynamic-rerequire].
 }
 
 @defproc[(schema-registry-lookup [id symbol?]) schema?]{
