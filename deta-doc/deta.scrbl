@@ -569,7 +569,7 @@ queries.
 @defop[json-remove/path (display (select _ (json-remove/path (json "{\"a\": \"hello\"}") (array "a"))))]
 @defop[json-subset? (display (select _ (json-subset? (jsonb "{}") (jsonb "{\"a\": 1}"))))]
 @defop[json-superset? (display (select _ (json-superset? (jsonb "{\"a\": 1}") (jsonb "{}"))))]
-@defop[jsonb (display (select _ (json "{}")))]
+@defop[jsonb (display (select _ (jsonb "{}")))]
 @defop[like (display (select _ (like "a" "%a%")))]
 @defop[position (display (select _ (position "om" "Thomas")))]
 @defop[similar-to (display (select _ (similar-to "a" "abc")))]
