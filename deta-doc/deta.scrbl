@@ -179,7 +179,7 @@ the table:
 @margin-note{While the DDL functionality is convenient for the
 purposes of this tutorial, in real world projects you should probably
 use something like @hyperlink[north-uri]{north} to manage your
-database table schemas.}
+database schema.}
 
 Now that we have a table, we can insert the book that we created into
 the database:
