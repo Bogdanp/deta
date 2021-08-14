@@ -60,6 +60,9 @@
          (define id/f
            (~? constructor-e (id-field))))]))
 
+(module+ define
+  (provide define-type))
+
 (define-type id
   #:contract exact-nonnegative-integer?
   #:declaration "INTEGER")
