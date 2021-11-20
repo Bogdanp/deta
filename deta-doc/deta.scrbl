@@ -4,6 +4,7 @@
           racket/runtime-path
           racket/sandbox
           scribble/example
+          (prefix-in man: scribble/manual)
           (for-label db
                      db/util/postgresql
                      deta
@@ -20,7 +21,7 @@
                      threading))
 
 @title{@exec{deta}: Functional Database Mapping}
-@author[(author+email "Bogdan Popa" "bogdan@defn.io")]
+@man:author[(author+email "Bogdan Popa" "bogdan@defn.io")]
 
 @defmodule[deta]
 
