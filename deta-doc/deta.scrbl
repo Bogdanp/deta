@@ -548,7 +548,22 @@ queries.
 @defop[cast (display (select _ (cast 1 float)))]
 @defop[date (display (select _ (date "2021-04-09")))]
 @defop[extract (display (select _ (extract hour (timestamp "2021-04-09 18:25:00"))))]
-@defop[fragment]
+@defidform[#:kind "operator" fragment]{
+  This form is used to splice dynamic fragments into queries at
+  runtime.  It depends on the private @racket[deta/private/ast]
+  module, meaning backwards-compatibility is not guaranteed (though
+  the AST module rarely changes).
+
+  @interaction[
+    #:eval reference-eval
+    (require (prefix-in ast: deta/private/ast))
+    (let ([table "users"]
+          [column "name"])
+     (display
+      (~> (from ,table #:as t)
+          (where (= (fragment (ast:qualified "t" column)) "bogdan")))))
+  ]
+}
 @defop[ilike (display (select _ (ilike "A" "%a%")))]
 @defop[in (display (select _ (in 5 '(1 2 3 4 5))))]
 @defop[interval (display (select _ (interval "5 minutes")))]
