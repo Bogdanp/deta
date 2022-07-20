@@ -1241,6 +1241,85 @@ Here are all the types and how they map to the different backends.
   to a field. May only be used on virtual fields.
 }
 
+@subsubsection{Custom Types}
+@defmodule[(submod deta/type define)]
+
+Custom types may be defined using the @racket[define-type] form.
+
+@defform[
+ (define-type id
+  maybe-fields
+  maybe-option ...)
+ #:grammar
+ [(maybe-fields (code:line)
+                (field-id ...))
+  (maybe-option (code:line)
+                contract-decl
+                (code:line #:declaration declaration-expr)
+                (code:line #:constructor constructor-expr)
+                (code:line #:dump dump-expr)
+                (code:line #:load load-expr))
+  (contract-decl (code:line #:contract contract-expr)
+                 (code:line #:contract-fn contract-fn-expr))]
+  #:contracts
+  [(contract-expr contract?)
+   (contract-fn-expr (-> any/c contract?))
+   (declaration-expr (or/c string? (-> any/c symbol? string?)))]]{
+
+  Declares a new field data type.  The data type is named by appending
+  @tt{/f} to its @racket[id].  For example, @racket[(define-type
+  bigint)] produces @racket[bigint/f].  The type constructor and its
+  predicate are automatically provided from the enclosing module.
+
+  The @racket[#:declaration] option controls how the type is rendered
+  in schema declarations.  This is the only required option.  The
+  associated expression may either a @racket[string?] or a function
+  that takes as input the field type and the current dialect.
+
+  The @racket[#:contract] option controls the default contract for
+  values of the data type.  The @racket[#:contract-fn] option is
+  mutually-exclusive with the @racket[#:contract] option and it can be
+  used to parameterize the contract over the type.
+
+  The @racket[#:constructor] option lets you declare a custom
+  constructor procedure for instances of the data type.  This is
+  useful when declaring parameterized types (such as @racket[array/f]
+  or @racket[numeric/f]).
+
+  The @racket[#:dump] option can be used to manipulate values before
+  they are passed to the database.  Its associated expression must be
+  a procedure of three arguments: the data type, the current dialect
+  and the value to dump.
+
+  The @racket[#:load] option can be used to manipulate values before
+  they are passed into entities.  It is the dual of @racket[#:dump].
+
+  @interaction[
+    #:eval reference-eval
+    (module example racket/base
+     (require (submod deta/type define)
+              racket/contract)
+
+     (define-type bigint
+      #:contract exact-integer?
+      #:declaration "BIGINT")
+
+     (define-type bigint-array
+      #:contract (vectorof exact-integer?)
+      #:declaration
+      (lambda (t dialect)
+        (case dialect
+          [(postgresql) "BIGINT[]"]
+          [else (raise-argument-error 'bigint-array "'postgresql" dialect)]))))
+
+    (require 'example)
+    (bigint/f? bigint/f)
+    (bigint-array/f? bigint-array/f)
+  ]
+
+  See "deta-lib/type.rkt" for more examples.
+}
+
 @subsection[#:tag "reflection"]{Reflection}
 
 @defmodule[deta/reflect]
