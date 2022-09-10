@@ -922,11 +922,11 @@ queries.
 @defform[
   (update query assignment ...+)
   #:grammar
-  [(assignment [column q-expr])]]{
+  [(assignment [column-id q-expr])]]{
 
   Converts @racket[query] into an @tt{UPDATE} query, preserving its
-  @tt{FROM} clause, making it the target table for the update, and its
-  @tt{WHERE} clause.
+  @tt{FROM} clause -- making it the target of the update operation --
+  and its @tt{WHERE} clause.
 
   An error is raised if @racket[q] is anything other than a
   @tt{SELECT} query.
@@ -1388,6 +1388,19 @@ in mind!
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
+
+@subsubsection{@exec{v0.10} -- 2022-09-10}
+@bold{Changed:}
+@itemlist[
+  @item{The @racket[update] form checks that its @tt{column-ids} do
+  not contain any periods.  This was previously a source of confusion
+  as they were syntactically valid in deta, but not in SQL, and the
+  resulting errors made it look like the columns did not exist when
+  the problem was actually that SQL assignments must not be qualified.
+  Identifiers containing periods are valid in SQL, but are used
+  infrequently.  If necessary, we may later add a way to escape such
+  identifiers.}
+]
 
 @subsubsection{@exec{v0.9.0} -- 2021-07-25}
 @bold{Added:}

@@ -8,6 +8,7 @@
          racket/port
          racket/set
          rackunit
+         syntax/macro-testing
          threading
          "common.rkt")
 
@@ -344,6 +345,15 @@
 
     (test-suite
      "update"
+
+     (test-case "attempting to update a qualified field is a syntax error"
+       (check-exn
+        #rx"assignments may not be qualified"
+        (lambda ()
+          (convert-compile-time-error
+           (let ()
+             (~> (from user #:as e)
+                 (update [u.username "foo"])))))))
 
      (test-case "can update arbitrary tables"
        (query-exec (current-conn)

@@ -2,6 +2,7 @@
 
 (require (for-syntax racket/base
                      racket/match
+                     racket/string
                      syntax/parse
                      "private/field.rkt")
          (except-in db
@@ -415,6 +416,7 @@
 
   (define-syntax-class q-assignment
     (pattern [column:id value:q-expr]
+             #:fail-when (string-contains? (symbol->string (syntax->datum #'column)) ".") "assignments may not be qualified"
              #:with e (with-syntax ([name (datum->syntax #'r (id->column-name (syntax->datum #'column)))])
                         #'(cons (ast:column name) value.e))))
 
