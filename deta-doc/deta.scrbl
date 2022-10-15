@@ -1252,7 +1252,7 @@ Here are all the types and how they map to the different backends.
 }
 
 @subsubsection{Custom Types}
-@defmodule[(submod deta/type define)]
+@defmodule[deta/type]
 
 Custom types may be defined using the @racket[define-type] form.
 
@@ -1307,7 +1307,7 @@ Custom types may be defined using the @racket[define-type] form.
   @interaction[
     #:eval reference-eval
     (module example racket/base
-     (require (submod deta/type define)
+     (require deta/type
               racket/contract)
 
      (define-type bigint
@@ -1331,7 +1331,6 @@ Custom types may be defined using the @racket[define-type] form.
 }
 
 @subsection[#:tag "reflection"]{Reflection}
-
 @defmodule[deta/reflect]
 
 The bindings provided by this module let you access schema and field
@@ -1398,6 +1397,21 @@ in mind!
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
+
+@subsubsection{@exec{v0.11} -- Unreleased}
+@bold{Added:}
+@itemlist[
+  @item{The @racket[#:force?] keyword to @racket[update!] and
+  @racket[update-one!].}
+]
+@bold{Changed:}
+@itemlist[
+  @item{The @racket[define-type] form is now provided by the
+  @racketmodname[deta/type] module instead of a submodule.  This is a
+  breaking change in version 0.11.  To update your code, simply change
+  any instances of @racket[(submod deta/type define)] to
+  @racket[deta/type].}
+]
 
 @subsubsection{@exec{v0.10} -- 2022-09-10}
 @bold{Changed:}

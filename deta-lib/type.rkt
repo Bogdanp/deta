@@ -13,7 +13,8 @@
          "private/type.rkt")
 
 (provide
- type?)
+ type?
+ define-type)
 
 (define (raise-dialect-error who d)
   (raise-user-error who "unsupported dialect ~s" d))
@@ -59,9 +60,6 @@
          (define id/f? id-field?)
          (define id/f
            (~? constructor-e (id-field))))]))
-
-(module+ define
-  (provide define-type))
 
 (define-type id
   #:contract exact-nonnegative-integer?
