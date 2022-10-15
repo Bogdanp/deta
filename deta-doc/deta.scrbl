@@ -390,22 +390,30 @@ the reference documentation below.
   If there are no results then @racket[#f] is returned.
 }
 
-@defproc[(update! [conn connection?]
+@defproc[(update! [#:force? force? boolean? #f]
+                  [conn connection?]
                   [e entity?] ...) (listof entity?)]{
 
   Attempts to update any modified entities.  Only updates the fields
   that have changed since the entities were retrieved from the
-  database.  Returns those entities that have been updated.
+  database.  Returns those entities that have been updated.  When
+  @racket[#:force?] is @racket[#t], every entity is updated regardless
+  of whether or not its fields have changed since being retrieved.
 
   Raises a user error if any of the entities don't have a primary key
   field.
+
+  @history[#:changed "0.11" @elem{Added the @racket[#:force?] keyword.}]
 }
 
-@defproc[(update-one! [conn connection?]
+@defproc[(update-one! [#:force? force? boolean? #f]
+                      [conn connection?]
                       [e entity?]) (or/c false/c entity?)]{
 
   Attempts to update @racket[e].  If it doesn't need to be updated,
-  then @racket[#f] is returned.
+  then @racket[#f] is returned.  When @racket[#:force?] is
+  @racket[#t], the entity is updated whether or not is has been
+  changed.
 
   Equivalent to:
 
@@ -414,6 +422,8 @@ the reference documentation below.
       [(list e) e]
       [_ #f])
   ]
+
+  @history[#:changed "0.11" @elem{Added the @racket[#:force?] keyword.}]
 }
 
 @defproc[(delete! [conn connection?]

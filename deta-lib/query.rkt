@@ -115,35 +115,40 @@
  update!
  update-one!)
 
-(define/contract (update! conn . entities)
-  (-> connection? entity? ... (listof entity?))
+(define/contract (update! conn #:force? [force? #f] . entities)
+  (->* (connection?)
+       (#:force? boolean?)
+       #:rest (listof entity?)
+       (listof entity?))
   (define dialect (connection-dialect conn))
   (define maybe-updated
     (for/list ([entity (in-list entities)])
-      (update-entity! dialect conn entity)))
+      (update-entity! dialect conn entity force?)))
   (filter values maybe-updated))
 
-(define/contract (update-one! conn entity)
-  (-> connection? entity? (or/c false/c entity?))
-  (match (update! conn entity)
+(define/contract (update-one! conn entity #:force? [force? #f])
+  (->* (connection? entity?)
+       (#:force? boolean?)
+       (or/c false/c entity?))
+  (match (update! conn entity #:force? force?)
     [(list e) e]
     [_ #f]))
 
-(define (update-entity! dialect conn entity)
+(define (update-entity! dialect conn entity force?)
   (define schema (meta-schema (entity-meta entity)))
   (define pk (schema-primary-key schema))
   (unless pk
     (raise-argument-error 'update-entity! "entity with primary key field" entity))
 
   (cond
-    [(meta-can-update? (entity-meta entity))
+    [(or force? (meta-can-update? (entity-meta entity)))
      (define entity* ((schema-pre-persist-hook schema) entity))
      (define changes (meta-changes (entity-meta entity*)))
      (define-values (columns column-values)
        (for*/fold ([columns null]
                    [column-values null])
                   ([f (in-list (schema-fields schema))]
-                   #:when (set-member? changes (field-id f))
+                   #:when (or force? (set-member? changes (field-id f)))
                    #:unless (or (field-auto-increment? f) (field-virtual? f)))
          (values (cons (field-name f) columns)
                  (cons (type-dump/null (field-type f)
