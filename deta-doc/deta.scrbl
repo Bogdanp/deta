@@ -1397,8 +1397,16 @@ in mind!
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
+@subsubsection{@exec{v0.12} -- 2023-03-10}
+@bold{Changed:}
+@itemlist[
+  @item{The sqlite3 dialect now supports the @tt{RETURNING} clause.
+  This change requires SQLite3 version 3.35 (released in March 2021)
+  or later.  If your system does not have a recent enough version of
+  SQLite, see the @tt{libsqlite3} Racket package.}
+]
 
-@subsubsection{@exec{v0.11} -- Unreleased}
+@subsubsection{@exec{v0.11} -- 2022-10-15}
 @bold{Added:}
 @itemlist[
   @item{The @racket[#:force?] keyword to @racket[update!] and
