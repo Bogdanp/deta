@@ -98,7 +98,7 @@
            (if (dialect-supports-returning? dialect)
                (apply query-value conn query args)
                (call-with-transaction conn
-                 (lambda _
+                 (lambda ()
                    (apply query-exec conn query args)
                    (query-value conn (dialect-last-id-query dialect))))))
 

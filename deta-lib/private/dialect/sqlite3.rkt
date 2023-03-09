@@ -34,7 +34,7 @@
          (-> dialect? stmt? string?)
          (emit-stmt s))
 
-       (define/contract (dialect-prepare-parameters _ p args)
+       (define/contract (dialect-prepare-parameters _ _p args)
          (-> dialect? prepared-statement? (listof any/c) (listof any/c))
          (for/list ([arg (in-list args)])
            (match arg
@@ -119,5 +119,6 @@
      (emit-stmt/standard e)]))
 
 (define emit-stmt/standard
-  (make-stmt-emitter emit-stmt/sqlite3 emit-expr
-                     #:supports-returning? #t))
+  (make-stmt-emitter
+   #:supports-returning? #t
+   emit-stmt/sqlite3 emit-expr))
