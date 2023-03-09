@@ -20,7 +20,7 @@
     (struct sqlite3-dialect ()
       #:methods gen:dialect
       [(define (dialect-name _) 'sqlite3)
-       (define (dialect-supports-returning? _) #f)
+       (define (dialect-supports-returning? _) #t)
 
        (define/contract (dialect-last-id-query _)
          (-> dialect? string?)
@@ -119,4 +119,5 @@
      (emit-stmt/standard e)]))
 
 (define emit-stmt/standard
-  (make-stmt-emitter emit-stmt/sqlite3 emit-expr))
+  (make-stmt-emitter emit-stmt/sqlite3 emit-expr
+                     #:supports-returning? #t))

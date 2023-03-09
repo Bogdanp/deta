@@ -355,6 +355,20 @@
              (~> (from user #:as e)
                  (update [u.username "foo"])))))))
 
+     (test-case "supports returning clause"
+       (define expected-id
+         (query-value (current-conn)
+                     (~> (from user #:as u)
+                         (select id)
+                         (limit 1))))
+       (define returned-id
+         (query-value (current-conn)
+                     (~> (from user #:as u)
+                         (update [active? #t])
+                         (where (= id ,expected-id))
+                         (returning id))))
+       (check-equal? expected-id returned-id))
+
      (test-case "can update arbitrary tables"
        (query-exec (current-conn)
                    (~> (from user #:as u)

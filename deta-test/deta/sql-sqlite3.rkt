@@ -61,6 +61,16 @@
      "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))
 
    (test-suite
+    "returning"
+
+    (check-emitted
+     (~> (from "books" #:as b)
+         (update [published-at (date "now")])
+         (returning title))
+
+     "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))
+
+   (test-suite
     "union"
 
     (check-emitted
