@@ -68,7 +68,7 @@
          (update [published-at (date "now")])
          (returning title))
 
-     "SELECT * FROM books AS b LIMIT 20 OFFSET 10"))
+     "UPDATE books AS b SET published_at = DATE('now') RETURNING TITLE"))
 
    (test-suite
     "union"
