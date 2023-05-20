@@ -14,9 +14,9 @@
  sql-tests)
 
 (define (query->stmt q)
-  (cond
-    [(query? q) (query-stmt q)]
-    [else q]))
+  (if (query? q)
+      (query-stmt q)
+      q))
 
 (define (emit q)
   (define-values (query _)
@@ -24,14 +24,28 @@
   query)
 
 (define-check (check-emitted q expected)
-  (check-equal? (emit q) expected))
+  (define query (emit q))
+  (with-check-info
+    (['query query]
+     ['expected expected])
+    (unless (equal? query expected)
+      (fail-check))))
 
 (define-check (check-emitted/placeholders q expected-query expected-placeholders)
   (define-values (query args)
     (dialect-emit-query postgresql-dialect (query->stmt q)))
 
-  (check-equal? query expected-query)
-  (check-equal? args expected-placeholders))
+  (with-check-info
+    (['query query]
+     ['expected expected-query])
+    (unless (equal? query expected-query)
+      (fail-check)))
+
+  (with-check-info
+    (['placeholders args]
+     ['expected expected-placeholders])
+    (unless (equal? args expected-placeholders)
+      (fail-check))))
 
 (define sql-tests
   (test-suite

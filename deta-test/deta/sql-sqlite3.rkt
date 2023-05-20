@@ -15,7 +15,11 @@
   (define-values (query _)
     (dialect-emit-query sqlite3-dialect (query-stmt q)))
 
-  (check-equal? query expected))
+  (with-check-info
+    (['query query]
+     ['expected expected])
+    (unless (equal? query expected)
+      (fail-check))))
 
 (define sql-tests
   (test-suite
