@@ -303,6 +303,19 @@
   (lambda (_ dialect)
     (case dialect
       [(mysql postgresql) "JSON"]
+      [(sqlite3) "TEXT"]
+      [else (raise-dialect-error 'json/f dialect)]))
+  #:load
+  (lambda (_ dialect v)
+    (case dialect
+      [(mysql postgresql) v]
+      [(sqlite3) (string->jsexpr v)]
+      [else (raise-dialect-error 'json/f dialect)]))
+  #:dump
+  (lambda (_ dialect v)
+    (case dialect
+      [(mysql postgresql) v]
+      [(sqlite3) (jsexpr->string v)]
       [else (raise-dialect-error 'json/f dialect)])))
 
 (define-type jsonb

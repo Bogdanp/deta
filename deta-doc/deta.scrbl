@@ -1216,7 +1216,7 @@ Here are all the types and how they map to the different backends.
         (list @racket[datetime-tz/f]  @racket[moment-provider?]            @tt{TIMESTMAPTZ}        @tt{TEXT}         )
         (list @racket[uuid/f]         @racket[uuid?]                       @tt{UUID}               @tt{UNSUPPORTED}  )
         (list @racket[array/f]        @racket[vector?]                     @tt{ARRAY}              @tt{UNSUPPORTED}  )
-        (list @racket[json/f]         @racket[jsexpr?]                     @tt{JSON}               @tt{UNSUPPORTED}  )
+        (list @racket[json/f]         @racket[jsexpr?]                     @tt{JSON}               @tt{TEXT}         )
         (list @racket[jsonb/f]        @racket[jsexpr?]                     @tt{JSONB}              @tt{UNSUPPORTED}  )
         (list @racket[any/f]          @racket[any/c]                       @tt{N/A}                @tt{N/A}          )
         )]
@@ -1397,6 +1397,12 @@ in mind!
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
+@subsubsection{@exec{v0.13} -- 2023-05-20}
+@bold{Added:}
+@itemlist[
+  @item{SQLite support for the @racket[json/f] type.}
+]
+
 @subsubsection{@exec{v0.12} -- 2023-03-10}
 @bold{Changed:}
 @itemlist[

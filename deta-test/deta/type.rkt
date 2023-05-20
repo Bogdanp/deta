@@ -3,8 +3,6 @@
 (require db
          db/util/postgresql
          deta
-         deta/private/field
-         deta/private/schema
          deta/private/type
          gregor
          rackunit)
@@ -16,26 +14,35 @@
    (test-suite
     "array/f"
 
-    (for ([dialect '(postgresql sqlite3)]
-          [expected (list (list (sql-date 1996 5 29)
-                                (sql-date 2019 5 29))
-                          (list "1996-05-29"
-                                "2019-05-29"))])
-      (test-case (format "can dump and load dumped values for ~a" dialect)
-        (define initial
+    (for ([dialect (in-list '(postgresql sqlite3))]
+          [expected (in-list `((,(sql-date 1996 5 29)
+                                ,(sql-date 2019 5 29))
+                               ("1996-05-29"
+                                "2019-05-29")))])
+      (test-case (format "roundtrip array values (~a)" dialect)
+        (define type (array/f date/f))
+        (define value
           (vector (date 1996 5 29)
                   (date 2019 5 29)))
 
-        (define type (array/f date/f))
-        (define dumped
-          (type-dump type dialect initial))
-
+        (define dumped (type-dump type dialect value))
         (check-equal? dumped expected)
 
-        (define loaded
-          (type-load type dialect (list->pg-array dumped)))
+        (define loaded (type-load type dialect (list->pg-array dumped)))
+        (check-equal? loaded value))))
 
-        (check-equal? loaded initial))))
+   (test-suite
+    "json/f"
+
+    (for ([dialect (in-list '(postgresql sqlite3))]
+          [expected (in-list `(#hasheq((hello . "world"))
+                               "{\"hello\":\"world\"}"))])
+      (test-case (format "roundtrip json values (~a)" dialect)
+        (define value (hasheq 'hello "world"))
+        (define dumped (type-dump json/f dialect value))
+        (check-equal? dumped expected)
+        (define loaded (type-load json/f dialect dumped))
+        (check-equal? loaded value))))
 
    (test-suite
     "uuid/f"
@@ -48,12 +55,13 @@
            ([uuid uuid/f]))
 
          (make-with-uuid
-          ("invalid-uuid")))))
+          #:uuid "invalid-uuid"))))
 
     (test-case "raises when invoked for sqlite"
       (check-exn
        exn:fail:user?
-       (lambda () (type-declaration uuid/f 'sqlite3))))
+       (lambda ()
+         (type-declaration uuid/f 'sqlite3))))
 
     (test-case "dump and load"
       (define some-uuids
@@ -76,13 +84,17 @@
 
     (test-case "raises on type-declaration"
       (for ([dialect (in-list '(postgresql sqlite3))])
-        (check-exn exn:fail:user?
-                   (lambda () (type-declaration any/f dialect)))))
+        (check-exn
+         exn:fail:user?
+         (λ ()
+           (type-declaration any/f dialect)))))
 
     (test-case "raises on type-dump"
       (for ([dialect (in-list '(postgresql sqlite3))])
-        (check-exn exn:fail:user?
-                   (lambda () (type-dump any/f dialect "somevalue")))))
+        (check-exn
+         exn:fail:user?
+         (λ ()
+           (type-dump any/f dialect "somevalue")))))
 
     (test-case "pass-through on type-load"
       (for* ([val (in-list '("string" symbol 5 '(another list)))]
