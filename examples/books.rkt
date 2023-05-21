@@ -14,7 +14,7 @@
   (sqlite3-connect #:database 'memory))
 
 (void
- (create-table! conn 'book)
+ (create-all! conn)
  (insert! conn
           (make-book #:title "To Kill a Mockingbird"
                      #:author "Harper Lee"

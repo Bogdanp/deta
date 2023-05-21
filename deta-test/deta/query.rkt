@@ -27,14 +27,8 @@
 
    #:before
    (lambda ()
-     (drop-table! (current-conn) 'book-with-nulls)
-     (drop-table! (current-conn) 'user)
-     (drop-table! (current-conn) 'password-reset)
-     (drop-table! (current-conn) 'hybrid)
-     (create-table! (current-conn) 'book-with-nulls)
-     (create-table! (current-conn) 'user)
-     (create-table! (current-conn) 'password-reset)
-     (create-table! (current-conn) 'hybrid))
+     (drop-all! (current-conn))
+     (create-all! (current-conn)))
 
    (test-suite
     "prop:statement"
@@ -51,13 +45,13 @@
     (test-case "prints queries"
       (check-equal?
        (with-output-to-string
-         (lambda _
+         (lambda ()
            (display (select _ 1))))
        "#<query: SELECT 1>")
 
       (check-equal?
        (with-output-to-string
-         (lambda _
+         (lambda ()
            (display (select _ ,1))))
        "#<query: SELECT $1 1>")))
 
@@ -69,7 +63,7 @@
        (lambda (e)
          (and (exn:fail:user? e)
               (check-regexp-match "unregistered schema" (exn-message e))))
-       (lambda _
+       (lambda ()
          (create-table! (current-conn) 'idontexist))))
 
     (test-case "ignores virtual fields"
@@ -100,7 +94,7 @@
 
       (check-exn
        exn:fail:user?
-       (lambda _
+       (lambda ()
          (insert! (current-conn) (make-v #:x 42)))))
 
     (test-case "persists entities w/o a primary key"
@@ -473,10 +467,11 @@
 
           query-tests)))
 
-      (let ([pool (connection-pool connect)])
-        (parameterize ([current-conn (connection-pool-lease pool)])
-          (run-tests
-           (test-suite
-            "postgresql (connection pool)"
+      (parameterize ([current-conn
+                      (connection-pool-lease
+                       (connection-pool connect))])
+        (run-tests
+         (test-suite
+          "postgresql (connection pool)"
 
-            query-tests)))))))
+          query-tests))))))

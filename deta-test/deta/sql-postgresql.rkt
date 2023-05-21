@@ -425,7 +425,7 @@
      (test-case "errors out when given an invalid dynamic direction"
        (check-exn
         exn:fail:contract?
-        (lambda _
+        (lambda ()
           (~> (from "books" #:as b)
               (order-by ([b.year ,1]))))))
 
@@ -440,7 +440,7 @@
      (test-case "errors out when given an invalid dynamic column"
        (check-exn
         exn:fail:contract?
-        (lambda _
+        (lambda ()
           (~> (from "books" #:as b)
               (order-by ([(fragment 1)]))))))
 
@@ -471,7 +471,7 @@
      (test-case "errors out when given an invalid dynamic nulls direction"
        (check-exn
         exn:fail:contract?
-        (lambda _
+        (lambda ()
           (~> (from "books" #:as b)
               (order-by ([b.title #:asc ,'foo]))))))
 
@@ -632,7 +632,7 @@
     (test-case "raises an error if trying to update a subquery"
       (check-exn
        exn:fail:contract?
-       (lambda _
+       (lambda ()
          (~> (from (subquery (select _ 1)) #:as t)
              (update [x 2]))))))
 
@@ -672,7 +672,7 @@
     (test-case "raises an error if trying to delete a subquery"
       (check-exn
        exn:fail:contract?
-       (lambda _
+       (lambda ()
          (delete (from (subquery (select _ 1)) #:as t))))))))
 
 (module+ test

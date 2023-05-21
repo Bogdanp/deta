@@ -46,7 +46,7 @@
 
 (define (emit-ddl d)
   (with-output-to-string
-    (lambda _
+    (lambda ()
       (match d
         [(create-table table fields)
          (display "CREATE TABLE IF NOT EXISTS ")
@@ -106,7 +106,7 @@
 
 (define (emit-stmt e)
   (with-output-to-string
-    (lambda _
+    (lambda ()
       (emit-stmt/sqlite3 e))))
 
 (define (emit-stmt/sqlite3 e)

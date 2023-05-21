@@ -41,7 +41,7 @@
 
 (define (emit-ddl d)
   (with-output-to-string
-    (lambda _
+    (lambda ()
       (match d
         [(create-table table fields)
          (display "CREATE TABLE IF NOT EXISTS ")
@@ -81,8 +81,7 @@
     (displayln ",")))
 
 (define (emit-expr e)
-  (match e
-    [_ (emit-expr/standard e)]))
+  (emit-expr/standard e))
 
 (define emit-expr/standard
   (make-expr-emitter emit-expr
@@ -91,12 +90,13 @@
 
 (define (emit-stmt e)
   (with-output-to-string
-    (lambda _
+    (lambda ()
       (emit-stmt/postgresql e))))
 
 (define (emit-stmt/postgresql e)
   (emit-stmt/standard e))
 
 (define emit-stmt/standard
-  (make-stmt-emitter emit-stmt/postgresql emit-expr
-                     #:supports-returning? #t))
+  (make-stmt-emitter
+   #:supports-returning? #t
+   emit-stmt/postgresql emit-expr))

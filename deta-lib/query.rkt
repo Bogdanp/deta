@@ -24,18 +24,27 @@
 ;; ddl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- create-table!
- drop-table!)
+ (contract-out
+  [create-all! (-> connection? void?)]
+  [drop-all! (-> connection? void?)]
+  [create-table! (-> connection? (or/c schema? symbol?) void?)]
+  [drop-table! (-> connection? (or/c schema? symbol?) void?)]))
 
-(define/contract (create-table! conn schema-or-name)
-  (-> connection? (or/c schema? symbol?) void?)
+(define (create-all! conn)
+  (for ([schema (in-hash-values (current-schema-registry))])
+    (create-table! conn schema)))
+
+(define (drop-all! conn)
+  (for ([schema (in-hash-values (current-schema-registry))])
+    (drop-table! conn schema)))
+
+(define (create-table! conn schema-or-name)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:create-table (schema-table schema)
                                                        (schema-fields/nonvirtual schema)))))
 
-(define/contract (drop-table! conn schema-or-name)
-  (-> connection? (or/c schema? symbol?) void?)
+(define (drop-table! conn schema-or-name)
   (define schema (schema-registry-lookup schema-or-name))
   (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:drop-table (schema-table schema)))))
@@ -44,17 +53,16 @@
 ;; insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- insert!
- insert-one!)
+ (contract-out
+  [insert! (-> connection? entity? ... (listof entity?))]
+  [insert-one! (-> connection? entity? (or/c #f entity?))]))
 
-(define/contract (insert! conn . entities)
-  (-> connection? entity? ... (listof entity?))
+(define (insert! conn . entities)
   (define dialect (connection-dialect conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-persist? (entity-meta entity)))
     (insert-entity! dialect conn entity)))
 
-(define/contract (insert-one! conn entity)
-  (-> connection? entity? (or/c false/c entity?))
+(define (insert-one! conn entity)
   (match (insert! conn entity)
     [(list entity) entity]
     [_ #f]))
@@ -112,24 +120,23 @@
 ;; update ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- update!
- update-one!)
+ (contract-out
+  [update! (->* (connection?)
+                (#:force? boolean?)
+                #:rest (listof entity?)
+                (listof entity?))]
+  [update-one! (->* (connection? entity?)
+                    (#:force? boolean?)
+                    (or/c #f entity?))]))
 
-(define/contract (update! conn #:force? [force? #f] . entities)
-  (->* (connection?)
-       (#:force? boolean?)
-       #:rest (listof entity?)
-       (listof entity?))
+(define (update! conn #:force? [force? #f] . entities)
   (define dialect (connection-dialect conn))
   (define maybe-updated
     (for/list ([entity (in-list entities)])
       (update-entity! dialect conn entity force?)))
   (filter values maybe-updated))
 
-(define/contract (update-one! conn entity #:force? [force? #f])
-  (->* (connection? entity?)
-       (#:force? boolean?)
-       (or/c false/c entity?))
+(define (update-one! conn entity #:force? [force? #f])
   (match (update! conn entity #:force? force?)
     [(list e) e]
     [_ #f]))
@@ -184,17 +191,16 @@
 ;; delete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- delete!
- delete-one!)
+ (contract-out
+  [delete! (-> connection? entity? ... (listof entity?))]
+  [delete-one! (-> connection? entity? (or/c #f entity?))]))
 
-(define/contract (delete! conn . entities)
-  (-> connection? entity? ... (listof entity?))
+(define (delete! conn . entities)
   (define dialect (connection-dialect conn))
   (for/list ([entity (in-list entities)] #:when (meta-can-delete? (entity-meta entity)))
     (delete-entity! dialect conn entity)))
 
-(define/contract (delete-one! conn entity)
-  (-> connection? entity? (or/c false/c entity?))
+(define (delete-one! conn entity)
   (match (delete! conn entity)
     [(list e) e]
     [_ #f]))
@@ -226,8 +232,11 @@
 ;; select ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- in-entities
- lookup
+ (contract-out
+  [in-entities (->* (connection? dyn:query?)
+                    (#:batch-size (or/c exact-positive-integer? +inf.0))
+                    sequence?)]
+  [lookup (-> connection? dyn:query? any)])
 
  from
  group-by
@@ -294,11 +303,8 @@
 (define-keywords
   array as subquery fragment)
 
-(define/contract (in-entities conn q
-                              #:batch-size [batch-size +inf.0])
-  (->* (connection? dyn:query?)
-       (#:batch-size (or/c exact-positive-integer? +inf.0))
-       sequence?)
+(define (in-entities conn q
+                     #:batch-size [batch-size +inf.0])
   (define dialect
     (dbsystem-name (connection-dbsystem conn)))
   (define results-seq
@@ -318,8 +324,7 @@
     [else
      results-seq]))
 
-(define/contract (lookup conn q)
-  (-> connection? dyn:query? any)
+(define (lookup conn q)
   (define-values (res _)
     (sequence-generate* (in-entities conn q)))
 
@@ -421,7 +426,8 @@
 
   (define-syntax-class q-assignment
     (pattern [column:id value:q-expr]
-             #:fail-when (string-contains? (symbol->string (syntax->datum #'column)) ".") "assignments may not be qualified"
+             #:fail-when (string-contains? (symbol->string (syntax->datum #'column)) ".")
+             "assignments may not be qualified"
              #:with e (with-syntax ([name (datum->syntax #'r (id->column-name (syntax->datum #'column)))])
                         #'(cons (ast:column name) value.e))))
 
@@ -483,7 +489,8 @@
 (define-syntax (limit stx)
   (syntax-parse stx
     [(_ q:expr n:number)
-     #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n) "n must be a positive integer"
+     #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n)
+     "n must be a positive integer"
      #'(dyn:limit q (ast:scalar n))]
 
     [(_ q:expr p:placeholder-expr)
@@ -492,7 +499,8 @@
 (define-syntax (offset stx)
   (syntax-parse stx
     [(_ q:expr n:number)
-     #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n) "n must be a positive integer"
+     #:fail-when (and (not (exact-nonnegative-integer? (syntax->datum #'n))) #'n)
+     "n must be a positive integer"
      #'(dyn:offset q (ast:scalar n))]
 
     [(_ q:expr p:placeholder-expr)

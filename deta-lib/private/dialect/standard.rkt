@@ -8,7 +8,7 @@
          "dialect.rkt"
          "operator.rkt")
 
-;; Implements a "standard" emitter for SQL from our AST.  I say
+;; Implements a "standard" emitter for SQL from our AST. I say
 ;; "standard", but what I really mean is as close to the standard as
 ;; PostgreSQL 11 natively supports.
 
@@ -25,6 +25,9 @@
     [(regexp-match-exact? #rx"[a-z_][a-z0-9_]*" e) e]
     [else (string-append "\"" e "\"")]))
 
+(define (display/quoted e)
+  (write-string (quote/standard e)))
+
 (define ((make-expr-emitter write-expr write-stmt) e)
   (define (display/maybe-parenthize e)
     (match e
@@ -38,9 +41,6 @@
        (write-string "(")
        (write-expr e)
        (write-string ")")]))
-
-  (define (display/quoted e)
-    (write-string (quote/standard e)))
 
   (match e
     [(? string?)
@@ -320,15 +320,14 @@
            (write-string " NULLS")
            (case nulls-dir
              [(nulls-first) (write-string " FIRST")]
-             [(nulls-last) (write-string " LAST")]))]))]
+             [(nulls-last)  (write-string " LAST")]))]))]
 
     [(union stmt)
      (write-string "UNION (")
      (write-stmt stmt)
      (write-string ")")]))
 
-(define (write/sep xs write-proc
-                   #:sep [sep ", "])
+(define (write/sep xs write-proc #:sep [sep ", "])
   (define n-xs
     (sequence-length xs))
 

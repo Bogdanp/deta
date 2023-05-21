@@ -5,6 +5,7 @@
          deta/private/schema
          racket/generic
          racket/match
+         racket/port
          racket/set
          rackunit
          syntax/macro-testing
@@ -71,7 +72,7 @@
              (lambda (e)
                (and (exn:fail:syntax? e)
                     (regexp-match? "virtual fields may not have database-related attributes" (exn-message e))))
-             (lambda _
+             (lambda ()
                (convert-compile-time-error
                 (let ()
                   (define-schema illegal
@@ -93,7 +94,7 @@
     (test-case "raises an error if two schemas are defined with the same name"
       (check-exn
        exn:fail:user?
-       (lambda _
+       (lambda ()
          (define-schema user
            ([id id/f #:primary-key #:auto-increment]))
 
@@ -107,37 +108,37 @@
     (test-case "defined structs have an associated smart constructor"
       (check-exn
        exn:fail:contract?
-       (lambda _
-         (make-user #:username 1)))
-
+       (λ () (make-user #:username 1)))
       (check-true (user? (make-user #:username "bogdan@example.com"))))
 
     (test-case "defined structs have associated functional setters and updaters"
-      (define a-user (make-user #:username "bogdan"))
-      (check-equal? (~> a-user
-                        (set-user-username "bogdan-paul")
-                        (update-user-username string-upcase)
-                        (user-username))
-                    "BOGDAN-PAUL"))
+      (define a-user
+        (make-user #:username "bogdan"))
+      (check-equal?
+       (~> a-user
+           (set-user-username "bogdan-paul")
+           (update-user-username string-upcase)
+           (user-username))
+       "BOGDAN-PAUL"))
 
     (test-case "defined structs have associated metadata"
       (define m (entity-meta (make-user #:username "bogdan")))
       (check-eq? (meta-state m) 'created)
       (check-equal? (meta-changes m) (seteq)))
 
-    ;; XFAIL: Custom field names are not currently replaced.
-    #;
     (test-case "schema fields can have custom names"
       (define q
         (with-output-to-string
-          (lambda _
+          (λ ()
             (display (select (from user #:as u) u.valid?)))))
 
-      (check-equal? q "#<query: SELECT \"u\".\"valid\" FROM \"users\" AS \"u\">"))
+      (check-equal? q "#<query: SELECT u.is_valid FROM users AS u>"))
 
     (test-case "struct-options are passed to the struct definition"
       (define e (make-entry #:title "hello"))
-      (check-equal? (->jsexpr e) (hasheq 'title "hello"))))
+      (check-equal?
+       (->jsexpr e)
+       (hasheq 'title "hello"))))
 
    (test-suite
     "schema-registry-lookup"
@@ -145,7 +146,7 @@
     (test-case "raises an error when given a nonexistent schema"
       (check-exn
        exn:fail?
-       (lambda _
+       (λ ()
          (schema-registry-lookup 'idontexist))))
 
     (test-case "returns a schema given its name"
@@ -165,10 +166,11 @@
                    #:author "J.R.R. Tolkien"))
 
       (check-true (book? a-book))
-      (check-equal? (~> (set-book-title a-book "The Lord of the Rings")
-                        (update-book-title string-upcase)
-                        (book-title))
-                    "THE LORD OF THE RINGS")))))
+      (check-equal?
+       (~> (set-book-title a-book "The Lord of the Rings")
+           (update-book-title string-upcase)
+           (book-title))
+       "THE LORD OF THE RINGS")))))
 
 (module+ test
   (require rackunit/text-ui)

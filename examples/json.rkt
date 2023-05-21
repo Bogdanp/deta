@@ -12,7 +12,7 @@
   (sqlite3-connect #:database 'memory))
 
 (void
- (create-table! conn 'example)
+ (create-all! conn)
  (insert! conn
           (make-example #:data (hasheq))
           (make-example #:data (hasheq 'hello "world"))))

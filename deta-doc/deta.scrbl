@@ -328,6 +328,19 @@ the reference documentation below.
 
 @subsubsection{DDL}
 
+@defproc[(create-all! [conn connection?]) void?]{
+  Creates a table for every declared schema where the table doesn't
+  already exist.
+
+  @history[#:added "0.14"]
+}
+
+@defproc[(drop-all! [conn connection?]) void?]{
+  Drops any tables that exist and are named after a registered schema.
+
+  @history[#:added "0.14"]
+}
+
 @defproc[(create-table! [conn connection?]
                         [schema (or/c schema? symbol?)]) void?]{
 
@@ -356,7 +369,7 @@ the reference documentation below.
 }
 
 @defproc[(insert-one! [conn connection?]
-                      [e entity?]) (or/c false/c entity?)]{
+                      [e entity?]) (or/c #f entity?)]{
 
   Attempts to insert @racket[e].  If it doesn't need to be persisted,
   then @racket[#f] is returned.
@@ -408,7 +421,7 @@ the reference documentation below.
 
 @defproc[(update-one! [#:force? force? boolean? #f]
                       [conn connection?]
-                      [e entity?]) (or/c false/c entity?)]{
+                      [e entity?]) (or/c #f entity?)]{
 
   Attempts to update @racket[e].  If it doesn't need to be updated,
   then @racket[#f] is returned.  When @racket[#:force?] is
@@ -437,7 +450,7 @@ the reference documentation below.
 }
 
 @defproc[(delete-one! [conn connection?]
-                      [e entity?]) (or/c false/c entity?)]{
+                      [e entity?]) (or/c #f entity?)]{
 
   Attempts to delete @racket[e].  If it doesn't need to be deleted,
   then @racket[#f] is returned.
@@ -1397,6 +1410,11 @@ in mind!
 @subsection[#:tag "changelog"]{Changelog}
 
 @subsubsection{@exec{HEAD}}
+@bold{Added:}
+@itemlist[
+  @item{The @racket[create-all!] and @racket[drop-all!] procedures.}
+]
+
 @subsubsection{@exec{v0.13} -- 2023-05-20}
 @bold{Added:}
 @itemlist[
