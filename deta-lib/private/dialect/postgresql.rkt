@@ -83,11 +83,6 @@
 (define (emit-expr e)
   (emit-expr/standard e))
 
-(define emit-expr/standard
-  (make-expr-emitter emit-expr
-                     (lambda args
-                       (apply emit-stmt/postgresql args))))
-
 (define (emit-stmt e)
   (with-output-to-string
     (lambda ()
@@ -95,6 +90,11 @@
 
 (define (emit-stmt/postgresql e)
   (emit-stmt/standard e))
+
+(define emit-expr/standard
+  (make-expr-emitter
+   emit-expr
+   emit-stmt/postgresql))
 
 (define emit-stmt/standard
   (make-stmt-emitter

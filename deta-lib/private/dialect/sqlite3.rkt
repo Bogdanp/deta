@@ -99,11 +99,6 @@
     [_
      (emit-expr/standard e)]))
 
-(define emit-expr/standard
-  (make-expr-emitter emit-expr
-                     (lambda args
-                       (apply emit-stmt/sqlite3 args))))
-
 (define (emit-stmt e)
   (with-output-to-string
     (lambda ()
@@ -117,6 +112,11 @@
 
     [_
      (emit-stmt/standard e)]))
+
+(define emit-expr/standard
+  (make-expr-emitter
+   emit-expr
+   emit-stmt/sqlite3))
 
 (define emit-stmt/standard
   (make-stmt-emitter
