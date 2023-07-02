@@ -2,8 +2,10 @@
 
 (require racket/match
          racket/port
+         racket/runtime-path
          racket/sequence
          racket/string
+         racket/symbol
          "../ast.rkt"
          "dialect.rkt"
          "operator.rkt")
@@ -18,15 +20,27 @@
  make-stmt-emitter
  write/sep)
 
-(define (quote/standard e)
-  (cond
-    [(symbol? e) (symbol->string e)]
-    [(string=? e "*") "*"]
-    [(regexp-match-exact? #rx"[a-z_][a-z0-9_]*" e) e]
-    [else (string-append "\"" e "\"")]))
+(define-runtime-path standard-reserved-words.rktd
+  "standard-reserved-words.rktd")
 
-(define (display/quoted e)
-  (write-string (quote/standard e)))
+(define reserved-words
+  (for/fold ([words (hash)])
+            ([word (in-list (call-with-input-file standard-reserved-words.rktd read))])
+    (hash-set words (symbol->immutable-string word) #t)))
+
+(define (quote-string s)
+  (string-append "\"" s "\""))
+
+(define (quote/standard e [reserved reserved-words])
+  (cond
+    [(symbol? e) (quote/standard (symbol->string e))]
+    [(string=? e "*") "*"]
+    [(regexp-match-exact? #rx"[a-z_][a-z0-9_]*" e)
+     (if (hash-has-key? reserved e)
+         (quote-string e)
+         e)]
+    [else
+     (quote-string e)]))
 
 (define ((make-expr-emitter write-expr write-stmt) e)
   (define (display/maybe-parenthize e)
@@ -43,7 +57,8 @@
        (write-string ")")]))
 
   (match e
-    [(? string?)
+    [(or (? string?)
+         (? symbol?))
      (write-string (quote/standard e))]
 
     [(table e)  (write-expr e)]
@@ -80,12 +95,12 @@
     [(qualified parent name)
      (write-expr parent)
      (write-string ".")
-     (display/quoted name)]
+     (write-expr name)]
 
     [(as e alias)
      (display/maybe-parenthize e)
      (write-string " AS ")
-     (display/quoted alias)]
+     (write-expr alias)]
 
     [(app (ident (unary-operator op)) (list a))
      (write-unary-operator op)

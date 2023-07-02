@@ -194,6 +194,18 @@
     (test-suite
      "select"
 
+     (test-case "can retrieve reserved columns"
+       (insert-one!
+        (current-conn)
+        (make-reserved
+         #:user "example"
+         #:timestamp  (now/moment)))
+       (check-not-false
+        (lookup
+         (current-conn)
+         (~> (from reserved #:as r)
+             (where (= r.user "example"))))))
+
      (test-case "can retrieve arbitrary data"
        (define x
          (for/first ([(x) (in-entities (current-conn) (select _ 1))])

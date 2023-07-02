@@ -240,7 +240,7 @@
       (check-emitted
        (~> (from "tags" #:as t)
            (select #:distinct t.name t.count))
-       "SELECT DISTINCT t.name, t.count FROM tags AS t"))
+       "SELECT DISTINCT t.name, t.\"count\" FROM tags AS t"))
 
     (test-case "supports COND as an alias for CASE"
       (check-emitted
@@ -364,8 +364,7 @@
         (~> (from "books" #:as b)
             (select b.year (count b.title))
             (group-by b.year))
-
-        "SELECT b.year, COUNT(b.title) FROM books AS b GROUP BY b.year"))
+        "SELECT b.\"year\", COUNT(b.title) FROM books AS b GROUP BY b.\"year\""))
 
      (test-case "augments existing group-by clauses"
        (check-emitted
@@ -373,8 +372,7 @@
             (select b.year b.month (count *))
             (group-by b.year)
             (group-by b.month))
-
-        "SELECT b.year, b.month, COUNT(*) FROM books AS b GROUP BY b.year, b.month")))
+        "SELECT b.\"year\", b.\"month\", COUNT(*) FROM books AS b GROUP BY b.\"year\", b.\"month\"")))
 
     (test-suite
      "order-by"
@@ -384,8 +382,7 @@
         (~> (from "books" #:as b)
             (select b.title)
             (order-by ([b.year])))
-
-        "SELECT b.title FROM books AS b ORDER BY b.year"))
+        "SELECT b.title FROM books AS b ORDER BY b.\"year\""))
 
      (test-case "augments existing order-by clauses"
        (check-emitted
@@ -393,8 +390,7 @@
             (select b.title)
             (order-by ([b.year #:desc]))
             (order-by ([b.title])))
-
-        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
+        "SELECT b.title FROM books AS b ORDER BY b.\"year\" DESC, b.title"))
 
      (test-case "supports descending directions"
        (check-emitted
@@ -402,8 +398,7 @@
             (select b.title)
             (order-by ([b.year #:desc]
                        [b.title])))
-
-        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
+        "SELECT b.title FROM books AS b ORDER BY b.\"year\" DESC, b.title"))
 
      (test-case "supports explicit #:asc directions"
        (check-emitted
@@ -411,8 +406,7 @@
             (select b.title)
             (order-by ([b.year #:desc]
                        [b.title #:asc])))
-
-        "SELECT b.title FROM books AS b ORDER BY b.year DESC, b.title"))
+        "SELECT b.title FROM books AS b ORDER BY b.\"year\" DESC, b.title"))
 
      (test-case "supports dynamic directions"
        (define order 'desc)
@@ -420,7 +414,7 @@
        (check-emitted
         (~> (from "books" #:as b)
             (order-by ([b.year ,order])))
-        "SELECT * FROM books AS b ORDER BY b.year DESC"))
+        "SELECT * FROM books AS b ORDER BY b.\"year\" DESC"))
 
      (test-case "errors out when given an invalid dynamic direction"
        (check-exn
@@ -447,7 +441,7 @@
      (test-case "supports NULLS FIRST"
        (define q (from "books" #:as b))
        (define result
-         "SELECT * FROM books AS b ORDER BY b.title NULLS FIRST, b.year")
+         "SELECT * FROM books AS b ORDER BY b.title NULLS FIRST, b.\"year\"")
        (check-emitted (order-by q ([b.title #:asc #:nulls-first] [b.year])) result)
        (check-emitted (order-by q ([b.title #:asc ,'nulls-first] [b.year])) result)
        (check-emitted (order-by q ([b.title ,'asc ,'nulls-first] [b.year])) result)
@@ -456,13 +450,13 @@
      (test-case "supports NULLS LAST"  ; ASC NULLS LAST is actually Postgres' default
        (define q (from "books" #:as b))
        (define result
-         "SELECT * FROM books AS b ORDER BY b.title NULLS LAST, b.year")
+         "SELECT * FROM books AS b ORDER BY b.title NULLS LAST, b.\"year\"")
        (check-emitted (order-by q ([b.title #:asc #:nulls-last] [b.year])) result))
 
      (test-case "supports DESC NULLS LAST"
        (define q (from "books" #:as b))
        (define result
-         "SELECT * FROM books AS b ORDER BY b.title DESC NULLS LAST, b.year")
+         "SELECT * FROM books AS b ORDER BY b.title DESC NULLS LAST, b.\"year\"")
        (check-emitted (order-by q ([b.title #:desc #:nulls-last] [b.year])) result)
        (check-emitted (order-by q ([b.title ,'desc ,'nulls-last] [b.year])) result)
        (check-emitted (order-by q ([b.title #:desc ,'nulls-last] [b.year])) result)
@@ -570,7 +564,21 @@
           (union (select _ 2))
           (union (select _ 3))
           (union (select _ 4)))
-      "SELECT 1 UNION (SELECT 2 UNION (SELECT 3 UNION (SELECT 4)))")))
+      "SELECT 1 UNION (SELECT 2 UNION (SELECT 3 UNION (SELECT 4)))"))
+
+    (test-case "quotes reserved keywords"
+      (check-emitted
+       (~> (from "reserved" #:as r)
+           (select r.user r.timestamp))
+       "SELECT r.\"user\", r.\"timestamp\" FROM reserved AS r"))
+
+    (test-case "does not quote reserved keywords unless qualified"
+      (check-emitted
+       (select _ current_timestamp)
+       "SELECT CURRENT_TIMESTAMP")
+      (check-emitted
+       (select _ (= user "postgresql"))
+       "SELECT USER = 'postgresql'")))
 
    (test-suite
     "select-for-schema"

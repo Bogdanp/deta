@@ -1415,6 +1415,11 @@ in mind!
   @item{The @racket[create-all!] and @racket[drop-all!] procedures.}
 ]
 
+@bold{Changed:}
+@itemlist[
+  @item{The standard SQL emitter now quotes reserved column names.}
+]
+
 @subsubsection{@exec{v0.13} -- 2023-05-20}
 @bold{Added:}
 @itemlist[

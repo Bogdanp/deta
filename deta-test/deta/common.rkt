@@ -9,7 +9,8 @@
  (schema-out book-with-nulls)
  (schema-out user)
  (schema-out password-reset)
- (schema-out hybrid))
+ (schema-out hybrid)
+ (schema-out reserved))
 
 (define (generate-random-string)
   "a random string -- I promise")
@@ -52,3 +53,7 @@
   ([id id/f #:primary-key #:auto-increment]
    [slug string/f #:unique]
    [(comment "irrelevant") string/f #:virtual]))
+
+(define-schema reserved
+  ([user string/f]
+   [timestamp datetime-tz/f]))
