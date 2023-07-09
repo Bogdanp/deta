@@ -2,7 +2,7 @@
 
 (define license 'BSD-3-Clause)
 (define collection "deta")
-(define scribblings '(("deta.scrbl")))
+(define scribblings '(("deta.scrbl" () ("Databases"))))
 
 (define deps '("base"))
 (define build-deps '("db-doc"
