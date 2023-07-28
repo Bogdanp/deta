@@ -52,18 +52,23 @@
          (display "CREATE TABLE IF NOT EXISTS ")
          (display (quote/standard table))
 
-         (displayln "(")
+         (display "(")
          (define n-fields (length fields))
          (for ([i (in-naturals 1)]
                [f (in-list fields)])
-           (emit-field-ddl f (= i n-fields)))
+           (emit-field-ddl f (= i 1)))
+         (for ([i (in-naturals 1)]
+               [f (in-list fields)])
+           (emit-field-constraints f))
          (displayln ")")]
 
         [(drop-table table)
          (display "DROP TABLE IF EXISTS ")
          (displayln (quote/standard table))]))))
 
-(define (emit-field-ddl f last?)
+(define (emit-field-ddl f first?)
+  (unless first?
+    (display ","))
   (display (quote/standard (field-name f)))
   (display " ")
   (display (type-declaration (field-type f) 'sqlite3))
@@ -78,10 +83,21 @@
     (display " AUTOINCREMENT"))
 
   (when (field-unique? f)
-    (display " UNIQUE"))
+    (display " UNIQUE")))
 
-  (unless last?
-    (displayln ",")))
+(define (emit-field-constraints f)
+  (when (field-foreign-key? f)
+    (display ",")
+    (display " FOREIGN KEY")
+    (display "(")
+    (display (quote/standard (field-name f)))
+    (display ")")
+    (display " REFERENCES ")
+    (define fk (field-foreign-key f))
+    (display (quote/standard (foreign-key-schema fk)))
+    (display "(")
+    (display (quote/standard (foreign-key-field fk)))
+    (display ")")))
 
 (define (emit-expr e)
   (match e
