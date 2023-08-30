@@ -469,13 +469,13 @@ the reference documentation below.
 
 @centered{
   @racketgrammar*[
-    #:literals (array as and case else fragment list not or quote subquery unquote unquote-splicing)
+    #:literals (array as and cond else fragment list not or quote subquery unquote unquote-splicing)
 
     [q-expr (and q-expr ...+)
             (array q-expr ...)
             (as q-expr id)
-            (case [q-expr q-expr] ...+)
-            (case [q-expr q-expr] ...+
+            (cond [q-expr q-expr] ...+)
+            (cond [q-expr q-expr] ...+
                   [else q-expr])
             (fragment expr)
             (not q-expr)
