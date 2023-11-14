@@ -27,7 +27,7 @@
 ((define a-book
    (make-book
     #:title
-    "To Kill a Mockingbird"
+    "To Kill a Mockingbirb"
     #:author
     "Harper Lee"
     #:published-on
@@ -46,15 +46,15 @@
  #""
  #"")
 ((book-title a-book)
- ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbird")))
+ ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbirb")))
  #""
  #"")
 ((book-title (update-book-title a-book (lambda (t) (string-append t "?"))))
- ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbird?")))
+ ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbirb?")))
  #""
  #"")
 ((book-title a-book)
- ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbird")))
+ ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbirb")))
  #""
  #"")
 ((drop-table! conn 'book) ((3) 0 () 0 () () (c values c (void))) #"" #"")
@@ -64,6 +64,23 @@
  #""
  #"")
 ((book-id saved-book) ((3) 0 () 0 () () (q values 1)) #"" #"")
+((book-title saved-book)
+ ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbirb")))
+ #""
+ #"")
+((define updated-book
+   (update-one! conn (set-book-title saved-book "To Kill a Mockingbird")))
+ ((3) 0 () 0 () () (c values c (void)))
+ #""
+ #"")
+((book-title saved-book)
+ ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbirb")))
+ #""
+ #"")
+((book-title updated-book)
+ ((3) 0 () 0 () () (c values c (u . "To Kill A Mockingbird")))
+ #""
+ #"")
 ((void
   (insert!
    conn

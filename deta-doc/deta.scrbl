@@ -146,7 +146,7 @@ and functional setter and updater functions for each field.
 
 (code:line)
 (define a-book
-  (make-book #:title "To Kill a Mockingbird"
+  (make-book #:title "To Kill a Mockingbirb"
              #:author "Harper Lee"
              #:published-on (date 1960 7 11)))
 
@@ -194,7 +194,25 @@ the database:
 (book-id saved-book)
 ]
 
-Let's insert a few more books:
+Oops! Looks like we have a typo in the book's title:
+
+@interaction[
+#:eval db-eval
+(book-title saved-book)
+]
+
+Let's update the book and fix it:
+
+@interaction[
+#:eval db-eval
+(define updated-book
+  (update-one! conn (set-book-title saved-book "To Kill a Mockingbird")))
+
+(book-title saved-book)
+(book-title updated-book)
+]
+
+That's better! Let's insert a few more books:
 
 @interaction[
 #:eval db-eval
