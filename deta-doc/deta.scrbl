@@ -1244,7 +1244,7 @@ Here are all the types and how they map to the different backends.
         (list @racket[date/f]         @racket[date-provider?]              @tt{DATE}               @tt{TEXT}         )
         (list @racket[time/f]         @racket[time-provider?]              @tt{TIME}               @tt{TEXT}         )
         (list @racket[datetime/f]     @racket[datetime-provider?]          @tt{TIMESTAMP}          @tt{TEXT}         )
-        (list @racket[datetime-tz/f]  @racket[moment-provider?]            @tt{TIMESTMAPTZ}        @tt{TEXT}         )
+        (list @racket[datetime-tz/f]  @racket[moment-provider?]            @tt{TIMESTAMPTZ}        @tt{TEXT}         )
         (list @racket[uuid/f]         @racket[uuid?]                       @tt{UUID}               @tt{UNSUPPORTED}  )
         (list @racket[array/f]        @racket[vector?]                     @tt{ARRAY}              @tt{UNSUPPORTED}  )
         (list @racket[json/f]         @racket[jsexpr?]                     @tt{JSON}               @tt{TEXT}         )
