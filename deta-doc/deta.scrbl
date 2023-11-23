@@ -1079,7 +1079,7 @@ queries.
                                         maybe-nullable
                                         maybe-contract
                                         maybe-wrapper])
-                            (code:line [(id default) field-type
+                            (code:line [(id default-expr) field-type
                                         maybe-name
                                         maybe-primary-key
                                         maybe-auto-increment
@@ -1119,18 +1119,25 @@ queries.
           [pre-persist-hook (-> entity? entity?)]
           [pre-delete-hook (-> entity? entity?)])]{
 
-  Defines a schema named @racket[id].  The schema will have an
+  Defines a schema named @racket[id]. The schema will have an
   associated struct with the same name and a smart constructor called
-  @tt{make-@emph{id}}.  The struct's "dumb" constructor is hidden so
+  @tt{make-@emph{id}}. The struct's ``dumb'' constructor is hidden so
   that invalid entities cannot be created.
 
   For every defined field there will be an associated functional
   setter and updater named @tt{set-@emph{id}-@emph{field}} and
   @tt{update-@emph{id}-@emph{field}}, respectively.
 
+  Fields with a @racket[default-expr] are optional with respect to
+  the smart constructor. When such a field is elided from a call to
+  the constructor, its value will be the result of evaluating its
+  @racket[default-expr] at the time the struct is instantiated. Field
+  default expressions are a Racket-only construct and have no effect on
+  DDL statements.
+
   If a @racket[table-name] is provided, then that is used as the name
-  for the table.  Otherwise, an "s" is appended to the schema id to
-  pluralize it.  Currently, there are no other pluralization rules.
+  for the table. Otherwise, an ``s'' is appended to the schema id to
+  pluralize it. Currently, there are no other pluralization rules.
 
   If @racket[#:virtual] is provided on a schema definition, then the
   resulting schema's entities will not be able to be persisted, nor
@@ -1138,10 +1145,10 @@ queries.
 
   Alternatively, individual fields may be set as @racket[#:virtual].
   Such fields must have a default value defined, and will be ignored
-  when performing database operations. @racket[in-entities] will
-  produce entities with virtual fields set to their default values.
-  Virtual fields may be used for data not directly mapped to database
-  columns (see also the @racket[any/f] field type.)
+  when performing database operations. @racket[in-entities] will produce
+  entities with virtual fields set to their default values. Virtual
+  fields may be used for data not directly mapped to database columns
+  (see also the @racket[any/f] field type.)
 
   The @racket[pre-persist-hook] is run before an entity is either
   @racket[insert!]ed or @racket[update!]d.
@@ -1176,9 +1183,9 @@ queries.
   @racket[admin?] becomes @racket[is_admin].
 
   Custom field names can be specified by providing a @racket[#:name]
-  in the field definition.  Note, however, that the library does not
-  currently translate between field names and custom column names
-  within arbitrary queries.
+  in the field definition. Note, however, that the library does not
+  currently translate between field names and custom column names within
+  arbitrary queries.
 
   Example:
 
@@ -1188,7 +1195,20 @@ queries.
     (define-schema book
       ([id id/f #:primary-key #:auto-increment]
        [title string/f #:unique #:contract non-empty-string? #:wrapper string-titlecase]
-       [author string/f #:contract non-empty-string?]))
+       [author string/f #:contract non-empty-string?]
+       [(created-at (now/moment)) datetime-tz/f]
+       [(updated-at (now/moment)) datetime-tz/f])
+      #:pre-persist-hook
+      (lambda (b)
+        (set-book-updated-at b (now/moment))))
+
+   (define b
+     (make-book
+      #:title "a book"
+      #:author "An Author"))
+   (book-title b)
+   (book-author b)
+   (book-created-at b)
   ]
 }
 
