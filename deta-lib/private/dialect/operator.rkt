@@ -1,10 +1,9 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     racket/syntax)
-         racket/match
-         syntax/parse
-         syntax/parse/define)
+                     racket/syntax
+                     syntax/parse/pre)
+         racket/match)
 
 (provide
  define-ops)

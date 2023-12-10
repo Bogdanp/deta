@@ -2,13 +2,13 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     syntax/parse)
+                     syntax/parse/pre)
          db
          db/util/postgresql
          gregor
          gregor/time
          json
-         racket/contract
+         racket/contract/base
          racket/format
          "private/type.rkt")
 

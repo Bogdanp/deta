@@ -3,11 +3,11 @@
 (require (for-syntax racket/base
                      racket/match
                      racket/string
-                     syntax/parse
+                     syntax/parse/pre
                      "private/field.rkt")
          (except-in db
                     query)
-         racket/contract
+         racket/contract/base
          racket/match
          racket/sequence
          racket/set

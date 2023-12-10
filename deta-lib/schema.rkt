@@ -1,14 +1,13 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     racket/contract
-                     racket/function
+                     racket/contract/base
                      racket/list
                      racket/provide-transform
                      racket/struct-info
                      racket/syntax
-                     syntax/parse
-                     syntax/parse/experimental/template)
+                     syntax/parse/experimental/template
+                     syntax/parse/pre)
          db
          racket/contract
          "private/entity.rkt"
@@ -251,7 +250,7 @@
    (lambda (stx _modes)
      (syntax-parse stx
        [(_ struct-id:id)
-        (define v (syntax-local-value #'struct-id (const #f)))
+        (define v (syntax-local-value #'struct-id (λ () #f)))
         (unless (struct-info? v)
           (raise-syntax-error #f "identifier is not bound to struct type information" stx #'struct-id))
 
