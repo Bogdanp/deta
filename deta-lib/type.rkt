@@ -5,12 +5,41 @@
                      syntax/parse/pre)
          db
          db/util/postgresql
-         gregor
-         gregor/time
-         json
          racket/contract/base
          racket/format
+         racket/lazy-require
          "private/type.rkt")
+
+(lazy-require
+ [gregor (moment-provider?
+          datetime-provider?
+          date-provider?
+          time-provider?
+          moment
+          datetime
+          moment->iso8601/tzid
+          datetime->iso8601
+          date->iso8601
+          iso8601/tzid->moment
+          iso8601->datetime
+          iso8601->date
+          iso8601->time
+          ->moment
+          ->datetime/local
+          ->date
+          ->time
+          ->year
+          ->month
+          ->day
+          ->hours
+          ->minutes
+          ->seconds
+          ->nanoseconds
+          ->utc-offset)]
+ [gregor/time (time->iso8601)]
+ [json (jsexpr?
+        string->jsexpr
+        jsexpr->string)])
 
 (provide
  type?
@@ -23,6 +52,11 @@
 (define gen:type-declaration type-declaration)
 (define gen:type-load type-load)
 (define gen:type-dump type-dump)
+
+(define (get-type-declaration type dialect decl)
+  (if (procedure? decl)
+      (decl type dialect)
+      decl))
 
 (define-syntax (define-type stx)
   (syntax-parse stx
@@ -49,10 +83,7 @@
            [(define (type-contract type)
               (~? contract-e (~? (contract-fn-e type) any/c)))
             (define (type-declaration type dialect)
-              (let ([decl declaration-e])
-                (if (procedure? decl)
-                    (decl type dialect)
-                    decl)))
+              (get-type-declaration type dialect declaration-e))
             (define (type-load type dialect v)
               (~? (load-e type dialect v) v))
             (define (type-dump type dialect v)
