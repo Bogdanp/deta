@@ -9,7 +9,8 @@
                      syntax/parse/experimental/template
                      syntax/parse/pre)
          db
-         racket/contract
+         racket/contract/base
+         racket/contract/region
          "private/entity.rkt"
          "private/field.rkt"
          "private/meta.rkt"

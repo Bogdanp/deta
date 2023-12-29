@@ -1,8 +1,6 @@
 #lang racket/base
 
-(require db
-         racket/contract
-         racket/match
+(require racket/match
          racket/port
          "../ast.rkt"
          "../field.rkt"
@@ -22,20 +20,16 @@
       [(define (dialect-name _) 'sqlite3)
        (define (dialect-supports-returning? _) #t)
 
-       (define/contract (dialect-last-id-query _)
-         (-> dialect? string?)
+       (define (dialect-last-id-query _)
          "SELECT last_insert_rowid()")
 
-       (define/contract (dialect-emit-ddl _ d)
-         (-> dialect? ddl? string?)
+       (define (dialect-emit-ddl _ d)
          (emit-ddl d))
 
-       (define/contract (dialect-emit-query/impl _ s)
-         (-> dialect? stmt? string?)
+       (define (dialect-emit-query/impl _ s)
          (emit-stmt s))
 
-       (define/contract (dialect-prepare-parameters _ _p args)
-         (-> dialect? prepared-statement? (listof any/c) (listof any/c))
+       (define (dialect-prepare-parameters _ _p args)
          (for/list ([arg (in-list args)])
            (match arg
              [#f 0]

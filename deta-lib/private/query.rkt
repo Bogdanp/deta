@@ -2,7 +2,7 @@
 
 (require db
          (only-in racket/class send)
-         racket/contract
+         racket/contract/base
          racket/match
          racket/struct
          (prefix-in ast: "ast.rkt")
@@ -79,26 +79,42 @@
 ;; combinators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- delete
- from
- group-by
- join
- limit
- offset
- or-where
- union
- order-by
- project-onto
- project-virtual-fields
- returning
- select
- select-for-schema
- subquery
- update
- where)
+ (contract-out
+  [delete (-> select-query? query?)]
+  [from (-> any/c #:as symbol? query?)]
+  [group-by (-> select-query? ast:expr? ast:expr? ... query?)]
+  [join
+   (-> select-query?
+       #:type (or/c 'inner 'left 'right 'full 'cross)
+       #:lateral? boolean?
+       #:with (or/c ast:subquery? schema? string? symbol?)
+       #:as symbol?
+       #:on ast:expr?
+       query?)]
+  [limit (-> query? (or/c ast:scalar? ast:placeholder?) query?)]
+  [offset (-> query? (or/c ast:scalar? ast:placeholder?) query?)]
+  [or-where (-> query? ast:expr? query?)]
+  [order-by (-> select-query? ordering/c ordering/c ... query?)]
+  [project-onto (-> query? schema? query?)]
+  [project-virtual-fields (-> query? query?)]
+  [returning (-> query? ast:expr? ast:expr? ... query?)]
+  [select
+   (->* (query? ast:expr?)
+        (#:distinct? boolean?)
+        #:rest (listof ast:expr?)
+        query?)]
+  [select-for-schema
+   (-> query?
+       (or/c schema? symbol?)
+       string?
+       (hash/c symbol? ast:expr?)
+       query?)]
+  [subquery (-> select-query? ast:subquery?)]
+  [union (-> select-query? select-query? query?)]
+  [update (-> select-query? assignment/c assignment/c ... query?)]
+  [where (-> query? ast:expr? query?)]))
 
-(define/contract (delete q)
-  (-> select-query? query?)
+(define (delete q)
   (match q
     [(query schema opts (struct* ast:select ([from (ast:from (list table) _)]
                                              [where where])))
@@ -109,9 +125,7 @@
                          #:from (ast:make-from #:tables (list table))
                          #:where where))]))
 
-(define/contract (from source #:as alias)
-  (-> any/c #:as symbol? query?)
-
+(define (from source #:as alias)
   (define alias:str (symbol->string alias))
   (cond
     [(string? source)
@@ -138,20 +152,12 @@
     [else
      (raise-argument-error 'form "a table name, a schema name or a subquery" source)]))
 
-(define/contract (join q
-                       #:type type
-                       #:lateral? lateral?
-                       #:with tbl-e
-                       #:as alias
-                       #:on constraint)
-  (-> select-query?
-      #:type (or/c 'inner 'left 'right 'full 'cross)
-      #:lateral? boolean?
-      #:with (or/c ast:subquery? schema? string? symbol?)
-      #:as symbol?
-      #:on ast:expr?
-      query?)
-
+(define (join q
+              #:type type
+              #:lateral? lateral?
+              #:with tbl-e
+              #:as alias
+              #:on constraint)
   (define tbl-clause
     (match tbl-e
       [(? ast:subquery?) tbl-e]
@@ -167,21 +173,16 @@
                                             (ast:select-from stmt)
                                             (ast:join type lateral? (ast:as tbl-clause alias) constraint))]))]))
 
-(define/contract (select q column0
-                         #:distinct? [distinct? #f]
-                         . columns)
-  (->* (query? ast:expr?)
-       (#:distinct? boolean?)
-       #:rest (listof ast:expr?)
-       query?)
+(define (select q column0
+                #:distinct? [distinct? #f]
+                . columns)
   (match q
     [(query _  opts stmt)
      (query #f opts (struct-copy ast:select stmt
                                  [distinct? distinct?]
                                  [columns (cons column0 columns)]))]))
 
-(define/contract (select-for-schema q schema-or-id tbl-alias customizations)
-  (-> query? (or/c schema? symbol?) string? (hash/c symbol? ast:expr?) query?)
+(define (select-for-schema q schema-or-id tbl-alias customizations)
   (define s (schema-registry-lookup schema-or-id))
   (define q* (apply select q (for/list ([fld (schema-fields s)])
                                (hash-ref customizations
@@ -190,15 +191,12 @@
                                            (ast:qualified tbl-alias (field-name fld)))))))
   (project-onto q* s))
 
-(define/contract (limit q n)
-  (-> query? (or/c ast:scalar? ast:placeholder?) query?)
+(define (limit q n)
   (match q
     [(query schema opts stmt)
      (query schema opts (struct-copy ast:select stmt [limit (ast:limit n)]))]))
 
-(define/contract (group-by q column0 . columns)
-  (-> select-query? ast:expr? ast:expr? ... query?)
-
+(define (group-by q column0 . columns)
   (define all-columns
     (cons column0 columns))
 
@@ -209,8 +207,7 @@
     [(query schema opts (and (struct* ast:select ([group-by (ast:group-by existing-columns)])) stmt))
      (query schema opts (struct-copy ast:select stmt [group-by (ast:group-by (append existing-columns all-columns))]))]))
 
-(define/contract (offset q n)
-  (-> query? (or/c ast:scalar? ast:placeholder?) query?)
+(define (offset q n)
   (match q
     [(query schema opts stmt)
      (query schema opts (struct-copy ast:select stmt [offset (ast:offset n)]))]))
@@ -218,9 +215,7 @@
 (define ordering/c
   (list/c ast:expr? (or/c 'asc 'desc) (or/c #f 'nulls-first 'nulls-last)))
 
-(define/contract (union q1 q2)
-  (-> select-query? select-query? query?)
-
+(define (union q1 q2)
   (define (union* s1 s2)
     (match s1
       [(struct* ast:select ([union #f]))
@@ -236,9 +231,7 @@
     [(query schema opts (and (struct* ast:select ([union u])) stmt))
      (query schema opts (struct-copy ast:select stmt [union (ast:union (union* (ast:union-stmt u) (query-stmt q2)))]))]))
 
-(define/contract (order-by q ordering0 . orderings)
-  (-> select-query? ordering/c ordering/c ... query?)
-
+(define (order-by q ordering0 . orderings)
   (define all-orderings
     (cons ordering0 orderings))
 
@@ -249,17 +242,13 @@
     [(query schema opts (and (struct* ast:select ([order-by (ast:order-by existing-orderings)])) stmt))
      (query schema opts (struct-copy ast:select stmt [order-by (ast:order-by (append existing-orderings all-orderings))]))]))
 
-(define/contract (project-onto q s)
-  (-> query? schema? query?)
+(define (project-onto q s)
   (struct-copy query q [schema s]))
 
-(define/contract (project-virtual-fields q)
-  (-> query? query?)
+(define (project-virtual-fields q)
   (struct-copy query q [opts (opts #t)]))
 
-(define/contract (returning q e0 . es)
-  (-> query? ast:expr? ast:expr? ... query?)
-
+(define (returning q e0 . es)
   (define all-exprs
     (cons e0 es))
 
@@ -281,13 +270,10 @@
     [(query schema opts (and (? ast:delete?) stmt))
      (query schema opts (struct-copy ast:delete stmt [returning (append-exprs (ast:delete-returning stmt))]))]))
 
-(define/contract (subquery q)
-  (-> select-query? ast:subquery?)
+(define (subquery q)
   (ast:subquery (query-stmt q)))
 
-(define/contract (update q assignment0 . assignments)
-  (-> select-query? assignment/c assignment/c ... query?)
-
+(define (update q assignment0 . assignments)
   (define all-assignments
     (cons assignment0 assignments))
 
@@ -303,8 +289,7 @@
                          #:assignments (ast:assignments all-assignments)
                          #:where where))]))
 
-(define/contract (where q e)
-  (-> query? ast:expr? query?)
+(define (where q e)
   (match q
     [(query schema opts (and (struct* ast:select ([where #f])) stmt))
      (query schema opts (struct-copy ast:select stmt [where (ast:where e)]))]
@@ -324,8 +309,7 @@
     [(query schema opts (and (struct* ast:delete ([where (ast:where e0)])) stmt))
      (query schema opts (struct-copy ast:delete stmt [where (ast:where (ast:app (ast:ident 'and) (list e0 e)))]))]))
 
-(define/contract (or-where q e)
-  (-> query? ast:expr? query?)
+(define (or-where q e)
   (match q
     [(query schema opts (and (struct* ast:select ([where #f])) stmt))
      (query schema opts (struct-copy ast:select stmt [where (ast:where e)]))]

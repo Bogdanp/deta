@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/contract
+(require racket/contract/base
          "field.rkt")
 
 ;; struct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -55,24 +55,22 @@
     (unless virtual?
       (register! id the-schema))))
 
-(define/contract (schema-fields/nonvirtual the-schema)
-  (-> schema? (listof field?))
+(define (schema-fields/nonvirtual the-schema)
   (filter (compose1 not field-virtual?)
           (schema-fields the-schema)))
 
 ;; registry ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
- current-schema-registry
- schema-registry-allow-conflicts?
- schema-registry-lookup)
+ (contract-out
+  [current-schema-registry (parameter/c (hash/c symbol? schema?))]
+  [schema-registry-allow-conflicts? (parameter/c boolean?)]
+  [schema-registry-lookup (-> (or/c schema? symbol?) schema?)]))
 
-(define/contract schema-registry-allow-conflicts?
-  (parameter/c boolean?)
+(define schema-registry-allow-conflicts?
   (make-parameter #f))
 
-(define/contract current-schema-registry
-  (parameter/c (hash/c symbol? schema?))
+(define current-schema-registry
   (make-parameter (make-hasheq)))
 
 (define (register! id s)
@@ -82,8 +80,7 @@
 
   (hash-set! registry id s))
 
-(define/contract (schema-registry-lookup schema-or-id)
-  (-> (or/c schema? symbol?) schema?)
+(define (schema-registry-lookup schema-or-id)
   (cond
     [(schema? schema-or-id)
      schema-or-id]

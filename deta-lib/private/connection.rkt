@@ -1,16 +1,16 @@
 #lang racket/base
 
 (require db
-         racket/contract
+         racket/contract/base
          "dialect/dialect.rkt"
          "dialect/postgresql.rkt"
          "dialect/sqlite3.rkt")
 
 (provide
- connection-dialect)
+ (contract-out
+  [connection-dialect (-> connection? dialect?)]))
 
-(define/contract (connection-dialect conn)
-  (-> connection? dialect?)
+(define (connection-dialect conn)
   (case (dbsystem-name (connection-dbsystem conn))
     [(postgresql) postgresql-dialect]
     [(sqlite3)    sqlite3-dialect]
