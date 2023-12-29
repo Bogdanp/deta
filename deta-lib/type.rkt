@@ -17,6 +17,8 @@
           time-provider?
           moment
           datetime
+          date
+          time
           moment->iso8601/tzid
           datetime->iso8601
           date->iso8601
