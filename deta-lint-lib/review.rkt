@@ -18,8 +18,8 @@
     [_ #f]))
 
 (define-syntax-class schema-field
-  (pattern [id:id type-expr:expr . opts])
-  (pattern [(id:id default-expr:expr) type-expr . opts]))
+  (pattern [id:id type-expr:expression . opts])
+  (pattern [(id:id default-expr:expression) type-expr . opts]))
 
 (define-syntax-class schema-definition
   #:datum-literals (define-schema)
@@ -29,8 +29,8 @@
              {~alt {~optional {~seq #:table table-name:str}}
                    {~optional #:virtual}} ...
              (schema-field:schema-field ...+)
-             {~alt {~optional {~seq #:pre-persist-hook pre-persist-hook-expr:expr}}
-                   {~optional {~seq #:pre-delete-hook pre-delete-hook-expr:expr}}} ...
+             {~alt {~optional {~seq #:pre-persist-hook pre-persist-hook-expr:expression}}
+                   {~optional {~seq #:pre-delete-hook pre-delete-hook-expr:expression}}} ...
              struct-option ...)
            #:do [(track-binding #'schema-id #:check-usages? #f)
                  (track-binding #'schema-id "~a?" #:check-usages? #f)
