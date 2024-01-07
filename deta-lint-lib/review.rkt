@@ -10,8 +10,6 @@
  should-review-syntax?
  review-syntax)
 
-(define-expression-syntax-class expression)
-
 (define (should-review-syntax? stx)
   (syntax-case stx (define-schema)
     [(define-schema . _rest) #t]
