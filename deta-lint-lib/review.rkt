@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base)
-         review/ext
+(require review/ext
          syntax/parse/pre)
 
 #|review: ignore|#
