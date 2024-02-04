@@ -23,12 +23,14 @@
   (pattern (define-schema
              ~!
              schema-id:id
+             {~do (push-scope)}
              {~alt {~optional {~seq #:table table-name:str}}
                    {~optional #:virtual}} ...
              (schema-field:schema-field ...+)
              {~alt {~optional {~seq #:pre-persist-hook pre-persist-hook-expr:expression}}
                    {~optional {~seq #:pre-delete-hook pre-delete-hook-expr:expression}}} ...
-             struct-option ...)
+             struct-option ...
+             {~do (pop-scope)})
            #:do [(track-binding #'schema-id #:check-usages? #f)
                  (track-binding #'schema-id "~a?" #:check-usages? #f)
                  (track-binding #'schema-id "make-~a" #:check-usages? #f)
