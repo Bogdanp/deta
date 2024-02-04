@@ -46,4 +46,4 @@
 (define (review-syntax stx)
   (syntax-parse stx
     [d:schema-definition #'d]
-    [_ stx]))
+    [_ (track-error stx "expected a deta schema definition")]))
