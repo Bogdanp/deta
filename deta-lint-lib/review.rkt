@@ -14,9 +14,22 @@
     [(define-schema . _rest) #t]
     [_ #f]))
 
+(define-splicing-syntax-class schema-field-option
+  (pattern {~seq {~alt
+                  {~optional #:primary-key}
+                  {~optional #:auto-increment}
+                  {~optional #:nullable}
+                  {~optional #:unique}
+                  {~optional {~seq #:name name-e:expression}}
+                  {~optional {~seq #:contract contract-e:expression}}
+                  {~optional {~seq #:wrapper wrapper-e:expression}}} ...}))
+
 (define-syntax-class schema-field
-  (pattern [id:id type-expr:expression . opts])
-  (pattern [(id:id default-expr:expression) type-expr . opts]))
+  (pattern [id:id type-expr:expression opt:schema-field-option])
+  (pattern [(id:id default-expr:expression) type-expr opt:schema-field-option])
+  (pattern e
+           #:with id #'invalid
+           #:do [(track-error this-syntax "expected a valid deta field definition")]))
 
 (define-syntax-class schema-definition
   #:datum-literals (define-schema)
