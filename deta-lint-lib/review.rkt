@@ -27,7 +27,7 @@
 
 (define-syntax-class schema-field
   (pattern [id:id type-expr:expression opt:schema-field-option])
-  (pattern [(id:id default-expr:expression) type-expr opt:schema-field-option])
+  (pattern [(id:id default-expr:expression) type-expr:expression opt:schema-field-option])
   (pattern e
            #:with id #'invalid
            #:do [(track-error this-syntax "expected a valid deta field definition")]))
