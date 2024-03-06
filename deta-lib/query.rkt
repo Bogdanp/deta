@@ -121,12 +121,12 @@
 
 (provide
  (contract-out
-  [update! (->* (connection?)
-                (#:force? boolean?)
+  [update! (->* [connection?]
+                [#:force? boolean?]
                 #:rest (listof entity?)
                 (listof entity?))]
-  [update-one! (->* (connection? entity?)
-                    (#:force? boolean?)
+  [update-one! (->* [connection? entity?]
+                    [#:force? boolean?]
                     (or/c #f entity?))]))
 
 (define (update! conn #:force? [force? #f] . entities)
@@ -233,9 +233,12 @@
 
 (provide
  (contract-out
-  [in-entities (->* (connection? dyn:query?)
-                    (#:batch-size (or/c exact-positive-integer? +inf.0))
+  [in-entities (->* [connection? dyn:query?]
+                    [#:batch-size (or/c exact-positive-integer? +inf.0)]
                     sequence?)]
+  [query-entities (->* [connection? dyn:query?]
+                       [#:batch-size (or/c exact-positive-integer? +inf.0)]
+                       list?)]
   [lookup (-> connection? dyn:query? any)])
 
  from
@@ -260,8 +263,8 @@
 
  (contract-out
   [make-entity
-   (->* ((or/c connection? symbol?) schema? (listof any/c))
-        (#:project-virtual-fields? boolean?)
+   (->* [(or/c connection? symbol?) schema? (listof any/c)]
+        [#:project-virtual-fields? boolean?]
         entity?)]))
 
 (define (make-entity conn-or-dialect schema cols
@@ -284,7 +287,7 @@
     (sort pairs keyword<? #:key car))
 
   (define-values (kwds kw-args)
-    (for/lists (kwds kw-args)
+    (for/lists (_kwds _kw-args)
                ([pair (in-list pairs/sorted)])
       (values (car pair)
               (cdr pair))))
@@ -324,10 +327,17 @@
     [else
      results-seq]))
 
+(define query-entities
+  (procedure-rename
+   (make-keyword-procedure
+    (lambda (kws kw-args . args)
+      (sequence->list
+       (keyword-apply in-entities kws kw-args args))))
+   'query-entities))
+
 (define (lookup conn q)
   (define-values (res _)
     (sequence-generate* (in-entities conn q)))
-
   (and res (apply values res)))
 
 (begin-for-syntax
