@@ -409,16 +409,17 @@ the reference documentation below.
   sequence of entities or a sequence of @racket[values].
 
   @racket[#:batch-size] controls how many rows to fetch from the
-  database at a time.  It is analogous to @racket[in-query]'s
+  database at a time. It is analogous to @racket[in-query]'s
   @racket[#:fetch] argument.
 }
 
 @defproc[(query-entities [conn connection?]
                          [q query?]
-                         [#:batch-size batch-size (or/c exact-positive-integer? +inf.0) +inf.0]) list?]{
+                         [#:batch-size batch-size (or/c exact-positive-integer? +inf.0) +inf.0]) (listof entity?)]{
 
   Like @racket[in-entities], but collects the results in a list and
-  returns it.
+  returns it. Unlike @racket[in-entities], it does not support queries
+  that return sequences of values.
 
   @history[#:added "0.14"]
 }
