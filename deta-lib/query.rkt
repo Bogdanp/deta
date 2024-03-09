@@ -238,7 +238,7 @@
                     sequence?)]
   [query-entities (->* [connection? dyn:query?]
                        [#:batch-size (or/c exact-positive-integer? +inf.0)]
-                       (list/c entity?))]
+                       (listof entity?))]
   [lookup (-> connection? dyn:query? any)])
 
  from
