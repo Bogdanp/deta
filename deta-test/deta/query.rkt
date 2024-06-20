@@ -2,6 +2,7 @@
 
 (require db
          deta
+         (prefix-in ast: deta/private/ast)
          deta/private/meta
          gregor
          racket/match
@@ -318,7 +319,7 @@
 
         (check-true (null? all-active-users))
 
-        (match-define (list active-user-jim active-user-bob)
+        (match-define (list _active-user-jim active-user-bob)
           (insert! (current-conn)
                    (make-user #:username "active-user-jim@example.com"
                               #:active? #t)
@@ -422,7 +423,33 @@
      (test-case "can fail to look up entities"
        (check-false (lookup (current-conn)
                             (~> (from user #:as u)
-                                (where #f)))))))))
+                                (where #f))))))
+
+    (test-suite
+     "fragment"
+
+     (test-case "fragment with ast nodes"
+       (check-equal?
+        (with-output-to-string
+          (lambda ()
+            (display
+             (~> (from user #:as u)
+                 (select u.name)
+                 (where (fragment (ast:app
+                                   (ast:ident '=)
+                                   (list (ast:qualified "u" "name")
+                                         (ast:scalar "Bogdan")))))))))
+        "#<query: SELECT u.name FROM users AS u WHERE u.name = 'Bogdan'>"))
+
+     (test-case "fragment with string"
+       (check-equal?
+        (with-output-to-string
+          (lambda ()
+            (display
+             (~> (from user #:as u)
+                 (select u.name)
+                 (where (fragment "u.name = 'Bogdan'"))))))
+        "#<query: SELECT u.name FROM users AS u WHERE u.name = 'Bogdan'>"))))))
 
 (module+ test
   (require rackunit/text-ui)

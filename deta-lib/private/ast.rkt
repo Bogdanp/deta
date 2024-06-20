@@ -25,10 +25,12 @@
  expr?
  expr-terminal?
 
+ make-fragment
  (struct-out app)
  (struct-out as)
  (struct-out case-e)
  (struct-out column)
+ (struct-out fragment)
  (struct-out ident)
  (struct-out placeholder)
  (struct-out qualified)
@@ -54,6 +56,9 @@
 (struct column expr (e)
   #:transparent)
 
+(struct fragment expr (e)
+  #:transparent)
+
 (struct ident expr (name)
   #:transparent)
 
@@ -71,6 +76,12 @@
 
 (struct table expr (e)
   #:transparent)
+
+(define (make-fragment e)
+  (cond
+    [(string? e) (fragment e)]
+    [(expr? e) e]
+    [else (raise-argument-error 'fragment "(or/c string? expr?)" e)]))
 
 
 ;; clauses ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

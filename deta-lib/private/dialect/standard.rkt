@@ -64,6 +64,9 @@
     [(table e)  (write-expr e)]
     [(column e) (write-expr e)]
 
+    [(fragment s)
+     (write-string s)]
+
     [(ident i)
      (write-string (ident->string i))]
 

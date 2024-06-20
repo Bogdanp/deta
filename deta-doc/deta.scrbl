@@ -615,6 +615,10 @@ queries.
       (~> (from ,table #:as t)
           (where (= (fragment (ast:qualified "t" column)) "bogdan")))))
   ]
+
+  @history[
+    #:changed "0.15" @elem{Added support for string fragments.}
+  ]
 }
 @defop[ilike (display (select _ (ilike "A" "%a%")))]
 @defop[in (display (select _ (in 5 '(1 2 3 4 5))))]

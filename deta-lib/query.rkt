@@ -360,7 +360,8 @@
 
   (define-syntax-class fragment-expr
     #:literals (fragment)
-    (pattern (fragment node:expr) #:with e #'node))
+    (pattern (fragment node:expr)
+             #:with e #'(ast:make-fragment node)))
 
   (define-syntax-class subquery-expr
     #:literals (subquery)
