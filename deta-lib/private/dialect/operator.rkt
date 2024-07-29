@@ -73,7 +73,7 @@
   [trim])
 
 (define-ops variadic
-  [+] [-] [*] [/] [%]
+  [+] [-] [*] [/] [%] [^]
   [<<] [>>]
   [and]
   [array-concat "||"]
