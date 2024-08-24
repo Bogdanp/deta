@@ -21,6 +21,7 @@
                   {~optional #:auto-increment}
                   {~optional #:nullable}
                   {~optional #:unique}
+                  {~optional #:virtual}
                   {~optional {~seq #:name name-e:expression}}
                   {~optional {~seq #:contract contract-e:expression}}
                   {~optional {~seq #:wrapper wrapper-e:expression}}} ...}))
