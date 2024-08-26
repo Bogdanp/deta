@@ -354,7 +354,27 @@
                   #:as pi
                   #:on #t)
             (select p.* pi.*))
-        "SELECT p.*, pi.* FROM posts AS p LEFT JOIN LATERAL (SELECT * FROM post_images AS pi WHERE pi.post_id = p.id ORDER BY pi.id DESC LIMIT 1) AS pi ON TRUE")))
+        "SELECT p.*, pi.* FROM posts AS p LEFT JOIN LATERAL (SELECT * FROM post_images AS pi WHERE pi.post_id = p.id ORDER BY pi.id DESC LIMIT 1) AS pi ON TRUE"))
+
+     (test-case "emits cross joins"
+       (check-emitted
+        (~> (from "posts" #:as p)
+            (join #:cross "post_images" #:as pi)
+            (select p.* pi.*))
+        "SELECT p.*, pi.* FROM posts AS p CROSS JOIN post_images AS pi"))
+
+     (test-case "emits cross lateral joins"
+       (check-emitted
+        (~> (from "posts" #:as p)
+            (join #:cross
+                  #:lateral
+                  (subquery
+                   (~> (from "post_images" #:as pi)
+                       (where (= pi.post-id p.id))
+                       (limit 1)))
+                  #:as pi)
+            (select p.*))
+        "SELECT p.* FROM posts AS p CROSS JOIN LATERAL (SELECT * FROM post_images AS pi WHERE pi.post_id = p.id LIMIT 1) AS pi")))
 
     (test-suite
      "group-by"

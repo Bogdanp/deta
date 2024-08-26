@@ -730,10 +730,10 @@ queries.
 
 @defform*[
   #:literals (subquery unquote)
-  ((join query maybe-type maybe-lateral table-name #:as alias #:on q-expr)
-   (join query maybe-type maybe-lateral schema-id #:as alias #:on q-expr)
-   (join query maybe-type maybe-lateral (subquery query) #:as alias #:on q-expr)
-   (join query maybe-type maybe-lateral (unquote table-name-expr) #:as alias #:on q-expr))
+  ((join query maybe-type maybe-lateral table-name #:as alias maybe-condition)
+   (join query maybe-type maybe-lateral schema-id #:as alias maybe-condition)
+   (join query maybe-type maybe-lateral (subquery query) #:as alias maybe-condition)
+   (join query maybe-type maybe-lateral (unquote table-name-expr) #:as alias maybe-condition))
   #:grammar
   ([maybe-type (code:line)
                (code:line #:inner)
@@ -742,13 +742,16 @@ queries.
                (code:line #:full)
                (code:line #:cross)]
    [maybe-lateral (code:line)
-                  (code:line #:lateral)])
+                  (code:line #:lateral)]
+   [maybe-condition (code:line)
+                    (code:line #:on q-expr)])
   #:contracts
   ([table-name non-empty-string?]
    [query query?])]{
 
-  Adds a @tt{JOIN} to @racket[query].  If a join type is not provided,
-  then the join defaults to an @tt{INNER} join.
+  Adds a @tt{JOIN} to @racket[query]. If a join type is not provided,
+  then the join defaults to an @tt{INNER} join. A join condition is
+  required for all join types apart from @racket[#:cross].
 
   @interaction[
     #:eval reference-eval

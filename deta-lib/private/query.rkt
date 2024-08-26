@@ -89,7 +89,7 @@
        #:lateral? boolean?
        #:with (or/c ast:subquery? schema? string? symbol?)
        #:as symbol?
-       #:on ast:expr?
+       #:on (or/c #f ast:expr?)
        query?)]
   [limit (-> query? (or/c ast:scalar? ast:placeholder?) query?)]
   [offset (-> query? (or/c ast:scalar? ast:placeholder?) query?)]
@@ -99,8 +99,8 @@
   [project-virtual-fields (-> query? query?)]
   [returning (-> query? ast:expr? ast:expr? ... query?)]
   [select
-   (->* (query? ast:expr?)
-        (#:distinct? boolean?)
+   (->* [query? ast:expr?]
+        [#:distinct? boolean?]
         #:rest (listof ast:expr?)
         query?)]
   [select-for-schema

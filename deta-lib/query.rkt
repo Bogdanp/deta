@@ -474,16 +474,27 @@
      #'(dyn:group-by q e.e ...)]))
 
 (define-syntax (join stx)
-  (define-syntax-class join-type
+  (define-syntax-class qualified-join-type
     (pattern #:inner #:with type #''inner)
     (pattern #:left  #:with type #''left)
     (pattern #:right #:with type #''right)
-    (pattern #:full  #:with type #''full)
-    (pattern #:cross #:with type #''cross))
+    (pattern #:full  #:with type #''full))
 
   (syntax-parse stx
     [(_ q:expr
-        (~optional t:join-type)
+        #:cross
+        (~optional (~and #:lateral lateral))
+        source:q-source
+        #:as alias:id)
+     #:with lateral? (if (attribute lateral) #'#t #'#f)
+     #'(dyn:join q
+                 #:type 'cross
+                 #:lateral? lateral?
+                 #:with source.e
+                 #:as 'alias
+                 #:on #f)]
+    [(_ q:expr
+        (~optional t:qualified-join-type)
         (~optional (~and #:lateral lateral))
         source:q-source
         #:as alias:id

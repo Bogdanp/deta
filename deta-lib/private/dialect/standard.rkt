@@ -306,8 +306,9 @@
      (when lateral?
        (write-string "LATERAL "))
      (write-expr with)
-     (write-string " ON ")
-     (write-expr constraint)]
+     (unless (eq? type 'cross)
+       (write-string " ON ")
+       (write-expr constraint))]
 
     [(where e)
      (write-string "WHERE ")
