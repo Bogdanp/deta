@@ -6,6 +6,7 @@
           scribble/example
           (prefix-in man: scribble/manual)
           (for-label db
+                     db/util/geometry
                      db/util/postgresql
                      deta
                      deta/reflect
@@ -1284,6 +1285,7 @@ Here are all the types and how they map to the different backends.
         (list @racket[datetime/f]     @racket[datetime-provider?]          @tt{TIMESTAMP}          @tt{TEXT}         )
         (list @racket[datetime-tz/f]  @racket[moment-provider?]            @tt{TIMESTAMPTZ}        @tt{TEXT}         )
         (list @racket[uuid/f]         @racket[uuid?]                       @tt{UUID}               @tt{UNSUPPORTED}  )
+        (list @racket[point/f]        @racket[point?]                      @tt{POINT}              @tt{UNSUPPORTED}  )
         (list @racket[array/f]        @racket[vector?]                     @tt{ARRAY}              @tt{UNSUPPORTED}  )
         (list @racket[json/f]         @racket[jsexpr?]                     @tt{JSON}               @tt{TEXT}         )
         (list @racket[jsonb/f]        @racket[jsexpr?]                     @tt{JSONB}              @tt{UNSUPPORTED}  )
@@ -1308,6 +1310,7 @@ Here are all the types and how they map to the different backends.
    @defthing[datetime/f type?]
    @defthing[datetime-tz/f type?]
    @defthing[uuid/f type?]
+   @defthing[point/f type?]
    @defproc[(array/f [t type?]) type?]
    @defthing[json/f type?]
    @defthing[jsonb/f type?])]{

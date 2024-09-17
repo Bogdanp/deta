@@ -4,6 +4,7 @@
                      racket/syntax
                      syntax/parse/pre)
          db
+         db/util/geometry
          db/util/postgresql
          racket/contract/base
          racket/format
@@ -366,6 +367,14 @@
     (case dialect
       [(postgresql) "UUID"]
       [else (raise-dialect-error 'uuid/f dialect)])))
+
+(define-type point
+  #:contract point?
+  #:declaration
+  (lambda (_ dialect)
+    (case dialect
+      [(postgresql) "POINT"]
+      [else (raise-dialect-error 'point/f dialect)])))
 
 (define-type any
   #:contract any/c
