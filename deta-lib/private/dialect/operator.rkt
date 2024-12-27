@@ -65,6 +65,9 @@
   [json-superset? "@>"]
   [like]
   [position]
+  [regexp-match? "~"]
+  [regexp-match?* "~*"]
+  [tsquery-match? "@@"]
   [similar-to "SIMILAR TO"])
 
 (define-ops ternary
