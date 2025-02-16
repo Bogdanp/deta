@@ -20,7 +20,8 @@
    pre-persist-hook
    pre-delete-hook
    fields
-   primary-key))
+   primary-key
+   foreign-key))
 
 (define (make-schema #:id id
                      #:table table
@@ -39,6 +40,9 @@
                            "at most one field may be marked as a #:primary-key"
                            "bad fields" (map field-id pk-fields)))
 
+  (define fk-fields
+    (filter field-foreign-key? fields))
+
   (define the-schema
     (schema id
             table
@@ -49,7 +53,8 @@
             pre-persist-hook
             pre-delete-hook
             fields
-            (findf field-primary-key? pk-fields)))
+            (findf field-primary-key? pk-fields)
+            (findf field-foreign-key? fk-fields)))
 
   (begin0 the-schema
     (unless virtual?

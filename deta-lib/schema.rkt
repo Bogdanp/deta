@@ -72,7 +72,7 @@
 
   (define-template-metafunction (make-fld-maker stx)
     (syntax-parse stx
-      [(_ struct-id fld-id fld-name fld-type fld-pk? fld-ai? fld-nullable? fld-unique? fld-virtual?)
+      [(_ struct-id fld-id fld-name fld-type fld-pk? fld-fk? fld-fk fld-ai? fld-nullable? fld-unique? fld-virtual?)
        (with-syntax ([getter-id  (format-id #'struct-id "~a-~a"        #'struct-id #'fld-id)]
                      [setter-id  (format-id #'struct-id "set-~a-~a"    #'struct-id #'fld-id)]
                      [updater-id (format-id #'struct-id "update-~a-~a" #'struct-id #'fld-id)])
@@ -83,6 +83,8 @@
                        #:setter setter-id
                        #:updater updater-id
                        #:primary-key? fld-pk?
+                       #:foreign-key? fld-fk?
+                       #:foreign-key fld-fk
                        #:auto-increment? fld-ai?
                        #:nullable? fld-nullable?
                        #:unique? fld-unique?
@@ -111,8 +113,14 @@
                 (optional-arg ... ...)
                 struct-pred-id))]))
 
+  (define-syntax-class fk
+    (pattern (schema:id field:id)
+             #:with ctor-arg (with-syntax* ([schema-id (format-id #'schema "~a-schema" #'schema)])
+                               #'(foreign-key (schema-table schema-id) (id->column-name 'field)))))
+
   (define-syntax-class fld
     (pattern (id:id type:expr (~alt (~optional (~and #:primary-key primary-key))
+                                    (~optional (~seq #:foreign-key foreign-key:fk))
                                     (~optional (~and #:auto-increment auto-increment))
                                     (~optional (~and #:nullable nullable))
                                     (~optional (~and #:unique unique))
@@ -126,6 +134,10 @@
              #:with required? (if (or (attribute auto-increment)
                                       (attribute nullable)) #'#f #'t)
              #:with primary-key? (if (attribute primary-key) #'#t #'#f)
+             #:with foreign-key? (if (attribute foreign-key) #'#t #'#f)
+             #:with foreign-key-ctor-arg (if (attribute foreign-key)
+                                         (attribute foreign-key.ctor-arg)
+                                         #'#f)
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
              #:with unique? (if (attribute unique) #'#t #'#f)
@@ -143,6 +155,7 @@
                                [else                    #'(ctor-kwd  id)]))
 
     (pattern ((id:id default:expr) type:expr (~alt (~optional (~and #:primary-key primary-key))
+                                                   (~optional (~seq #:foreign-key foreign-key:fk))
                                                    (~optional (~and #:auto-increment auto-increment))
                                                    (~optional (~and #:nullable nullable))
                                                    (~optional (~and #:unique unique))
@@ -164,6 +177,10 @@
 
              #:with required? #'#f
              #:with primary-key? (if (attribute primary-key) #'#t #'#f)
+             #:with foreign-key? (if (attribute foreign-key) #'#t #'#f)
+             #:with foreign-key-ctor-arg (if (attribute foreign-key)
+                                         (attribute foreign-key.ctor-arg)
+                                         #'#f)
              #:with auto-increment? (if (attribute auto-increment) #'#t #'#f)
              #:with nullable? (if (attribute nullable) #'#t #'#f)
              #:with unique? (if (attribute unique) #'#t #'#f)
@@ -239,6 +256,8 @@
                                                          f.name
                                                          f.type
                                                          f.primary-key?
+                                                         f.foreign-key?
+                                                         f.foreign-key-ctor-arg
                                                          f.auto-increment?
                                                          f.nullable?
                                                          f.unique?

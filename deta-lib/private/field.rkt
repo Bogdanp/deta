@@ -7,6 +7,9 @@
  make-field
  (struct-out field)
 
+ make-foreign-key
+ (struct-out foreign-key)
+
  id->column-name)
 
 (struct field
@@ -18,6 +21,8 @@
    setter
    updater
    primary-key?
+   foreign-key?
+   foreign-key
    auto-increment?
    nullable?
    unique?
@@ -31,6 +36,8 @@
                     #:setter setter
                     #:updater updater
                     #:primary-key? primary-key?
+                    #:foreign-key? foreign-key?
+                    #:foreign-key foreign-key
                     #:auto-increment? auto-increment?
                     #:nullable? nullable?
                     #:unique? unique?
@@ -43,10 +50,20 @@
          setter
          updater
          primary-key?
+         foreign-key?
+         foreign-key
          auto-increment?
          nullable?
          unique?
          virtual?))
+
+(struct foreign-key
+  (schema
+   field))
+
+(define (make-foreign-key #:schema schema
+                          #:field field)
+  (foreign-key schema field))
 
 (define (id->column-name id)
   (let* ([name (cond
