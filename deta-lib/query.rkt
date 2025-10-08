@@ -239,7 +239,8 @@
   [query-entities (->* [connection? dyn:query?]
                        [#:batch-size (or/c exact-positive-integer? +inf.0)]
                        (listof entity?))]
-  [lookup (-> connection? dyn:query? any)])
+  [lookup (-> connection? dyn:query? any)]
+  [refresh (-> connection? entity? (or/c #f entity?))])
 
  from
  group-by
@@ -339,6 +340,25 @@
   (define-values (res _)
     (sequence-generate* (in-entities conn q)))
   (and res (apply values res)))
+
+(define (refresh conn e)
+  (define meta (entity-meta e))
+  (define schema (meta-schema meta))
+  (define pk-field (schema-primary-key schema))
+  (unless pk-field
+    (raise-arguments-error
+     'reload-entity
+     "only entities with a #:primary-key may be reloaded"
+     "entity" e))
+  (define pk-value
+    ((field-getter pk-field) e))
+  (define pk-ref
+    (ast:qualified "t" (ast:column (field-name pk-field))))
+  (define q
+    (where
+     (dyn:from (schema-id schema) #:as 't)
+     (= (fragment pk-ref) ,pk-value)))
+  (lookup conn q))
 
 (begin-for-syntax
   (define column-reference-re

@@ -449,7 +449,26 @@
              (~> (from user #:as u)
                  (select u.name)
                  (where (fragment "u.name = 'Bogdan'"))))))
-        "#<query: SELECT u.name FROM users AS u WHERE u.name = 'Bogdan'>"))))))
+        "#<query: SELECT u.name FROM users AS u WHERE u.name = 'Bogdan'>")))
+
+    (test-suite
+     "refresh"
+
+     (test-case "refreshes entities"
+       (define a-user
+         (~> (make-user #:username "refresh-test@example.com")
+             (insert-one! (current-conn) _)))
+       (define b-user
+         (refresh (current-conn) a-user))
+       (check-equal? a-user b-user)
+       (~> (set-user-active? b-user #t)
+           (update-one! (current-conn) _))
+       (define c-user
+         (refresh (current-conn) b-user))
+       (check-not-equal? b-user c-user)
+       (check-true (user-active? c-user))
+       (delete-one! (current-conn) c-user)
+       (check-false (refresh (current-conn) c-user)))))))
 
 (module+ test
   (require rackunit/text-ui)

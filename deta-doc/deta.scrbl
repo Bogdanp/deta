@@ -433,6 +433,17 @@ the reference documentation below.
   If there are no results then @racket[#f] is returned.
 }
 
+@defproc[(refresh [conn connection?]
+                  [e entity?]) (or/c #f entity?)]{
+
+  Runs a query to look up the latest version of @racket[e] against
+  @racket[conn]. Returns @racket[#f] when the row identified by
+  @racket[e]'s primary key no longer exists. Raises an argument error if
+  the schema backing @racket[e] does not have a primary key.
+
+  @history[#:added "0.17"]
+}
+
 @defproc[(update! [#:force? force? boolean? #f]
                   [conn connection?]
                   [e entity?] ...) (listof entity?)]{

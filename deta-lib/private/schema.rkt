@@ -35,9 +35,10 @@
   (define pk-fields
     (filter field-primary-key? fields))
   (when (> (length pk-fields) 1)
-    (raise-arguments-error 'make-schema
-                           "at most one field may be marked as a #:primary-key"
-                           "bad fields" (map field-id pk-fields)))
+    (raise-arguments-error
+     'make-schema
+     "at most one field may be marked as a #:primary-key"
+     "bad fields" (map field-id pk-fields)))
 
   (define the-schema
     (schema id
