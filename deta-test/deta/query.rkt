@@ -456,8 +456,14 @@
 
      (test-case "refreshes entities"
        (define a-user
-         (~> (make-user #:username "refresh-test@example.com")
-             (insert-one! (current-conn) _)))
+         ;; In Postgres, returned timestamps are less precise so look up
+         ;; the user after inserting in order for the subsequent equal?
+         ;; checks to work.
+         (let ([u (~> (make-user #:username "refresh-test@example.com")
+                      (insert-one! (current-conn) _))])
+           (~> (from user #:as u)
+               (where (= u.id ,(user-id u)))
+               (lookup (current-conn) _))))
        (define b-user
          (refresh (current-conn) a-user))
        (check-equal? a-user b-user)
