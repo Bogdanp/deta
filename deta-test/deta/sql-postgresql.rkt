@@ -223,8 +223,13 @@
                             (- (now) (interval "7 days"))
                             (+ (now) (interval "7 days")))
                    is_between))
-
      "SELECT ((NOW()) BETWEEN ((NOW()) - (INTERVAL '7 days')) AND ((NOW()) + (INTERVAL '7 days'))) AS is_between")
+
+    (check-emitted
+     (where
+      (select _ #t)
+      (exists (subquery (select _ #f))))
+     "SELECT TRUE WHERE EXISTS (SELECT FALSE)")
 
     (test-case "fails when known operators are called with bad arities"
       (check-exn

@@ -36,6 +36,7 @@
 (define-ops unary
   [bitwise-not "~"]
   [date]
+  [exists]
   [interval]
   [json]
   [jsonb]
