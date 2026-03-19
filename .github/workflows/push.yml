@@ -14,12 +14,12 @@ jobs:
           POSTGRES_DATABASE: deta
     steps:
     - uses: actions/checkout@master
-    - uses: Bogdanp/setup-racket@v1.9
+    - uses: Bogdanp/setup-racket@v1.15
       with:
         architecture: 'x64'
         distribution: 'full'
         variant: 'CS'
-        version: '8.6'
+        version: '9.1'
     - run: raco pkg install --auto --batch deta-lib/ deta-doc/ deta-test/
     - run: raco test -j 4 deta-lib/ deta-test/
       env:
