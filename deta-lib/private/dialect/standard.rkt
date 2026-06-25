@@ -240,7 +240,11 @@
     [(select distinct? columns from where group-by union order-by offset limit)
      (write-string "SELECT ")
      (when distinct?
-       (write-string "DISTINCT "))
+       (write-string "DISTINCT ")
+       (when (pair? distinct?)
+         (write-string "ON (")
+         (write/sep distinct? write-expr)
+         (write-string ") ")))
      (cond
        [(null? columns) (write-string "*")]
        [else            (write-stmt columns)])

@@ -370,7 +370,6 @@
   (define (syntax->column-reference stx)
     (match-define (list _ a b)
       (regexp-match column-reference-re (symbol->string (syntax->datum stx))))
-
     (cons (datum->syntax stx a)
           (datum->syntax stx (id->column-name b))))
 
@@ -571,9 +570,14 @@
 
   (syntax-parse stx
     [(_ q:from-expr
-        (~alt (~optional (~and #:distinct distinct))) ...
+        (~alt (~optional (~and #:distinct distinct))
+              (~optional (~seq #:distinct-on (distinct-expr:q-expr ...+)))) ...
         e:q-expr ...+)
-     #:with distinct? (if (attribute distinct) #'#t #'#f)
+     #:with distinct?
+     (cond
+       [(attribute distinct-expr) #'(list distinct-expr.e ...)]
+       [(attribute distinct) #'#t]
+       [else #'#f])
      #'(dyn:select
         #:distinct? distinct?
         q.e e.e ...)]))

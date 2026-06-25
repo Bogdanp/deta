@@ -247,6 +247,14 @@
            (select #:distinct t.name t.count))
        "SELECT DISTINCT t.name, t.\"count\" FROM tags AS t"))
 
+    (test-case "suppports DISTINCT ON in from-queries"
+      (check-emitted
+       (~> (from "actions" #:as a)
+           (select #:distinct-on (a.agent-id) a.agent-id a.action)
+           (order-by ([a.agent-id]
+                      [a.created-at #:desc])))
+       "SELECT DISTINCT ON (a.agent_id) a.agent_id, a.\"action\" FROM actions AS a ORDER BY a.agent_id, a.created_at DESC"))
+
     (test-case "supports COND as an alias for CASE"
       (check-emitted
        (select

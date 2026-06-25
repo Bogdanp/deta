@@ -100,7 +100,7 @@
   [returning (-> query? ast:expr? ast:expr? ... query?)]
   [select
    (->* [query? ast:expr?]
-        [#:distinct? boolean?]
+        [#:distinct? (or/c boolean? list?)]
         #:rest (listof ast:expr?)
         query?)]
   [select-for-schema

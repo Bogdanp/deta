@@ -913,8 +913,10 @@ queries.
   ((select _ maybe-distinct q-expr ...+)
    (select query maybe-distinct q-expr ...+))
   #:grammar
-  [(maybe-distinct (code:line)
-                   #:distinct)]
+  [(maybe-distinct
+    (code:line)
+    (code:line #:distinct)
+    (code:line #:distinct-on (q-expr ...+)))]
   #:contracts
   ([query query?])]{
 
