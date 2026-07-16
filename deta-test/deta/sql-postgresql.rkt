@@ -276,6 +276,14 @@
 
        "SELECT CASE WHEN (MIN(d.employees)) > 0 THEN AVG(d.expenses / d.employees) ELSE 0 END FROM departments AS d"))
 
+    (test-case "FOR UPDATE"
+      (check-emitted
+       (select-for-update
+        (where
+         (from "workspaces" #:as w)
+         (= w.id 1)))
+       "SELECT * FROM workspaces AS w WHERE w.id = 1 FOR UPDATE"))
+
     (test-suite
      "from"
 

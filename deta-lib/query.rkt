@@ -233,14 +233,18 @@
 
 (provide
  (contract-out
-  [in-entities (->* [connection? dyn:query?]
-                    [#:batch-size (or/c exact-positive-integer? +inf.0)]
-                    sequence?)]
-  [query-entities (->* [connection? dyn:query?]
-                       [#:batch-size (or/c exact-positive-integer? +inf.0)]
-                       (listof entity?))]
-  [lookup (-> connection? dyn:query? any)]
-  [refresh (-> connection? entity? (or/c #f entity?))])
+  [in-entities
+   (->* [connection? dyn:query?]
+        [#:batch-size (or/c exact-positive-integer? +inf.0)]
+        sequence?)]
+  [query-entities
+   (->* [connection? dyn:query?]
+        [#:batch-size (or/c exact-positive-integer? +inf.0)]
+        (listof entity?))]
+  [lookup
+   (-> connection? dyn:query? any)]
+  [refresh
+   (-> connection? entity? (or/c #f entity?))])
 
  from
  group-by
@@ -260,7 +264,8 @@
   [dyn:delete delete]
   [dyn:union union]
   [dyn:project-onto project-onto]
-  [dyn:project-virtual-fields project-virtual-fields])
+  [dyn:project-virtual-fields project-virtual-fields]
+  [dyn:select-for-update select-for-update])
 
  (contract-out
   [make-entity

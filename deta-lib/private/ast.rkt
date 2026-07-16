@@ -100,7 +100,8 @@
  (struct-out union)
  (struct-out order-by)
  (struct-out returning)
- (struct-out where))
+ (struct-out where)
+ (struct-out select-for))
 
 (struct clause ()
   #:transparent)
@@ -137,6 +138,9 @@
   #:transparent)
 
 (struct where clause (e)
+  #:transparent)
+
+(struct select-for clause (what)
   #:transparent)
 
 
@@ -186,7 +190,7 @@
                      #:returning [returning #f])
   (update table assignments where returning))
 
-(struct select stmt (distinct? columns from where group-by union order-by offset limit)
+(struct select stmt (distinct? columns from where group-by union order-by limit offset for-spec)
   #:transparent)
 
 (define (make-select #:distinct? [distinct? #f]
@@ -196,6 +200,7 @@
                      #:group-by [group-by #f]
                      #:union [union #f]
                      #:order-by [order-by #f]
+                     #:limit [limit #f]
                      #:offset [offset #f]
-                     #:limit [limit #f])
-  (select distinct? columns from where group-by union order-by offset limit))
+                     #:for [for-spec #f])
+  (select distinct? columns from where group-by union order-by limit offset for-spec))

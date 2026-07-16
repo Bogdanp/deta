@@ -980,6 +980,12 @@ queries.
   schema.
 }
 
+@defproc[(select-for-update [q query?]) query?]{
+  Modifies @racket[q] to lock its rows against concurrent updates.
+
+  @history[#:added "0.20"]
+}
+
 @defform[
   (union query-1 query-2)
 ]{

@@ -109,6 +109,8 @@
        string?
        (hash/c symbol? ast:expr?)
        query?)]
+  [select-for-update
+   (-> query? query?)]
   [subquery (-> select-query? ast:subquery?)]
   [union (-> select-query? select-query? query?)]
   [update (-> select-query? assignment/c assignment/c ... query?)]
@@ -190,6 +192,18 @@
                                          (lambda ()
                                            (ast:qualified tbl-alias (field-name fld)))))))
   (project-onto q* s))
+
+(define (select-for-update q)
+  (match q
+    [(query schema opts (? ast:select? stmt))
+     (query schema opts (struct-copy
+                         ast:select stmt
+                         [for-spec (ast:select-for 'update)]))]
+
+    [_
+     (raise-argument-error
+      'select-for-update
+      "a SELECT query" q)]))
 
 (define (limit q n)
   (match q

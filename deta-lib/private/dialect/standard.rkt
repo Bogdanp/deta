@@ -237,7 +237,7 @@
     [(list exprs ...)
      (write/sep exprs write-expr)]
 
-    [(select distinct? columns from where group-by union order-by offset limit)
+    [(select distinct? columns from where group-by union order-by limit offset for-spec)
      (write-string "SELECT ")
      (when distinct?
        (write-string "DISTINCT ")
@@ -255,7 +255,11 @@
      (when union    (display/space union))
      (when order-by (display/space order-by))
      (when limit    (display/space limit))
-     (when offset   (display/space offset))]
+     (when offset   (display/space offset))
+     (when for-spec (display/space for-spec))]
+
+    [(select-for 'update)
+     (write-string "FOR UPDATE")]
 
     [(update table assignments where returning)
      (write-string "UPDATE ")
