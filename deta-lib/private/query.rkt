@@ -456,9 +456,9 @@
 ;; resolve ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The query macros leave field names as symbols in the tree and the job
-;; of the resolver is to map qualified fields, and unqualified fields in
-;; an update clause, back to their canonical column #:names. When the
-;; resolver meets a symbol column id, it tries to resolve it back to
+;; of the resolver is to map qualified fields -- and unqualified fields
+;; in an update clause -- back to their canonical column #:names. When
+;; the resolver meets a symbol column id, it tries to resolve it back to
 ;; its canonical name. If it has a #f source schema for a given alias,
 ;; then it always resolves the column by converting it to a string using
 ;; id->column-name. If it has an actual schema for a given alias, then
@@ -466,7 +466,8 @@
 ;; If it doesn't have a mapping for a given alias, it punts until the
 ;; next resolve call or until it is called with finalize? set to #t,
 ;; in which case any remaining unresolvable columns are converted to a
-;; string via id->column-name.
+;; string via id->column-name (or raise when resolve-fields-strictly? is
+;; set to #t).
 ;;
 ;; The combinators each resolve whatever they introduce. When emitted, a
 ;; query is finalized, performing a final resolution over the tree. This
