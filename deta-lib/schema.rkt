@@ -44,7 +44,7 @@
       [(_ struct-id struct-pred-id fld-id fld-contract fld-wrapper)
        (with-syntax ([setter-id (format-id #'struct-id "set-~a-~a" #'struct-id #'fld-id)])
          #'(define/contract (setter-id e v [track-change? #t])
-             (->* (struct-pred-id fld-contract) (boolean?) struct-pred-id)
+             (->* [struct-pred-id fld-contract] [boolean?] struct-pred-id)
              (define meta
                (if track-change?
                    (meta-track-change (entity-meta e) 'fld-id)
@@ -60,7 +60,7 @@
        (with-syntax ([getter-id  (format-id #'struct-id "~a-~a"        #'struct-id #'fld-id)]
                      [updater-id (format-id #'struct-id "update-~a-~a" #'struct-id #'fld-id)])
          #'(define/contract (updater-id e p [track-change? #t])
-             (->* (struct-pred-id (-> fld-contract fld-contract)) (boolean?) struct-pred-id)
+             (->* [struct-pred-id (-> fld-contract fld-contract)] [boolean?] struct-pred-id)
              (define meta
                (if track-change?
                    (meta-track-change (entity-meta e) 'fld-id)
@@ -76,17 +76,18 @@
        (with-syntax ([getter-id  (format-id #'struct-id "~a-~a"        #'struct-id #'fld-id)]
                      [setter-id  (format-id #'struct-id "set-~a-~a"    #'struct-id #'fld-id)]
                      [updater-id (format-id #'struct-id "update-~a-~a" #'struct-id #'fld-id)])
-         #'(make-field #:id 'fld-id
-                       #:name fld-name
-                       #:type fld-type
-                       #:getter getter-id
-                       #:setter setter-id
-                       #:updater updater-id
-                       #:primary-key? fld-pk?
-                       #:auto-increment? fld-ai?
-                       #:nullable? fld-nullable?
-                       #:unique? fld-unique?
-                       #:virtual? fld-virtual?))]))
+         #'(make-field
+            #:id 'fld-id
+            #:name fld-name
+            #:type fld-type
+            #:getter getter-id
+            #:setter setter-id
+            #:updater updater-id
+            #:primary-key? fld-pk?
+            #:auto-increment? fld-ai?
+            #:nullable? fld-nullable?
+            #:unique? fld-unique?
+            #:virtual? fld-virtual?))]))
 
   (define-template-metafunction (make-ctor-contract stx)
     (syntax-parse stx
@@ -107,8 +108,8 @@
                                   (syntax-e #'(fld-kwd ...))
                                   (syntax-e #'(fld-contract ...))
                                   (syntax-e #'(fld-required? ...)))])
-         #'(->* (required-arg ... ...)
-                (optional-arg ... ...)
+         #'(->* [required-arg ... ...]
+                [optional-arg ... ...]
                 struct-pred-id))]))
 
   (define-syntax-class fld
@@ -199,7 +200,8 @@
                     [struct-ctor-id (gensym)]
                     [struct-pred-id (format-id #'struct-id "~a?" #'struct-id)]
                     [schema-id (format-id #'struct-id "~a-schema" #'struct-id)])
-       #'(begin
+       (syntax/loc stx
+         (begin
            (struct struct-id entity (f.id ...)
              #:constructor-name struct-ctor-id
              #:transparent
@@ -218,31 +220,32 @@
            (begin (make-fld-updater struct-id struct-pred-id f.id f.contract f.wrapper) ...)
 
            (define schema-id
-             (make-schema #:id 'struct-id
-                          #:table table-name
-                          #:virtual? virtual?
-                          #:struct-ctor ctor-id
-                          #:struct-pred struct-pred-id
-                          #:meta-updater meta-updater-id
-                          #:pre-persist-hook (contract
-                                              (-> struct-pred-id struct-pred-id)
-                                              pre-persist-hook-e
-                                              'struct-id 'struct-id
-                                              'pre-persist-hook #f)
-                          #:pre-delete-hook (contract
-                                             (-> struct-pred-id struct-pred-id)
-                                             pre-delete-hook-e
-                                             'struct-id 'struct-id
-                                             'pre-delete-hook #f)
-                          #:fields (list (make-fld-maker struct-id
-                                                         f.id
-                                                         f.name
-                                                         f.type
-                                                         f.primary-key?
-                                                         f.auto-increment?
-                                                         f.nullable?
-                                                         f.unique?
-                                                         f.virtual?) ...)))))]))
+             (make-schema
+              #:id 'struct-id
+              #:table table-name
+              #:virtual? virtual?
+              #:struct-ctor ctor-id
+              #:struct-pred struct-pred-id
+              #:meta-updater meta-updater-id
+              #:pre-persist-hook (contract
+                                  (-> struct-pred-id struct-pred-id)
+                                  pre-persist-hook-e
+                                  'struct-id 'struct-id
+                                  'pre-persist-hook #f)
+              #:pre-delete-hook (contract
+                                 (-> struct-pred-id struct-pred-id)
+                                 pre-delete-hook-e
+                                 'struct-id 'struct-id
+                                 'pre-delete-hook #f)
+              #:fields (list (make-fld-maker struct-id
+                                             f.id
+                                             f.name
+                                             f.type
+                                             f.primary-key?
+                                             f.auto-increment?
+                                             f.nullable?
+                                             f.unique?
+                                             f.virtual?) ...))))))]))
 
 ;; Heavily inspired by:
 ;; https://github.com/racket/racket/blob/20e669f47842d47b085ddedc5782e4a95495653a/racket/collects/racket/private/reqprov.rkt#L978
