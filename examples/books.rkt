@@ -53,11 +53,12 @@
 
 (displayln "")
 (displayln "Statistics:")
-(for ([stats (in-entities conn (~> (from book #:as b)
-                                   (select b.year-published (count *))
-                                   (group-by b.year-published)
-                                   (order-by ([b.year-published #:desc]))
-                                   (project-onto book-stats-schema)))])
+(for ([stats (~> (from book #:as b)
+                 (select b.year-published (count *))
+                 (group-by b.year-published)
+                 (order-by ([b.year-published #:desc]))
+                 (project-onto book-stats-schema)
+                 (in-entities conn _))])
   (displayln (format "year: ~a books: ~a"
                      (book-stats-year stats)
                      (book-stats-books stats))))

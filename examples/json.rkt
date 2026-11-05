@@ -22,6 +22,7 @@
   (println e))
 
 (displayln "Rows with a 'hello' key:")
-(for ([e (in-entities conn (~> (from example #:as e)
-                               (where (not (is (json-ref e.data "hello") null)))))])
+(for ([e (~> (from example #:as e)
+             (where (not (is (json-ref e.data "hello") null)))
+             (in-entities conn _))])
   (println e))

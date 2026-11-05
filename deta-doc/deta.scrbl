@@ -236,9 +236,10 @@ And now let's query for all of the books published before 1955:
 (require threading)
 
 (code:line)
-(for/list ([b (in-entities conn (~> (from book #:as b)
-                                    (where (< b.published-on (date "1955-01-01")))
-                                    (order-by ([b.published-on #:desc]))))])
+(for/list ([b (~> (from book #:as b)
+                  (where (< b.published-on (date "1955-01-01")))
+                  (order-by ([b.published-on #:desc]))
+                  (in-entities conn _))])
   (book-title b))
 ]
 

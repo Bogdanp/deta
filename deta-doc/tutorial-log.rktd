@@ -111,12 +111,11 @@
 ((require threading) ((3) 0 () 0 () () (c values c (void))) #"" #"")
 ((for/list
   ((b
-    (in-entities
-     conn
-     (~>
-      (from book #:as b)
-      (where (< b.published-on (date "1955-01-01")))
-      (order-by ((b.published-on #:desc)))))))
+    (~>
+     (from book #:as b)
+     (where (< b.published-on (date "1955-01-01")))
+     (order-by ((b.published-on #:desc)))
+     (in-entities conn _))))
   (book-title b))
  ((3)
   0

@@ -202,10 +202,9 @@
          #:user "example"
          #:timestamp  (now/moment)))
        (check-not-false
-        (lookup
-         (current-conn)
-         (~> (from reserved #:as r)
-             (where (= r.user "example"))))))
+        (~> (from reserved #:as r)
+            (where (= r.user "example"))
+            (lookup (current-conn) _))))
 
      (test-case "can retrieve arbitrary data"
        (define x
@@ -220,8 +219,9 @@
 
        (check-equal? (book-with-nulls-published-on book)
                      (book-with-nulls-published-on
-                      (lookup (current-conn) (~> (from book-with-nulls #:as b)
-                                                 (where (= b.id ,(book-with-nulls-id book))))))))
+                      (~> (from book-with-nulls #:as b)
+                          (where (= b.id ,(book-with-nulls-id book)))
+                          (lookup (current-conn) _)))))
 
      (test-case "can retrieve data containing datetime fields without tz"
        (define book
@@ -231,15 +231,16 @@
        (check-true (= (seconds-between
                        (book-with-nulls-published-on book)
                        (book-with-nulls-published-on
-                        (lookup (current-conn) (~> (from book-with-nulls #:as b)
-                                                   (where (= b.id ,(book-with-nulls-id book)))))))
+                        (~> (from book-with-nulls #:as b)
+                            (where (= b.id ,(book-with-nulls-id book)))
+                            (lookup (current-conn) _))))
                       0)))
 
      (test-case "can retrieve subsets of data from schemas"
        (define usernames
-         (for/list ([(username) (in-entities (current-conn)
-                                             (~> (from user #:as u)
-                                                 (select u.username)))])
+         (for/list ([(username) (~> (from user #:as u)
+                                    (select u.username)
+                                    (in-entities (current-conn) _))])
            username))
 
        (check-true (not (null? usernames))))
@@ -251,9 +252,9 @@
           [y string/f]))
 
        (define r
-         (for/first ([r (in-entities (current-conn)
-                                     (~> (select _ 1 "hello")
-                                         (project-onto res-schema)))])
+         (for/first ([r (~> (select _ 1 "hello")
+                            (project-onto res-schema)
+                            (in-entities (current-conn) _))])
            r))
 
        (check-true (res? r))
@@ -267,9 +268,9 @@
            ([roles (array/f string/f)]))
 
          (define r
-           (for/first ([r (in-entities (current-conn)
-                                       (~> (select _ (as (array "a" "b" "c") roles))
-                                           (project-onto res-schema)))])
+           (for/first ([r (~> (select _ (as (array "a" "b" "c") roles))
+                              (project-onto res-schema)
+                              (in-entities (current-conn) _))])
              r))
 
          (check-true (res? r))
@@ -301,7 +302,7 @@
                 (make-hybrid #:slug "hybrid-0" #:comment "some value")
                 (make-hybrid #:slug "hybrid-1" #:comment "some other value"))
        (define default-comment (hybrid-comment (make-hybrid #:slug "n/a")))
-       (for ([h (in-entities (current-conn) (~> (from hybrid #:as h) (order-by ([slug]))))]
+       (for ([h (~> (from hybrid #:as h) (order-by ([slug])) (in-entities (current-conn) _))]
              [slug (in-list '("hybrid-0" "hybrid-1"))])
          (check-equal? (hybrid-slug h) slug)
          (check-equal? (hybrid-comment h) default-comment)))
@@ -332,9 +333,9 @@
         (check-equal? (length all-active-users*) 2)
 
         (define all-active-users-named-bob
-          (for/list ([u (in-entities (current-conn)
-                                     (~> query
-                                         (where (like u.username "%bob%"))))])
+          (for/list ([u (~> query
+                            (where (like u.username "%bob%"))
+                            (in-entities (current-conn) _))])
             u))
 
         (check-equal? (length all-active-users-named-bob) 1)
@@ -345,10 +346,10 @@
         (check-not-exn
          (lambda ()
            (for ([v '(#t #f)])
-             (query-exec (current-conn)
-                         (~> (from user #:as u)
-                             (select u.id)
-                             (where (= u.active? ,v))))))))))
+             (~> (from user #:as u)
+                 (select u.id)
+                 (where (= u.active? ,v))
+                 (query-exec (current-conn) _))))))))
 
     (test-suite
      "update"
@@ -364,22 +365,22 @@
 
      (test-case "supports returning clause"
        (define expected-id
-         (query-value (current-conn)
-                      (~> (from user #:as u)
-                          (select id)
-                          (limit 1))))
+         (~> (from user #:as u)
+             (select id)
+             (limit 1)
+             (query-value (current-conn) _)))
        (define returned-id
-         (query-value (current-conn)
-                      (~> (from user #:as u)
-                          (update [active? #t])
-                          (where (= id ,expected-id))
-                          (returning id))))
+         (~> (from user #:as u)
+             (update [active? #t])
+             (where (= id ,expected-id))
+             (returning id)
+             (query-value (current-conn) _)))
        (check-equal? expected-id returned-id))
 
      (test-case "can update arbitrary tables"
-       (query-exec (current-conn)
-                   (~> (from user #:as u)
-                       (update [active? #t])))
+       (~> (from user #:as u)
+           (update [active? #t])
+           (query-exec (current-conn) _))
 
        (for ([u (in-entities (current-conn) (from user #:as u))])
          (check-true (user-active? u)))))
@@ -415,15 +416,16 @@
                       (make-user #:username "user-for-lookup@example.com")))
 
        (define user
-         (lookup (current-conn) (~> (from user #:as u)
-                                    (where (= u.id ,(user-id a-user))))))
+         (~> (from user #:as u)
+             (where (= u.id ,(user-id a-user)))
+             (lookup (current-conn) _)))
 
        (check-true (user? user)))
 
      (test-case "can fail to look up entities"
-       (check-false (lookup (current-conn)
-                            (~> (from user #:as u)
-                                (where #f))))))
+       (check-false (~> (from user #:as u)
+                        (where #f)
+                        (lookup (current-conn) _)))))
 
     (test-suite
      "fragment"
