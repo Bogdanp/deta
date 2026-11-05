@@ -243,7 +243,11 @@
   [lookup
    (-> connection? dyn:query? any)]
   [refresh
-   (-> connection? entity? (or/c #f entity?))])
+   (-> connection? entity? (or/c #f entity?))]
+  [rename
+   dyn:resolve-fields-strictly? ;; noqa
+   resolve-fields-strictly?
+   (parameter/c boolean?)])
 
  from
  group-by

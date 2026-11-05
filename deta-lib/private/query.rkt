@@ -15,10 +15,14 @@
 ;; struct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
+ resolve-fields-strictly?
  make-empty-query
  (struct-out opts)
  (struct-out query)
  emit-query)
+
+(define resolve-fields-strictly?
+  (make-parameter #t))
 
 (struct opts (project-virtual-fields?)
   #:transparent)
@@ -69,6 +73,7 @@
 
 (define (emit-query q dialect)
   (dialect-emit-query dialect (finalize q)))
+
 
 ;; combinators ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -586,20 +591,22 @@
      (ast:column (resolve-qualified sources alias id #t))]
     [_ column]))
 
+;; An alias may show up in sources as #f to signal that there is
+;; nothing to punt on for that alias. A missing field on a schema is an
+;; error when `resolve-fields-strictly?' is #t. Otherwise the field is
+;; converted using id->column-name.
 (define (resolve-qualified sources parent id finalize?)
   (define alias
     (if (symbol? parent)
         (symbol->string parent)
         parent))
   (cond
-    ;; An alias may show up in sources as #f to signal that there is
-    ;; nothing to punt on for that alias. For now, any field not found
-    ;; on a schema is converted using id->column-name. In future, we
-    ;; might decide to be stricter about this.
     [(hash-has-key? sources alias)
      (define s (hash-ref sources alias))
      (or (and s (resolve-field s id))
-         (id->column-name id))]
+         (if (and s (resolve-fields-strictly?) (not (eq? id '*)))
+             (raise-arguments-error (schema-id s) "no such field" "field" id "alias" alias)
+             (id->column-name id)))]
     [else
      (get-column-name id finalize?)]))
 

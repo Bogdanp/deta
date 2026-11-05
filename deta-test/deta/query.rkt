@@ -414,8 +414,10 @@
 
      (test-case "can look up entities"
        (define a-user
-         (insert-one! (current-conn)
-                      (make-user #:username "user-for-lookup@example.com")))
+         (insert-one!
+          (current-conn)
+          (make-user
+           #:username "user-for-lookup@example.com")))
 
        (define user
          (~> (from user #:as u)
@@ -425,9 +427,10 @@
        (check-true (user? user)))
 
      (test-case "can fail to look up entities"
-       (check-false (~> (from user #:as u)
-                        (where #f)
-                        (lookup (current-conn) _)))))
+       (check-false
+        (~> (from user #:as u)
+            (where #f)
+            (lookup (current-conn) _)))))
 
     (test-suite
      "fragment"
@@ -438,12 +441,12 @@
           (lambda ()
             (display
              (~> (from user #:as u)
-                 (select u.name)
+                 (select u.username)
                  (where (fragment (ast:app
                                    (ast:ident '=)
                                    (list (ast:qualified "u" "name")
                                          (ast:scalar "Bogdan")))))))))
-        "#<query: SELECT u.name FROM users AS u WHERE u.name = 'Bogdan'>"))
+        "#<query: SELECT u.username FROM users AS u WHERE u.name = 'Bogdan'>"))
 
      (test-case "fragment with string"
        (check-equal?
@@ -451,9 +454,9 @@
           (lambda ()
             (display
              (~> (from user #:as u)
-                 (select u.name)
+                 (select u.username)
                  (where (fragment "u.name = 'Bogdan'"))))))
-        "#<query: SELECT u.name FROM users AS u WHERE u.name = 'Bogdan'>")))
+        "#<query: SELECT u.username FROM users AS u WHERE u.name = 'Bogdan'>")))
 
     (test-suite
      "refresh"

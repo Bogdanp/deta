@@ -130,9 +130,9 @@
       (define q
         (with-output-to-string
           (λ ()
-            (display (select (from user #:as u) u.valid?)))))
+            (display (select (from user #:as u) u.verified?)))))
 
-      (check-equal? q "#<query: SELECT u.is_valid FROM users AS u>"))
+      (check-equal? q "#<query: SELECT u.verified FROM users AS u>"))
 
     (test-case "struct-options are passed to the struct definition"
       (define e (make-entry #:title "hello"))

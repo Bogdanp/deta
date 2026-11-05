@@ -1045,6 +1045,16 @@ queries.
   ]
 }
 
+@defparam[resolve-fields-strictly? strict? boolean? #:value #t]{
+  When @racket[strict?] is @racket[#t], referencing a field that does
+  not exist on the schema bound to a table alias raises an error when
+  the query is built. Otherwise, the reference is converted to a column
+  name following the naming rules described in @racket[define-schema]
+  instead.
+
+  @history[#:added "0.21"]
+}
+
 @subsection{Schema}
 
 @defproc[(entity? [e any/c]) boolean?]{
@@ -1227,7 +1237,8 @@ queries.
   Custom field names can be specified by providing a @racket[#:name]
   in the field definition. In queries, custom field names are resolved
   when a field is qualified by a table alias that resolves to a known
-  schema.
+  schema. Referencing an unknown field through a resolved schema
+  behaves according to @racket[resolve-fields-strictly?].
 
   Example:
 

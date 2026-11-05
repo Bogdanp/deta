@@ -285,6 +285,30 @@
            (where u.verified?))
        "UPDATE users AS u SET verified = TRUE WHERE u.verified"))
 
+    (test-case "unknown fields on a schema are an error by default"
+      (check-exn
+       #rx"^user: no such field\n  field: 'nonexistent[?]\n  alias: \"u\""
+       (lambda ()
+         (~> (from user #:as u)
+             (where u.nonexistent?))))
+
+      (check-emitted
+       (~> (from user #:as u)
+           (select (count u.*)))
+       "SELECT COUNT(u.*) FROM users AS u")
+
+      (check-emitted
+       (~> (from "logins" #:as l)
+           (select l.nonexistent?))
+       "SELECT l.is_nonexistent FROM logins AS l"))
+
+    (test-case "unknown fields fall back to the default column name when not strict"
+      (parameterize ([resolve-fields-strictly? #f])
+        (check-emitted
+         (~> (from user #:as u)
+             (select u.nonexistent?))
+         "SELECT u.is_nonexistent FROM users AS u")))
+
     (test-case "fails when known operators are called with bad arities"
       (check-exn
        #rx"not: arity mismatch"
