@@ -51,7 +51,8 @@
 (define (id->column-name id)
   (let* ([name (cond
                  [(symbol? id) (symbol->string id)]
-                 [(string? id) id])]
+                 [(string? id) id]
+                 [else (raise-argument-error 'id->column-name "(or/c symbol? string?)" id)])]
          [name (string-replace name "-" "_")]
          [name (if (string-suffix? name "?")
                    (~a "is_" (substring name 0 (sub1 (string-length name))))
