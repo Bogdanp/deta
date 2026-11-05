@@ -1045,12 +1045,13 @@ queries.
   ]
 }
 
-@defparam[resolve-fields-strictly? strict? boolean? #:value #t]{
+@defparam[resolve-fields-strictly? strict? boolean? #:value #f]{
   When @racket[strict?] is @racket[#t], referencing a field that does
   not exist on the schema bound to a table alias raises an error when
   the query is built. Otherwise, the reference is converted to a column
   name following the naming rules described in @racket[define-schema]
-  instead.
+  instead. Strict resolution will become the default in a future
+  release.
 
   @history[#:added "0.21"]
 }

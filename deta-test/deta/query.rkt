@@ -407,7 +407,9 @@
 
      (test-case "can look up tuples of values"
        (define-values (a b)
-         (lookup (current-conn) (select _ 1 2)))
+         (lookup
+          (current-conn)
+          (select _ 1 2)))
 
        (check-equal? a 1)
        (check-equal? b 2))

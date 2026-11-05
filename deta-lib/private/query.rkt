@@ -22,7 +22,7 @@
  emit-query)
 
 (define resolve-fields-strictly?
-  (make-parameter #t))
+  (make-parameter #f))
 
 (struct opts (project-virtual-fields?)
   #:transparent)
@@ -223,20 +223,26 @@
 (define (select-for-schema q schema-or-id tbl-alias customizations)
   (define s
     (schema-registry-lookup schema-or-id))
+  (define sources
+    (query-sources q))
+  (define q-with-sources
+    (cond
+      ;; hash-has-key? in order to keep an alias bound to a plain table.
+      [(hash-has-key? sources tbl-alias) q]
+      [else (struct-copy query q [sources (hash-set sources tbl-alias s)])]))
+  (define bound-schema
+    (hash-ref (query-sources q-with-sources) tbl-alias))
   (define columns
-    (for/list ([fld (schema-fields s)])
+    (for/list ([fld (in-list (schema-fields s))])
       (hash-ref
        #;ht customizations
        #;key (field-id fld)
        #;failure-result
        (lambda ()
-         (ast:qualified tbl-alias (field-name fld))))))
-  (define sources
-    (query-sources q))
-  (define q-with-sources
-    (cond
-      [(hash-ref sources tbl-alias #f) q]
-      [else (struct-copy query q [sources (hash-set sources tbl-alias s)])]))
+         (define column
+           (or (and bound-schema (resolve-field bound-schema (field-id fld)))
+               (field-name fld)))
+         (ast:qualified tbl-alias column)))))
   (define updated-q
     (apply select q-with-sources columns))
   (project-onto updated-q s))
@@ -591,10 +597,10 @@
      (ast:column (resolve-qualified sources alias id #t))]
     [_ column]))
 
-;; An alias may show up in sources as #f to signal that there is
-;; nothing to punt on for that alias. A missing field on a schema is an
-;; error when `resolve-fields-strictly?' is #t. Otherwise the field is
-;; converted using id->column-name.
+;; An alias may show up in sources as #f to signal that there is nothing
+;; to punt on for that alias. A missing field on a schema is converted
+;; using id->column-name, unless `resolve-fields-strictly?' is #t, in
+;; which case it is an error.
 (define (resolve-qualified sources parent id finalize?)
   (define alias
     (if (symbol? parent)

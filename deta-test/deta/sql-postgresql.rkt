@@ -285,29 +285,29 @@
            (where u.verified?))
        "UPDATE users AS u SET verified = TRUE WHERE u.verified"))
 
-    (test-case "unknown fields on a schema are an error by default"
-      (check-exn
-       #rx"^user: no such field\n  field: 'nonexistent[?]\n  alias: \"u\""
-       (lambda ()
-         (~> (from user #:as u)
-             (where u.nonexistent?))))
-
+    (test-case "unknown fields fall back to the default column name by default"
       (check-emitted
        (~> (from user #:as u)
-           (select (count u.*)))
-       "SELECT COUNT(u.*) FROM users AS u")
+           (select u.nonexistent?))
+       "SELECT u.is_nonexistent FROM users AS u"))
 
-      (check-emitted
-       (~> (from "logins" #:as l)
-           (select l.nonexistent?))
-       "SELECT l.is_nonexistent FROM logins AS l"))
+    (test-case "unknown fields on a schema are an error when strict"
+      (parameterize ([resolve-fields-strictly? #t])
+        (check-exn
+         #rx"^user: no such field\n  field: 'nonexistent[?]\n  alias: \"u\""
+         (lambda ()
+           (~> (from user #:as u)
+               (where u.nonexistent?))))
 
-    (test-case "unknown fields fall back to the default column name when not strict"
-      (parameterize ([resolve-fields-strictly? #f])
         (check-emitted
          (~> (from user #:as u)
-             (select u.nonexistent?))
-         "SELECT u.is_nonexistent FROM users AS u")))
+             (select (count u.*)))
+         "SELECT COUNT(u.*) FROM users AS u")
+
+        (check-emitted
+         (~> (from "logins" #:as l)
+             (select l.nonexistent?))
+         "SELECT l.is_nonexistent FROM logins AS l")))
 
     (test-case "fails when known operators are called with bad arities"
       (check-exn
@@ -722,27 +722,39 @@
             ([b 42])))
        "SELECT e.a, 42 FROM examples AS e"))
 
-    (test-case "binds the projected schema to an alias without one"
+    (test-case "does not rebind an alias bound to a plain table"
       (define-schema renamed
         #:virtual
         ([a integer/f #:name "aa"]
          [b string/f]))
 
-      (check-emitted
-       (~> (from "examples" #:as e)
-           (select-for-schema
-            ,renamed-schema
-            #:from e
-            #:customizing
-            ([b e.a]))
-           (where (> e.a 0)))
-       "SELECT e.aa, e.aa FROM examples AS e WHERE e.aa > 0"))
+      (parameterize ([resolve-fields-strictly? #t])
+        (check-emitted
+         (~> (from "examples" #:as e)
+             (select-for-schema
+              ,renamed-schema
+              #:from e
+              #:customizing
+              ([b e.other]))
+             (where (> e.a 0)))
+         "SELECT e.aa, e.other FROM examples AS e WHERE e.a > 0")
 
-    (test-case "does not rebind an alias that already has a schema"
+        (check-emitted
+         (~> (from "examples" #:as e)
+             (where (> e.a 0))
+             (select-for-schema
+              ,renamed-schema
+              #:from e
+              #:customizing
+              ([b e.other])))
+         "SELECT e.aa, e.other FROM examples AS e WHERE e.a > 0")))
+
+    (test-case "resolves default columns through the alias' schema"
       (define-schema user-stats
         #:virtual
         ([verified? boolean/f]
-         [n integer/f]))
+         [n integer/f]
+         [total integer/f #:name "total_count"]))
 
       (check-emitted
        (~> (from user #:as u)
@@ -750,10 +762,9 @@
             ,user-stats-schema
             #:from u
             #:customizing
-            ([verified? u.verified?]
-             [n (count *)]))
+            ([n (count *)]))
            (group-by u.verified?))
-       "SELECT u.verified, COUNT(*) FROM users AS u GROUP BY u.verified")))
+       "SELECT u.verified, COUNT(*), u.total_count FROM users AS u GROUP BY u.verified")))
 
    (test-suite
     "update"
