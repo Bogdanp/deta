@@ -1225,9 +1225,9 @@ queries.
   @racket[admin?] becomes @racket[is_admin].
 
   Custom field names can be specified by providing a @racket[#:name]
-  in the field definition. Note, however, that the library does not
-  currently translate between field names and custom column names within
-  arbitrary queries.
+  in the field definition. In queries, custom field names are resolved
+  when a field is qualified by a table alias that resolves to a known
+  schema.
 
   Example:
 
@@ -1252,6 +1252,9 @@ queries.
    (book-author b)
    (book-created-at b)
   ]
+
+  @history[#:changed "0.21" @elem{Custom field @racket[#:name]s now
+  resolve in queries, for references qualified by a schema alias.}]
 }
 
 @defform[(schema-out schema)]{

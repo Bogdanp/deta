@@ -302,7 +302,9 @@
                 (make-hybrid #:slug "hybrid-0" #:comment "some value")
                 (make-hybrid #:slug "hybrid-1" #:comment "some other value"))
        (define default-comment (hybrid-comment (make-hybrid #:slug "n/a")))
-       (for ([h (~> (from hybrid #:as h) (order-by ([slug])) (in-entities (current-conn) _))]
+       (for ([h (~> (from hybrid #:as h)
+                    (order-by ([slug]))
+                    (in-entities (current-conn) _))]
              [slug (in-list '("hybrid-0" "hybrid-1"))])
          (check-equal? (hybrid-slug h) slug)
          (check-equal? (hybrid-comment h) default-comment)))

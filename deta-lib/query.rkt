@@ -3,8 +3,7 @@
 (require (for-syntax racket/base
                      racket/match
                      racket/string
-                     syntax/parse/pre
-                     "private/field.rkt")
+                     syntax/parse/pre)
          (except-in db
                     query)
          racket/contract/base
@@ -260,12 +259,13 @@
  where
 
  (rename-out
-  [dyn:query? query?]
-  [dyn:delete delete]
-  [dyn:union union]
-  [dyn:project-onto project-onto]
-  [dyn:project-virtual-fields project-virtual-fields]
-  [dyn:select-for-update select-for-update])
+  [dyn:query? query?] ;; noqa
+  [dyn:delete delete] ;; noqa
+  [dyn:union union] ;; noqa
+  [dyn:project-onto project-onto] ;; noqa
+  [dyn:project-virtual-fields project-virtual-fields] ;; noqa
+  [dyn:select-for-update select-for-update] ;; noqa
+  )
 
  (contract-out
   [make-entity
@@ -310,7 +310,7 @@
       (raise-syntax-error 'id "not allowed outside of a query" stx)) ...))
 
 (define-keywords
-  array as subquery fragment)
+  array as subquery fragment) ;; noqa
 
 (define (in-entities conn q
                      #:batch-size [batch-size +inf.0])
@@ -369,14 +369,15 @@
   (define column-reference-re
     #rx"^([^\\.]+)\\.([^\\.]+)$")
 
-  (define (column-reference? id)
+  (define (column-reference? id) ;; noqa
     (regexp-match? column-reference-re (symbol->string id)))
 
-  (define (syntax->column-reference stx)
+  (define (syntax->column-reference stx) ;; noqa
     (match-define (list _ a b)
       (regexp-match column-reference-re (symbol->string (syntax->datum stx))))
-    (cons (datum->syntax stx a)
-          (datum->syntax stx (id->column-name b))))
+    (values
+     (datum->syntax stx a)
+     (datum->syntax stx (string->symbol b))))
 
   (define-syntax-class placeholder-expr
     #:literals (unquote)
@@ -403,8 +404,9 @@
     #:literals (array as and case cond else or quote subquery unquote-splicing)
     (pattern column-reference:id
              #:when (column-reference? (syntax->datum this-syntax))
-             #:with e (let ([ref (syntax->column-reference this-syntax)])
-                        #`(ast:qualified #,(car ref) #,(cdr ref))))
+             #:with e (let-values ([(tbl column) (syntax->column-reference this-syntax)])
+                        (quasisyntax/loc this-syntax
+                          (ast:qualified #,tbl '#,column))))
 
     (pattern placeholder:placeholder-expr
              #:with e #'placeholder.e)
@@ -454,7 +456,7 @@
              #:with e #'(ast:app (ast:ident 'or) (list a.e b.e)))
 
     (pattern (subquery q)
-             #:with e #'(ast:subquery (dyn:query-stmt q)))
+             #:with e #'(dyn:subquery q))
 
     (pattern (fun:q-expr arg:q-expr ...)
              #:with e #'(ast:app fun.e (list arg.e ...))))
@@ -463,8 +465,7 @@
     (pattern [column:id value:q-expr]
              #:fail-when (string-contains? (symbol->string (syntax->datum #'column)) ".")
              "assignments may not be qualified"
-             #:with e (with-syntax ([name (datum->syntax #'r (id->column-name (syntax->datum #'column)))])
-                        #'(cons (ast:column name) value.e))))
+             #:with e #'(cons (ast:column 'column) value.e)))
 
   (define-syntax-class q-ordering
     #:literals (unquote)

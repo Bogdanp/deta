@@ -2,6 +2,7 @@
 
 (require racket/match
          racket/port
+         racket/promise
          racket/runtime-path
          racket/sequence
          racket/string
@@ -24,14 +25,15 @@
   "standard-reserved-words.rktd")
 
 (define reserved-words
-  (for/fold ([words (hash)])
-            ([word (in-list (call-with-input-file standard-reserved-words.rktd read))])
-    (hash-set words (symbol->immutable-string word) #t)))
+  (delay/sync
+   (for/fold ([words (hash)])
+             ([word (in-list (call-with-input-file standard-reserved-words.rktd read))])
+     (hash-set words (symbol->immutable-string word) #t))))
 
 (define (quote-string s)
   (string-append "\"" s "\""))
 
-(define (quote/standard e [reserved reserved-words])
+(define (quote/standard e [reserved (force reserved-words)])
   (cond
     [(symbol? e) (quote/standard (symbol->string e))]
     [(string=? e "*") "*"]
@@ -43,7 +45,7 @@
      (quote-string e)]))
 
 (define ((make-expr-emitter write-expr write-stmt) e)
-  (define (display/maybe-parenthize e)
+  (define (display/maybe-parenthize e) ;; noqa
     (match e
       [(app (ident 'any) _)
        (write-expr e)]
@@ -221,11 +223,11 @@
                             write-expr
                             #:supports-returning? [supports-returning? #f]) e)
 
-  (define (display/space e)
+  (define (display/space e) ;; noqa
     (write-string " ")
     (write-stmt e))
 
-  (define (display/parens e)
+  (define (display/parens e) ;; noqa
     (write-string "(")
     (write-stmt e)
     (write-string ")"))

@@ -1,10 +1,8 @@
 #lang racket/base
 
 (require deta
-         deta/private/dialect/dialect
          deta/private/dialect/sqlite3
-         (only-in deta/private/query
-                  query-stmt)
+         (only-in deta/private/query emit-query)
          rackunit
          threading)
 
@@ -13,7 +11,7 @@
 
 (define-check (check-emitted q expected)
   (define-values (query _)
-    (dialect-emit-query sqlite3-dialect (query-stmt q)))
+    (emit-query q sqlite3-dialect))
 
   (with-check-info
     (['query query]

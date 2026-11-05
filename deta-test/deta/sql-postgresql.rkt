@@ -2,25 +2,20 @@
 
 (require deta
          (prefix-in ast: deta/private/ast)
-         deta/private/dialect/dialect
          deta/private/dialect/postgresql
-         (only-in deta/private/query
-                  query-stmt)
+         (only-in deta/private/query emit-query)
          racket/format
          rackunit
-         threading)
+         threading
+         "common.rkt" ;; noqa
+         )
 
 (provide
  sql-tests)
 
-(define (query->stmt q)
-  (if (query? q)
-      (query-stmt q)
-      q))
-
 (define (emit q)
   (define-values (query _)
-    (dialect-emit-query postgresql-dialect (query->stmt q)))
+    (emit-query q postgresql-dialect))
   query)
 
 (define-check (check-emitted q expected)
@@ -33,7 +28,7 @@
 
 (define-check (check-emitted/placeholders q expected-query expected-placeholders)
   (define-values (query args)
-    (dialect-emit-query postgresql-dialect (query->stmt q)))
+    (emit-query q postgresql-dialect))
 
   (with-check-info
     (['query query]
@@ -231,6 +226,65 @@
       (exists (subquery (select _ #f))))
      "SELECT TRUE WHERE EXISTS (SELECT FALSE)")
 
+    (check-emitted
+     (~> (from user #:as u)
+         (where u.verified?))
+     "SELECT u.id, u.username, u.is_active, u.password_hash, u.verified, u.verification_code, u.created_at, u.updated_at FROM users AS u WHERE u.verified")
+
+    (check-emitted
+     (~> (from user #:as u)
+         (select
+          (in u.id (list u.verified? u.password-hash))
+          (array u.verified?)))
+     "SELECT u.id IN (u.verified, u.password_hash), ARRAY[u.verified] FROM users AS u")
+
+    (test-case "an alias bound by a subquery shadows the outer alias"
+      (check-emitted
+       (~> (from user #:as u)
+           (select u.verified?)
+           (where
+            (in u.id
+                (subquery
+                 (~> (from "other" #:as u)
+                     (select u.verified?))))))
+       "SELECT u.verified FROM users AS u WHERE u.id IN (SELECT u.is_verified FROM other AS u)"))
+
+    (test-case "a correlated subquery refers to the outer alias"
+      (check-emitted
+       (~> (from user #:as u)
+           (select u.id)
+           (where
+            (exists
+             (subquery
+              (~> (from "logins" #:as l)
+                  (select l.id)
+                  (where (and (= l.user_id u.id) u.verified?)))))))
+       "SELECT u.id FROM users AS u WHERE EXISTS (SELECT l.id FROM logins AS l WHERE (l.user_id = u.id) AND u.verified)"))
+
+    (test-case "both branches of a correlated union refer to the outer alias"
+      (check-emitted
+       (~> (from user #:as u)
+           (select u.id)
+           (where
+            (in u.id
+                (subquery
+                 (union
+                  (~> (from "a" #:as a)
+                      (select a.user_id)
+                      (where u.verified?))
+                  (~> (from "b" #:as b)
+                      (select b.user_id)
+                      (where u.verified?)))))))
+       "SELECT u.id FROM users AS u WHERE u.id IN (SELECT a.user_id FROM a AS a WHERE u.verified UNION (SELECT b.user_id FROM b AS b WHERE u.verified))"))
+
+    (test-case "update assignments are resolved against the updated table"
+      (check-emitted
+       (~> (from user #:as u)
+           (join "logins" #:as l #:on (= l.user_id u.id))
+           (update [verified? #t])
+           (where u.verified?))
+       "UPDATE users AS u SET verified = TRUE WHERE u.verified"))
+
     (test-case "fails when known operators are called with bad arities"
       (check-exn
        #rx"not: arity mismatch"
@@ -259,7 +313,7 @@
       (check-emitted
        (select
         (from "departments" #:as d)
-        (cond
+        (cond ;; noqa
           [(> (min d.employees) 0)
            (avg (/ d.expenses d.employees))]))
 
@@ -637,11 +691,45 @@
 
       (check-emitted
        (~> (from "examples" #:as e)
-           (select-for-schema ,example-schema
-                              #:from e
-                              #:customizing
-                              ([b 42])))
-       "SELECT e.a, 42 FROM examples AS e")))
+           (select-for-schema
+            ,example-schema
+            #:from e
+            #:customizing
+            ([b 42])))
+       "SELECT e.a, 42 FROM examples AS e"))
+
+    (test-case "binds the projected schema to an alias without one"
+      (define-schema renamed
+        #:virtual
+        ([a integer/f #:name "aa"]
+         [b string/f]))
+
+      (check-emitted
+       (~> (from "examples" #:as e)
+           (select-for-schema
+            ,renamed-schema
+            #:from e
+            #:customizing
+            ([b e.a]))
+           (where (> e.a 0)))
+       "SELECT e.aa, e.aa FROM examples AS e WHERE e.aa > 0"))
+
+    (test-case "does not rebind an alias that already has a schema"
+      (define-schema user-stats
+        #:virtual
+        ([verified? boolean/f]
+         [n integer/f]))
+
+      (check-emitted
+       (~> (from user #:as u)
+           (select-for-schema
+            ,user-stats-schema
+            #:from u
+            #:customizing
+            ([verified? u.verified?]
+             [n (count *)]))
+           (group-by u.verified?))
+       "SELECT u.verified, COUNT(*) FROM users AS u GROUP BY u.verified")))
 
    (test-suite
     "update"
