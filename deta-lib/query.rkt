@@ -38,13 +38,13 @@
     (drop-table! conn schema)))
 
 (define (create-table! conn schema-or-name)
-  (define schema (schema-registry-lookup schema-or-name))
+  (define schema (schema-registry-lookup schema-or-name 'create-table!))
   (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:create-table (schema-table schema)
                                                        (schema-fields/nonvirtual schema)))))
 
 (define (drop-table! conn schema-or-name)
-  (define schema (schema-registry-lookup schema-or-name))
+  (define schema (schema-registry-lookup schema-or-name 'drop-table!))
   (query-exec conn (dialect-emit-ddl (connection-dialect conn)
                                      (ast:drop-table (schema-table schema)))))
 

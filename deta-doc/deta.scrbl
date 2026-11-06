@@ -35,7 +35,10 @@ like an ORM.
 
 The API is currently stable, but small things may change before 1.0.
 Watch the @repo-link{GitHub repository} if you want to stay on top of
-potential changes.
+potential changes. One important change that will happen before the 1.0
+release is that the default value of @racket[resolve-fields-strictly?]
+will flip to @racket[#t]. I encourage you to set it to @racket[#t] in
+your own projects sooner rather than later.
 
 
 @section[#:tag "principles"]{Principles}
@@ -713,6 +716,9 @@ queries.
     (from user #:as u)
 
     (code:line)
+    (from ,user-schema #:as u)
+
+    (code:line)
     (let ([tbl "users"])
       (from ,tbl #:as u))
 
@@ -1047,12 +1053,25 @@ queries.
 }
 
 @defparam[resolve-fields-strictly? strict? boolean? #:value #f]{
-  When @racket[strict?] is @racket[#t], referencing a field that does
-  not exist on the schema bound to a table alias raises an error when
-  the query is built. Otherwise, the reference is converted to a column
-  name following the naming rules described in @racket[define-schema]
-  instead. Strict resolution will become the default in a future
-  release.
+  When @racket[strict?] is @racket[#t], referencing a field that
+  does not exist on a schema bound to a table alias raises an error
+  when the query is built or emitted. Otherwise, the reference is
+  converted to a column name following the naming rules described in
+  @racket[define-schema].
+
+  Strict resolution will become the default before 1.0.
+
+  @interaction[
+    #:eval reference-eval
+    (parameterize ([resolve-fields-strictly? #f])
+      (~> (from example #:as e)
+          (where (= e.nonexistent 42))))
+    (code:line)
+    (eval:error
+     (parameterize ([resolve-fields-strictly? #t])
+       (~> (from example #:as e)
+           (where (= e.nonexistent 42)))))
+  ]
 
   @history[#:added "0.21"]
 }
@@ -1460,10 +1479,15 @@ in mind!
   @racket[dynamic-rerequire].
 }
 
-@defproc[(schema-registry-lookup [id symbol?]) schema?]{
-  Returns the schema whose id is @racket[id] from the registry.
-  If a schema with the requested id is not registered, an
-  @racket[exn:fail:user?] is raised.
+@defproc[(schema-registry-lookup [id-or-schema (or/c schema? symbol?)]
+                                 [who symbol? 'schema-registry-lookup]) schema?]{
+  Returns the schema whose id is @racket[id-or-schema] from the
+  registry. Returns @racket[id-or-schema] when @racket[id-or-schema]
+  is a @racket[schema?]. If a schema with the requested id is not
+  registered, a contract error is raised.
+
+  @history[#:changed "0.21" @elem{Added the @racket[who] argument. A
+  contract error is now raised instead of @racket[exn:fail:user?].}]
 }
 
 @defproc[(schema-virtual? [s schema?]) boolean?]{

@@ -64,9 +64,14 @@
 
 (provide
  (contract-out
-  [current-schema-registry (parameter/c (hash/c symbol? schema?))]
-  [schema-registry-allow-conflicts? (parameter/c boolean?)]
-  [schema-registry-lookup (-> (or/c schema? symbol?) schema?)]))
+  [current-schema-registry
+   (parameter/c (hash/c symbol? schema?))]
+  [schema-registry-allow-conflicts?
+   (parameter/c boolean?)]
+  [schema-registry-lookup
+   (->* [(or/c schema? symbol?)]
+        [symbol?]
+        schema?)]))
 
 (define schema-registry-allow-conflicts?
   (make-parameter #f))
@@ -78,21 +83,17 @@
   (define registry (current-schema-registry))
   (when (and (hash-has-key? registry id) (not (schema-registry-allow-conflicts?)))
     (raise-user-error 'register! "a schema with id ~s is already registered" id))
-
   (hash-set! registry id s))
 
-(define (schema-registry-lookup schema-or-id)
-  (cond
-    [(schema? schema-or-id)
-     schema-or-id]
-
-    [else
-     (hash-ref
-      #;ht (current-schema-registry)
-      #;key schema-or-id
-      #;failure-result
-      (lambda ()
-        (raise-arguments-error
-         'lookup-schema
-         "unknown schema"
-         "id" schema-or-id)))]))
+(define (schema-registry-lookup schema-or-id [who 'schema-registry-lookup])
+  (if (schema? schema-or-id)
+      schema-or-id
+      (hash-ref
+       #;ht (current-schema-registry)
+       #;key schema-or-id
+       #;failure-result
+       (lambda ()
+         (raise-arguments-error
+          who
+          "unknown schema"
+          "id" schema-or-id)))))

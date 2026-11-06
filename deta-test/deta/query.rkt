@@ -59,10 +59,10 @@
    (test-suite
     "create-table!"
 
-    (test-case "fails with a user error if given an unknown schema id"
+    (test-case "fails with a contract error if given an unknown schema id"
       (check-exn
        (lambda (e)
-         (and (exn:fail? e)
+         (and (exn:fail:contract? e)
               (check-regexp-match "unknown schema" (exn-message e))))
        (lambda ()
          (create-table! (current-conn) 'idontexist))))

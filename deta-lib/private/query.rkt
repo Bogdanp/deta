@@ -147,7 +147,7 @@
     [(or (schema? source)
          (symbol? source))
      (define schema
-       (schema-registry-lookup source))
+       (schema-registry-lookup source 'from))
      (make-query
       #:schema schema
       #:sources (hash alias-str schema)
@@ -173,7 +173,7 @@
   (define maybe-schema
     (cond
       [(schema? tbl-e) tbl-e]
-      [(symbol? tbl-e) (schema-registry-lookup tbl-e)]
+      [(symbol? tbl-e) (schema-registry-lookup tbl-e 'join)]
       [else #f]))
   (define tbl-clause
     (cond
@@ -223,7 +223,7 @@
 
 (define (select-for-schema q schema-or-id tbl-alias customizations)
   (define s
-    (schema-registry-lookup schema-or-id))
+    (schema-registry-lookup schema-or-id 'select-for-schema))
   (define sources
     (query-sources q))
   (define q-with-sources
