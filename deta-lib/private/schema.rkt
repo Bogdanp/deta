@@ -88,7 +88,11 @@
 
     [else
      (hash-ref
-      (current-schema-registry)
-      schema-or-id
+      #;ht (current-schema-registry)
+      #;key schema-or-id
+      #;failure-result
       (lambda ()
-        (raise-user-error 'lookup-schema "unregistered schema~n  id: ~s" schema-or-id)))]))
+        (raise-arguments-error
+         'lookup-schema
+         "unknown schema"
+         "id" schema-or-id)))]))

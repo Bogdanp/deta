@@ -62,8 +62,8 @@
     (test-case "fails with a user error if given an unknown schema id"
       (check-exn
        (lambda (e)
-         (and (exn:fail:user? e)
-              (check-regexp-match "unregistered schema" (exn-message e))))
+         (and (exn:fail? e)
+              (check-regexp-match "unknown schema" (exn-message e))))
        (lambda ()
          (create-table! (current-conn) 'idontexist))))
 
