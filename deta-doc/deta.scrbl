@@ -692,9 +692,10 @@ queries.
   ((from table-name #:as alias)
    (from schema-id #:as alias)
    (from (subquery query) #:as alias)
-   (from (unquote table-name-expr) #:as alias))
+   (from (unquote source-expr) #:as alias))
   #:contracts
   ([table-name non-empty-string?]
+   [source-expr (or/c schema? string? symbol?)]
    [query query?])]{
 
   Creates a new @tt{SELECT} @racket[query?] from a schema or a table name.

@@ -80,13 +80,13 @@
 (provide
  (contract-out
   [delete (-> select-query? query?)]
-  [from (-> any/c #:as symbol? query?)]
+  [from (-> source/c #:as symbol? query?)]
   [group-by (-> select-query? ast:expr? ast:expr? ... query?)]
   [join
    (-> select-query?
        #:type (or/c 'inner 'left 'right 'full 'cross)
        #:lateral? boolean?
-       #:with (or/c ast:subquery? schema? string? symbol?)
+       #:with source/c
        #:as symbol?
        #:on (or/c #f ast:expr?)
        query?)]
@@ -115,6 +115,9 @@
   [update (-> select-query? assignment/c assignment/c ... query?)]
   [where (-> query? ast:expr? query?)]))
 
+(define source/c
+  (or/c schema? string? ast:subquery? symbol?))
+
 (define (delete q)
   (define delete-stmt
     (match (query-stmt q)
@@ -141,8 +144,8 @@
       (ast:make-select
        #:from (ast:make-from
                #:tables (list (ast:as (ast:table source) alias-str)))))]
-
-    [(symbol? source)
+    [(or (schema? source)
+         (symbol? source))
      (define schema
        (schema-registry-lookup source))
      (make-query
@@ -153,15 +156,13 @@
                #:tables (list (ast:as (ast:table (schema-table schema)) alias-str)))
        #:columns (for/list ([f (in-list (schema-fields/nonvirtual schema))])
                    (ast:column (ast:qualified alias-str (field-name f))))))]
-
     [(ast:subquery? source)
      (make-query
       #:sources (hash alias-str #f)
       (ast:make-select
        #:from (ast:make-from #:tables (list (ast:as source alias-str)))))]
-
     [else
-     (raise-argument-error 'from "a table name, a schema name or a subquery" source)]))
+     (error 'from "unreachable")]))
 
 (define (join q
               #:type type
